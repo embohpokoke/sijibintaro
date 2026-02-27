@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://sijibintaro.id/sitemap.xml

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terima Kasih - SIJI.Bintaro</title>
+    <meta name="description" content="Terima kasih telah mengirim data. Tim SIJI.Bintaro akan menghubungi kamu via WhatsApp.">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="images/logo90.png">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-dark: #0a0e27;
+            --secondary-dark: #151b35;
+            --tertiary-dark: #1e2447;
+            --gold-accent: #d4a843;
+            --gold-light: #f0d785;
+            --text-white: #ffffff;
+            --text-cream: #f8f6f0;
+            --text-gray: #b8c1d4;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--primary-dark);
+            color: var(--text-white);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .content {
+            background-color: var(--secondary-dark);
+            border-radius: 16px;
+            padding: 3rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .logo {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 2rem;
+            display: block;
+        }
+        
+        .title {
+            font-family: 'Playfair Display', serif;
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--gold-accent);
+            margin-bottom: 1rem;
+        }
+        
+        .subtitle {
+            font-size: 1.3rem;
+            color: var(--text-gray);
+            margin-bottom: 2.5rem;
+            line-height: 1.6;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-family: inherit;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: transform 0.3s ease, background-color 0.3s ease;
+            min-width: 200px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--gold-accent) 0%, var(--gold-light) 100%);
+            color: var(--primary-dark);
+        }
+        
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--gold-accent);
+            border: 2px solid var(--gold-accent);
+        }
+        
+        .btn-secondary:hover {
+            background-color: var(--gold-accent);
+            color: var(--primary-dark);
+        }
+        
+        .icon {
+            margin-right: 0.5rem;
+            font-size: 1.2rem;
+        }
+        
+        .animation {
+            animation: fadeInUp 0.8s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .content {
+                padding: 2rem;
+            }
+            
+            .title {
+                font-size: 2.5rem;
+            }
+            
+            .buttons {
+                flex-direction: column;
+            }
+            
+            .btn {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="content animation">
+            <img src="images/logo90.png" alt="SIJI.Bintaro Logo" class="logo">
+            
+            <h1 class="title">Terima Kasih, Kak! 🙏</h1>
+            
+            <p class="subtitle">
+                Data kamu sudah kami terima. Tim kami akan menghubungi kamu via WhatsApp.
+            </p>
+            
+            <div class="buttons">
+                <a href="/siji" class="btn btn-primary">
+                    <span class="icon">🏠</span>
+                    Kembali ke Beranda
+                </a>
+                
+                <a href="https://wa.me/6281288783088" target="_blank" class="btn btn-secondary">
+                    <span class="icon">💬</span>
+                    Chat WhatsApp
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

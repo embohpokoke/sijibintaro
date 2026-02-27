@@ -1,0 +1,1747 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIJI WA Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #C17E1A;
+            --gold-light: #D4A03C;
+            --gold-bg: rgba(193, 126, 26, 0.1);
+            --dark: #1A1A1A;
+            --dark-2: #2A2A2A;
+            --dark-3: #333333;
+            --bg: #0F0F0F;
+            --text: #F5F5F5;
+            --text-2: #AAAAAA;
+            --text-3: #777777;
+            --green: #4CAF50;
+            --red: #E53935;
+            --blue: #2196F3;
+            --orange: #FF9800;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* === HEADER === */
+        .header {
+            background: var(--dark);
+            border-bottom: 1px solid var(--dark-3);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-logo {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--gold);
+        }
+
+        .header-badge {
+            background: var(--green);
+            color: white;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .header-badge.offline {
+            background: var(--red);
+        }
+
+        /* === STATS BAR === */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            padding: 12px 16px;
+            background: var(--dark);
+            border-bottom: 1px solid var(--dark-3);
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 8px 4px;
+            background: var(--dark-2);
+            border-radius: 8px;
+        }
+
+        .stat-value {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--gold);
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+
+        /* === TABS === */
+        .tabs {
+            display: flex;
+            background: var(--dark);
+            border-bottom: 1px solid var(--dark-3);
+            position: sticky;
+            top: 52px;
+            z-index: 99;
+        }
+
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-3);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            color: var(--gold);
+            border-bottom-color: var(--gold);
+        }
+
+        .tab-badge {
+            background: var(--red);
+            color: white;
+            font-size: 10px;
+            padding: 1px 6px;
+            border-radius: 10px;
+            margin-left: 4px;
+        }
+
+        /* === PANELS === */
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        /* === INBOX === */
+        .search-bar {
+            padding: 12px 16px;
+            position: sticky;
+            top: 94px;
+            background: var(--bg);
+            z-index: 98;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--dark-2);
+            border: 1px solid var(--dark-3);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: var(--gold);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-3);
+        }
+
+        .message-list {
+            padding: 0 16px;
+        }
+
+        .message-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--dark-3);
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .message-item:active {
+            background: var(--dark-2);
+        }
+
+        .msg-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--gold-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: var(--gold);
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .msg-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .msg-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .msg-name {
+            font-weight: 600;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .msg-time {
+            font-size: 11px;
+            color: var(--text-3);
+            flex-shrink: 0;
+        }
+
+        .msg-preview {
+            font-size: 13px;
+            color: var(--text-2);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .msg-preview .direction {
+            color: var(--gold);
+            font-weight: 600;
+        }
+
+        .msg-meta {
+            display: flex;
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        .msg-tag {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .msg-tag.inbound { background: rgba(33,150,243,0.15); color: var(--blue); }
+        .msg-tag.outbound { background: rgba(76,175,80,0.15); color: var(--green); }
+        .msg-tag.auto { background: rgba(255,152,0,0.15); color: var(--orange); }
+        .msg-tag.harga { background: rgba(193,126,26,0.15); color: var(--gold); }
+        .msg-tag.general { background: rgba(119,119,119,0.15); color: var(--text-3); }
+
+        /* === CHAT VIEW === */
+        .chat-view {
+            display: none;
+            flex-direction: column;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg);
+            z-index: 200;
+        }
+
+        .chat-view.open { display: flex; }
+
+        .chat-header {
+            background: var(--dark);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--dark-3);
+        }
+
+        .chat-back {
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--gold);
+            padding: 4px;
+        }
+
+        .chat-info h3 {
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .chat-info p {
+            font-size: 11px;
+            color: var(--text-3);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .chat-bubble {
+            max-width: 80%;
+            padding: 10px 14px;
+            border-radius: 16px;
+            font-size: 14px;
+            line-height: 1.5;
+            position: relative;
+        }
+
+        .chat-bubble.inbound {
+            background: var(--dark-2);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+
+        .chat-bubble.outbound {
+            background: var(--gold);
+            color: var(--dark);
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .chat-bubble .bubble-time {
+            font-size: 10px;
+            opacity: 0.6;
+            margin-top: 4px;
+        }
+
+        .chat-bubble .bubble-tag {
+            font-size: 9px;
+            opacity: 0.5;
+        }
+
+        .chat-input-bar {
+            display: flex;
+            gap: 8px;
+            padding: 12px 16px;
+            background: var(--dark);
+            border-top: 1px solid var(--dark-3);
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 10px 14px;
+            background: var(--dark-2);
+            border: 1px solid var(--dark-3);
+            border-radius: 20px;
+            color: var(--text);
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            resize: none;
+            max-height: 100px;
+        }
+
+        .chat-input:focus { border-color: var(--gold); }
+
+        .chat-send {
+            width: 44px;
+            height: 44px;
+            background: var(--gold);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .chat-send:active { background: var(--gold-light); }
+
+        /* === CUSTOMERS === */
+        .customer-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--dark-3);
+            cursor: pointer;
+        }
+
+        .customer-info { flex: 1; }
+        .customer-info h4 { font-size: 14px; font-weight: 600; }
+        .customer-info p { font-size: 12px; color: var(--text-3); }
+
+        .customer-stats {
+            text-align: right;
+        }
+
+        .customer-stats .count {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--gold);
+        }
+
+        .customer-stats .label {
+            font-size: 10px;
+            color: var(--text-3);
+        }
+
+        /* === SEND PANEL === */
+        .send-form {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-2);
+            margin-bottom: 6px;
+        }
+
+        .form-input, .form-textarea {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--dark-2);
+            border: 1px solid var(--dark-3);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .form-input:focus, .form-textarea:focus {
+            border-color: var(--gold);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn-gold {
+            background: var(--gold);
+            color: white;
+        }
+
+        .btn-gold:active { background: var(--gold-light); }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--dark-3);
+            color: var(--text-2);
+        }
+
+        /* === TOAST === */
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--dark-2);
+            color: var(--text);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1px solid var(--gold);
+            z-index: 999;
+            display: none;
+        }
+
+        .toast.show {
+            display: block;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        /* === LOADING === */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-3);
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--dark-3);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-3);
+        }
+
+        .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+        .empty-state p { font-size: 14px; }
+
+        /* === REFRESH BTN === */
+        .refresh-btn {
+            background: none;
+            border: none;
+            color: var(--gold);
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .refresh-btn.spinning {
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* ========================================
+           PIPELINE STYLES
+           ======================================== */
+
+        /* Pipeline header with mode toggle */
+        .pipeline-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: var(--dark);
+            border-bottom: 1px solid var(--dark-3);
+        }
+
+        .pipeline-title {
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .mode-toggle {
+            display: flex;
+            background: var(--dark-2);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--dark-3);
+        }
+
+        .mode-btn {
+            padding: 6px 12px;
+            font-size: 11px;
+            font-weight: 600;
+            font-family: inherit;
+            border: none;
+            background: transparent;
+            color: var(--text-3);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            background: var(--gold);
+            color: white;
+        }
+
+        /* Summary chips */
+        .pipeline-chips {
+            display: flex;
+            gap: 8px;
+            padding: 10px 16px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .pipeline-chips::-webkit-scrollbar { display: none; }
+
+        .pipe-chip {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            border: 1px solid var(--dark-3);
+            background: var(--dark-2);
+            color: var(--text-2);
+            transition: all 0.2s;
+        }
+
+        .pipe-chip.active {
+            border-color: currentColor;
+        }
+
+        .pipe-chip .chip-count {
+            background: rgba(255,255,255,0.15);
+            padding: 1px 6px;
+            border-radius: 10px;
+            font-size: 11px;
+        }
+
+        .pipe-chip.active .chip-count {
+            background: rgba(255,255,255,0.25);
+        }
+
+        /* Kanban container */
+        .kanban-container {
+            padding: 12px 16px 20px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .kanban-board {
+            display: flex;
+            gap: 12px;
+            min-width: max-content;
+        }
+
+        .kanban-column {
+            width: 280px;
+            flex-shrink: 0;
+            background: var(--dark);
+            border-radius: 12px;
+            border: 1px solid var(--dark-3);
+            max-height: calc(100vh - 260px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .kanban-col-header {
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--dark-3);
+            flex-shrink: 0;
+        }
+
+        .kanban-col-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .kanban-col-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .kanban-col-count {
+            font-size: 11px;
+            color: var(--text-3);
+            background: var(--dark-2);
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        .kanban-col-cards {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--dark-3) transparent;
+        }
+
+        .kanban-col-cards::-webkit-scrollbar { width: 4px; }
+        .kanban-col-cards::-webkit-scrollbar-track { background: transparent; }
+        .kanban-col-cards::-webkit-scrollbar-thumb { background: var(--dark-3); border-radius: 2px; }
+
+        /* Pipeline customer card */
+        .pipe-card {
+            background: var(--dark-2);
+            border: 1px solid var(--dark-3);
+            border-radius: 10px;
+            padding: 10px 12px;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .pipe-card:hover {
+            border-color: var(--gold);
+        }
+
+        .pipe-card-name {
+            font-size: 13px;
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 2px;
+        }
+
+        .pipe-card-phone {
+            font-size: 11px;
+            color: var(--text-3);
+            margin-bottom: 6px;
+        }
+
+        .pipe-card-msg {
+            font-size: 11px;
+            color: var(--text-2);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 6px;
+            font-style: italic;
+        }
+
+        .pipe-card-badges {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .pipe-badge {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .pipe-badge.orders { background: rgba(193,126,26,0.15); color: var(--gold); }
+        .pipe-badge.spent { background: rgba(76,175,80,0.15); color: var(--green); }
+        .pipe-badge.days { background: rgba(33,150,243,0.15); color: var(--blue); }
+        .pipe-badge.unpaid { background: rgba(229,57,53,0.15); color: var(--red); }
+        .pipe-badge.wa { background: rgba(76,175,80,0.15); color: var(--green); }
+
+        /* === CUSTOMER DETAIL MODAL === */
+        .detail-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--bg);
+            z-index: 300;
+            flex-direction: column;
+        }
+
+        .detail-modal.open { display: flex; }
+
+        .detail-header {
+            background: var(--dark);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--dark-3);
+            flex-shrink: 0;
+        }
+
+        .detail-back {
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--gold);
+            padding: 4px;
+        }
+
+        .detail-hdr-info { flex: 1; }
+        .detail-hdr-info h3 { font-size: 15px; font-weight: 700; }
+        .detail-hdr-info p { font-size: 11px; color: var(--text-3); }
+
+        .detail-bucket-badge {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        /* Detail tabs */
+        .detail-tabs {
+            display: flex;
+            background: var(--dark);
+            border-bottom: 1px solid var(--dark-3);
+            flex-shrink: 0;
+        }
+
+        .detail-tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-3);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+
+        .detail-tab.active {
+            color: var(--gold);
+            border-bottom-color: var(--gold);
+        }
+
+        .detail-panel { display: none; flex: 1; overflow-y: auto; }
+        .detail-panel.active { display: block; }
+
+        /* Overview panel */
+        .detail-stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            padding: 16px;
+        }
+
+        .detail-stat {
+            background: var(--dark);
+            border: 1px solid var(--dark-3);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .detail-stat-val {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--gold);
+        }
+
+        .detail-stat-label {
+            font-size: 10px;
+            color: var(--text-3);
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        /* Orders panel */
+        .detail-order-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--dark-3);
+        }
+
+        .detail-order-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .detail-order-nota {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--gold);
+        }
+
+        .detail-order-date {
+            font-size: 11px;
+            color: var(--text-3);
+        }
+
+        .detail-order-service {
+            font-size: 13px;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .detail-order-badges {
+            display: flex;
+            gap: 4px;
+        }
+
+        .detail-order-badge {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .detail-order-badge.lunas { background: rgba(76,175,80,0.15); color: var(--green); }
+        .detail-order-badge.belum-lunas { background: rgba(229,57,53,0.15); color: var(--red); }
+        .detail-order-badge.diambil { background: rgba(33,150,243,0.15); color: var(--blue); }
+        .detail-order-badge.belum-diambil { background: rgba(255,152,0,0.15); color: var(--orange); }
+        .detail-order-badge.amount { background: rgba(193,126,26,0.15); color: var(--gold); }
+
+        /* Chat panel inside detail */
+        .detail-chat-list {
+            padding: 12px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .detail-chat-send {
+            padding: 12px 16px;
+            display: flex;
+            gap: 8px;
+            border-top: 1px solid var(--dark-3);
+            background: var(--dark);
+            flex-shrink: 0;
+        }
+
+        .detail-chat-send input {
+            flex: 1;
+            padding: 10px 14px;
+            background: var(--dark-2);
+            border: 1px solid var(--dark-3);
+            border-radius: 20px;
+            color: var(--text);
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .detail-chat-send input:focus { border-color: var(--gold); }
+
+        /* Mobile pipeline: vertical stacking */
+        @media (max-width: 768px) {
+            .kanban-board {
+                flex-direction: column;
+                min-width: auto;
+            }
+
+            .kanban-column {
+                width: 100%;
+                max-height: none;
+            }
+
+            .kanban-column.mobile-hidden {
+                display: none;
+            }
+
+            .kanban-col-cards {
+                max-height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <div class="header">
+        <div class="header-left">
+            <span class="header-logo">SIJI WA</span>
+            <span class="header-badge" id="statusBadge">Connected</span>
+        </div>
+        <button class="refresh-btn" id="refreshBtn" onclick="refreshAll()">&#8635;</button>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-bar" id="statsBar">
+        <div class="stat-card">
+            <div class="stat-value" id="statInbound">-</div>
+            <div class="stat-label">Masuk</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="statOutbound">-</div>
+            <div class="stat-label">Keluar</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="statAutoReply">-</div>
+            <div class="stat-label">Auto</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="statCustomers">-</div>
+            <div class="stat-label">Kontak</div>
+        </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+        <div class="tab active" data-tab="pipeline" onclick="switchTab('pipeline')">Pipeline</div>
+        <div class="tab" data-tab="inbox" onclick="switchTab('inbox')">
+            Inbox <span class="tab-badge" id="inboxBadge" style="display:none">0</span>
+        </div>
+        <div class="tab" data-tab="customers" onclick="switchTab('customers')">Kontak</div>
+        <div class="tab" data-tab="send" onclick="switchTab('send')">Kirim</div>
+    </div>
+
+    <!-- PIPELINE PANEL -->
+    <div class="panel active" id="panel-pipeline">
+        <div class="pipeline-header">
+            <span class="pipeline-title">CRM Pipeline</span>
+            <div class="mode-toggle">
+                <button class="mode-btn active" id="modeWa" onclick="setPipelineMode('wa')">WA Contacts</button>
+                <button class="mode-btn" id="modeAll" onclick="setPipelineMode('all')">All Customers</button>
+            </div>
+        </div>
+        <div class="pipeline-chips" id="pipelineChips"></div>
+        <div class="kanban-container">
+            <div class="kanban-board" id="kanbanBoard">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Loading pipeline...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- INBOX PANEL -->
+    <div class="panel" id="panel-inbox">
+        <div class="search-bar">
+            <input type="text" class="search-input" id="searchInbox" placeholder="Cari pesan atau nomor..." oninput="filterInbox()">
+        </div>
+        <div class="message-list" id="messageList">
+            <div class="loading">
+                <div class="spinner"></div>
+                Loading messages...
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOMERS PANEL -->
+    <div class="panel" id="panel-customers">
+        <div class="search-bar">
+            <input type="text" class="search-input" id="searchCustomers" placeholder="Cari kontak..." oninput="filterCustomers()">
+        </div>
+        <div id="customerList">
+            <div class="loading">
+                <div class="spinner"></div>
+                Loading contacts...
+            </div>
+        </div>
+    </div>
+
+    <!-- SEND PANEL -->
+    <div class="panel" id="panel-send">
+        <div class="send-form">
+            <div class="form-group">
+                <label>Nomor Tujuan</label>
+                <input type="text" class="form-input" id="sendTarget" placeholder="628xxxxxxxxxx">
+            </div>
+            <div class="form-group">
+                <label>Pesan</label>
+                <textarea class="form-textarea" id="sendMessage" placeholder="Tulis pesan..."></textarea>
+            </div>
+            <button class="btn btn-gold" onclick="sendMessage()" id="sendBtn">Kirim Pesan</button>
+            <p style="font-size:11px; color:var(--text-3); text-align:center;">
+                Pesan dikirim via Fonnte dari nomor SIJI (0812-8878-3088)
+            </p>
+        </div>
+    </div>
+
+    <!-- CHAT VIEW (overlay) -->
+    <div class="chat-view" id="chatView">
+        <div class="chat-header">
+            <span class="chat-back" onclick="closeChat()">&larr;</span>
+            <div class="chat-info">
+                <h3 id="chatName">-</h3>
+                <p id="chatPhone">-</p>
+            </div>
+        </div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-bar">
+            <textarea class="chat-input" id="chatInput" placeholder="Ketik pesan..." rows="1"></textarea>
+            <button class="chat-send" onclick="sendChatReply()">&#10148;</button>
+        </div>
+    </div>
+
+    <!-- CUSTOMER DETAIL MODAL -->
+    <div class="detail-modal" id="detailModal">
+        <div class="detail-header">
+            <span class="detail-back" onclick="closeDetail()">&larr;</span>
+            <div class="detail-hdr-info">
+                <h3 id="detailName">-</h3>
+                <p id="detailPhone">-</p>
+            </div>
+            <span class="detail-bucket-badge" id="detailBucket">-</span>
+        </div>
+        <div class="detail-tabs">
+            <div class="detail-tab active" data-dtab="overview" onclick="switchDetailTab('overview')">Overview</div>
+            <div class="detail-tab" data-dtab="orders" onclick="switchDetailTab('orders')">Orders</div>
+            <div class="detail-tab" data-dtab="chat" onclick="switchDetailTab('chat')">Chat</div>
+        </div>
+        <div class="detail-panel active" id="dpanel-overview">
+            <div class="detail-stats-grid" id="detailStats"></div>
+        </div>
+        <div class="detail-panel" id="dpanel-orders">
+            <div id="detailOrders"></div>
+        </div>
+        <div class="detail-panel" id="dpanel-chat" style="display:none; flex-direction:column;">
+            <div style="flex:1; overflow-y:auto;" id="detailChatMessages" class="detail-chat-list"></div>
+            <div class="detail-chat-send">
+                <input type="text" id="detailChatInput" placeholder="Ketik pesan...">
+                <button class="chat-send" onclick="sendDetailChat()">&#10148;</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const API_BASE = '/api/wa';
+        let allMessages = [];
+        let allCustomers = [];
+        let currentChatPhone = null;
+
+        // Pipeline state
+        let pipelineData = null;
+        let pipelineMode = 'wa';
+        let pipelineFilter = 'all'; // 'all' or bucket key
+        let currentDetailPhone = null;
+
+        const BUCKET_ORDER = ['lead', 'belum_lunas', 'proses', 'siap_ambil', 'returning', 'churn_risk', 'selesai'];
+
+        // === INIT ===
+        async function init() {
+            await Promise.all([loadStats(), loadPipeline(), loadMessages(), loadCustomers()]);
+            setInterval(async () => {
+                await loadStats();
+                await loadMessages();
+            }, 30000);
+        }
+
+        // === STATS ===
+        async function loadStats() {
+            try {
+                const res = await fetch(`${API_BASE}/stats`);
+                const data = await res.json();
+                document.getElementById('statInbound').textContent = data.today.inbound;
+                document.getElementById('statOutbound').textContent = data.today.outbound;
+                document.getElementById('statAutoReply').textContent = data.today.auto_replies;
+                document.getElementById('statCustomers').textContent = data.total_customers;
+
+                if (data.today.inbound > 0) {
+                    document.getElementById('inboxBadge').textContent = data.today.inbound;
+                    document.getElementById('inboxBadge').style.display = 'inline';
+                }
+            } catch (e) {
+                console.error('Stats error:', e);
+            }
+        }
+
+        // === PIPELINE ===
+        async function loadPipeline() {
+            const board = document.getElementById('kanbanBoard');
+            board.innerHTML = '<div class="loading"><div class="spinner"></div>Loading pipeline...</div>';
+
+            try {
+                const res = await fetch(`${API_BASE}/pipeline?mode=${pipelineMode}`);
+                pipelineData = await res.json();
+                renderPipelineChips();
+                renderKanban();
+            } catch (e) {
+                console.error('Pipeline error:', e);
+                board.innerHTML = '<div class="empty-state"><div class="icon">!</div><p>Gagal load pipeline</p></div>';
+            }
+        }
+
+        function setPipelineMode(mode) {
+            pipelineMode = mode;
+            document.getElementById('modeWa').classList.toggle('active', mode === 'wa');
+            document.getElementById('modeAll').classList.toggle('active', mode === 'all');
+            pipelineFilter = 'all';
+            loadPipeline();
+        }
+
+        function renderPipelineChips() {
+            if (!pipelineData) return;
+            const container = document.getElementById('pipelineChips');
+            const { summary, bucket_config, total_customers } = pipelineData;
+
+            let html = `<button class="pipe-chip ${pipelineFilter === 'all' ? 'active' : ''}"
+                          style="${pipelineFilter === 'all' ? 'color:var(--gold);border-color:var(--gold)' : ''}"
+                          onclick="filterPipeline('all')">
+                          Semua <span class="chip-count">${total_customers}</span></button>`;
+
+            for (const key of BUCKET_ORDER) {
+                const cfg = bucket_config[key];
+                const count = summary[key] || 0;
+                if (count === 0 && pipelineMode === 'wa') continue;
+                const isActive = pipelineFilter === key;
+                html += `<button class="pipe-chip ${isActive ? 'active' : ''}"
+                          style="${isActive ? 'color:' + cfg.color + ';border-color:' + cfg.color : ''}"
+                          onclick="filterPipeline('${key}')">
+                          ${cfg.label} <span class="chip-count">${count}</span></button>`;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function filterPipeline(key) {
+            pipelineFilter = key;
+            renderPipelineChips();
+            renderKanban();
+        }
+
+        function renderKanban() {
+            if (!pipelineData) return;
+            const board = document.getElementById('kanbanBoard');
+            const { buckets, bucket_config } = pipelineData;
+            const isMobile = window.innerWidth <= 768;
+
+            let html = '';
+            for (const key of BUCKET_ORDER) {
+                const cfg = bucket_config[key];
+                const cards = buckets[key] || [];
+                if (cards.length === 0 && pipelineMode === 'wa') continue;
+
+                const showColumn = pipelineFilter === 'all' || pipelineFilter === key;
+                const mobileHide = isMobile && !showColumn ? 'mobile-hidden' : '';
+
+                html += `<div class="kanban-column ${mobileHide}" ${!showColumn && !isMobile ? '' : ''}>
+                    <div class="kanban-col-header">
+                        <div class="kanban-col-title">
+                            <span class="kanban-col-dot" style="background:${cfg.color}"></span>
+                            ${cfg.label}
+                        </div>
+                        <span class="kanban-col-count">${cards.length}</span>
+                    </div>
+                    <div class="kanban-col-cards">`;
+
+                if (cards.length === 0) {
+                    html += '<div style="text-align:center;padding:20px;color:var(--text-3);font-size:12px;">Kosong</div>';
+                } else {
+                    // Show max 50 cards per column to keep things fast
+                    const displayCards = cards.slice(0, 50);
+                    for (const card of displayCards) {
+                        html += renderPipeCard(card);
+                    }
+                    if (cards.length > 50) {
+                        html += `<div style="text-align:center;padding:8px;color:var(--text-3);font-size:11px;">+${cards.length - 50} lainnya</div>`;
+                    }
+                }
+
+                html += `</div></div>`;
+            }
+
+            board.innerHTML = html || '<div class="empty-state"><p>Tidak ada data</p></div>';
+        }
+
+        function renderPipeCard(card) {
+            const name = escapeHtml(card.name || card.phone);
+            const phone = card.phone;
+            const msgPreview = card.last_message ? escapeHtml(card.last_message) : '';
+
+            let badges = '';
+            if (card.total_orders > 0) {
+                badges += `<span class="pipe-badge orders">${card.total_orders} order</span>`;
+            }
+            if (card.total_spent > 0) {
+                badges += `<span class="pipe-badge spent">Rp ${formatCurrency(card.total_spent)}</span>`;
+            }
+            if (card.unpaid_orders > 0) {
+                badges += `<span class="pipe-badge unpaid">${card.unpaid_orders} unpaid</span>`;
+            }
+            if (card.days_since_order !== null && card.days_since_order !== undefined) {
+                badges += `<span class="pipe-badge days">${card.days_since_order}d ago</span>`;
+            }
+            if (card.has_wa) {
+                badges += `<span class="pipe-badge wa">WA</span>`;
+            }
+
+            return `<div class="pipe-card" onclick="openCustomerDetail('${phone}')">
+                <div class="pipe-card-name">${name}</div>
+                <div class="pipe-card-phone">${phone}</div>
+                ${msgPreview ? `<div class="pipe-card-msg">"${msgPreview}"</div>` : ''}
+                <div class="pipe-card-badges">${badges}</div>
+            </div>`;
+        }
+
+        // === CUSTOMER DETAIL MODAL ===
+        async function openCustomerDetail(phone) {
+            currentDetailPhone = phone;
+            const modal = document.getElementById('detailModal');
+            modal.classList.add('open');
+
+            // Reset to overview tab
+            switchDetailTab('overview');
+
+            document.getElementById('detailName').textContent = 'Loading...';
+            document.getElementById('detailPhone').textContent = phone;
+            document.getElementById('detailBucket').textContent = '...';
+            document.getElementById('detailStats').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+            document.getElementById('detailOrders').innerHTML = '';
+            document.getElementById('detailChatMessages').innerHTML = '';
+
+            try {
+                const res = await fetch(`${API_BASE}/pipeline/customer/${phone}`);
+                const data = await res.json();
+                renderDetail(data);
+            } catch (e) {
+                console.error('Detail error:', e);
+                document.getElementById('detailStats').innerHTML = '<div class="empty-state"><p>Error loading data</p></div>';
+            }
+        }
+
+        function renderDetail(data) {
+            const bucketLabels = {
+                lead: 'Lead', belum_lunas: 'Belum Lunas', proses: 'Proses',
+                siap_ambil: 'Siap Ambil', returning: 'Returning',
+                churn_risk: 'Churn Risk', selesai: 'Selesai'
+            };
+            const bucketColors = {
+                lead: '#C17E1A', belum_lunas: '#E53935', proses: '#FF9800',
+                siap_ambil: '#2196F3', returning: '#4CAF50',
+                churn_risk: '#E53935', selesai: '#777777'
+            };
+
+            document.getElementById('detailName').textContent = data.name;
+            document.getElementById('detailPhone').textContent = data.phone + (data.address ? ' - ' + data.address : '');
+
+            const badge = document.getElementById('detailBucket');
+            badge.textContent = bucketLabels[data.bucket] || data.bucket;
+            badge.style.background = bucketColors[data.bucket] || '#777';
+
+            // Overview stats
+            const s = data.summary;
+            document.getElementById('detailStats').innerHTML = `
+                <div class="detail-stat">
+                    <div class="detail-stat-val">${s.total_orders}</div>
+                    <div class="detail-stat-label">Total Order</div>
+                </div>
+                <div class="detail-stat">
+                    <div class="detail-stat-val">Rp ${formatCurrency(s.total_spent)}</div>
+                    <div class="detail-stat-label">Total Spent</div>
+                </div>
+                <div class="detail-stat">
+                    <div class="detail-stat-val" style="color:var(--red)">${s.unpaid_count}</div>
+                    <div class="detail-stat-label">Belum Lunas</div>
+                </div>
+                <div class="detail-stat">
+                    <div class="detail-stat-val">${s.last_order_date || '-'}</div>
+                    <div class="detail-stat-label">Order Terakhir</div>
+                </div>
+            `;
+
+            // Orders list
+            if (data.orders && data.orders.length > 0) {
+                document.getElementById('detailOrders').innerHTML = data.orders.map(o => {
+                    const payClass = o.pembayaran === 'Lunas' ? 'lunas' : 'belum-lunas';
+                    const pickClass = o.pengambilan === 'Diambil Semua' ? 'diambil' : 'belum-diambil';
+                    return `<div class="detail-order-item">
+                        <div class="detail-order-top">
+                            <span class="detail-order-nota">${escapeHtml(o.no_nota || '')}</span>
+                            <span class="detail-order-date">${o.date_of_transaction || ''}</span>
+                        </div>
+                        <div class="detail-order-service">${escapeHtml(o.nama_layanan || '-')}</div>
+                        <div class="detail-order-badges">
+                            <span class="detail-order-badge amount">Rp ${formatCurrency(o.total_tagihan || 0)}</span>
+                            <span class="detail-order-badge ${payClass}">${o.pembayaran || '-'}</span>
+                            <span class="detail-order-badge ${pickClass}">${o.pengambilan || '-'}</span>
+                        </div>
+                    </div>`;
+                }).join('');
+            } else {
+                document.getElementById('detailOrders').innerHTML = '<div class="empty-state"><p>Belum ada order</p></div>';
+            }
+
+            // Chat history
+            if (data.conversations && data.conversations.length > 0) {
+                const sorted = [...data.conversations].reverse(); // oldest first
+                document.getElementById('detailChatMessages').innerHTML = sorted.map(c => `
+                    <div class="chat-bubble ${c.direction}">
+                        ${isMediaMessage(c.message) ? '<span style="margin-right:3px">&#128206;</span>' : ''}${c.media_url ? `<a href="${escapeHtml(c.media_url)}" target="_blank" style="color:inherit;text-decoration:underline">${escapeHtml(c.message || '')}</a>` : escapeHtml(c.message || '')}
+                        <div class="bubble-time">${formatTime(c.created_at)}${c.group_member ? ` | from ${c.group_member}` : ''}</div>
+                    </div>
+                `).join('');
+            } else {
+                document.getElementById('detailChatMessages').innerHTML = '<div class="empty-state" style="padding:30px"><p>Belum ada chat WA</p></div>';
+            }
+        }
+
+        function closeDetail() {
+            document.getElementById('detailModal').classList.remove('open');
+            currentDetailPhone = null;
+        }
+
+        function switchDetailTab(tabName) {
+            document.querySelectorAll('.detail-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.detail-panel').forEach(p => {
+                p.classList.remove('active');
+                p.style.display = 'none';
+            });
+            document.querySelector(`[data-dtab="${tabName}"]`).classList.add('active');
+            const panel = document.getElementById(`dpanel-${tabName}`);
+            panel.classList.add('active');
+            panel.style.display = tabName === 'chat' ? 'flex' : 'block';
+        }
+
+        async function sendDetailChat() {
+            const input = document.getElementById('detailChatInput');
+            const message = input.value.trim();
+            if (!message || !currentDetailPhone) return;
+            input.value = '';
+
+            const container = document.getElementById('detailChatMessages');
+            container.innerHTML += `<div class="chat-bubble outbound">${escapeHtml(message)}<div class="bubble-time">Sending...</div></div>`;
+            container.scrollTop = container.scrollHeight;
+
+            try {
+                await fetch(`${API_BASE}/send`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target: currentDetailPhone, message, sent_by: 'staff' })
+                });
+                showToast('Pesan terkirim!');
+            } catch (e) {
+                showToast('Gagal kirim pesan');
+            }
+        }
+
+        // === MESSAGES ===
+        async function loadMessages() {
+            try {
+                const res = await fetch(`${API_BASE}/customers`);
+                const customers = await res.json();
+
+                const messagePromises = customers.map(async (c) => {
+                    const convRes = await fetch(`${API_BASE}/conversations/${c.no_hp}?limit=1`);
+                    const convs = await convRes.json();
+                    return convs.length > 0 ? { ...convs[0], customer: c } : null;
+                });
+
+                allMessages = (await Promise.all(messagePromises)).filter(Boolean);
+                allMessages.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+                renderMessages(allMessages);
+            } catch (e) {
+                console.error('Messages error:', e);
+                document.getElementById('messageList').innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">!</div>
+                        <p>Gagal load pesan. Cek koneksi.</p>
+                    </div>`;
+            }
+        }
+
+        function renderMessages(messages) {
+            const list = document.getElementById('messageList');
+
+            if (messages.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">-</div>
+                        <p>Belum ada pesan masuk</p>
+                    </div>`;
+                return;
+            }
+
+            list.innerHTML = messages.map(msg => {
+                const phone = msg.direction === 'inbound' ? msg.sender : msg.recipient;
+                const name = msg.customer?.nama || phone;
+                const initials = name.substring(0, 2).toUpperCase();
+                const time = formatTime(msg.created_at);
+                const dirTag = msg.direction === 'inbound'
+                    ? '<span class="msg-tag inbound">Masuk</span>'
+                    : '<span class="msg-tag outbound">Keluar</span>';
+                const catTag = msg.category
+                    ? `<span class="msg-tag ${msg.category}">${msg.category}</span>`
+                    : '';
+                const autoTag = msg.replied_by === 'auto'
+                    ? '<span class="msg-tag auto">Auto</span>'
+                    : '';
+
+                return `
+                    <div class="message-item" onclick="openChat('${phone}', '${escapeHtml(name)}')">
+                        <div class="msg-avatar">${initials}</div>
+                        <div class="msg-content">
+                            <div class="msg-header">
+                                <span class="msg-name">${escapeHtml(name)}</span>
+                                <span class="msg-time">${time}</span>
+                            </div>
+                            <div class="msg-preview">
+                                ${msg.direction === 'outbound' ? '<span class="direction">&uarr; </span>' : ''}${isMediaMessage(msg.message) ? '<span style="margin-right:3px">&#128206;</span>' : ''}${escapeHtml(msg.message || '').substring(0, 80)}
+                            </div>
+                            <div class="msg-meta">${dirTag}${msg.media_extension ? `<span class="msg-tag" style="background:rgba(33,150,243,0.15);color:var(--blue)">${escapeHtml(msg.media_extension.toUpperCase())}</span>` : ''}${catTag}${autoTag}</div>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        function filterInbox() {
+            const q = document.getElementById('searchInbox').value.toLowerCase();
+            const filtered = allMessages.filter(m =>
+                (m.message || '').toLowerCase().includes(q) ||
+                (m.sender || '').includes(q) ||
+                (m.recipient || '').includes(q) ||
+                (m.customer?.nama || '').toLowerCase().includes(q)
+            );
+            renderMessages(filtered);
+        }
+
+        // === CUSTOMERS ===
+        async function loadCustomers() {
+            try {
+                const res = await fetch(`${API_BASE}/customers`);
+                allCustomers = await res.json();
+                renderCustomers(allCustomers);
+            } catch (e) {
+                console.error('Customers error:', e);
+            }
+        }
+
+        function renderCustomers(customers) {
+            const list = document.getElementById('customerList');
+
+            if (customers.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">-</div>
+                        <p>Belum ada kontak</p>
+                    </div>`;
+                return;
+            }
+
+            list.innerHTML = customers.map(c => {
+                const name = c.nama || c.no_hp;
+                const initials = name.substring(0, 2).toUpperCase();
+                const lastContact = c.last_contact ? formatTime(c.last_contact) : '-';
+
+                return `
+                    <div class="customer-item" onclick="openChat('${c.no_hp}', '${escapeHtml(name)}')">
+                        <div class="msg-avatar">${initials}</div>
+                        <div class="customer-info">
+                            <h4>${escapeHtml(name)}</h4>
+                            <p>${c.no_hp} - ${c.segment || 'Baru'} - ${lastContact}</p>
+                        </div>
+                        <div class="customer-stats">
+                            <div class="count">${c.total_messages || 0}</div>
+                            <div class="label">pesan</div>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        function filterCustomers() {
+            const q = document.getElementById('searchCustomers').value.toLowerCase();
+            const filtered = allCustomers.filter(c =>
+                (c.nama || '').toLowerCase().includes(q) ||
+                (c.no_hp || '').includes(q)
+            );
+            renderCustomers(filtered);
+        }
+
+        // === CHAT VIEW ===
+        async function openChat(phone, name) {
+            currentChatPhone = phone;
+            document.getElementById('chatName').textContent = name;
+            document.getElementById('chatPhone').textContent = phone;
+            document.getElementById('chatView').classList.add('open');
+            document.getElementById('chatMessages').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+            try {
+                const res = await fetch(`${API_BASE}/conversations/${phone}?limit=50`);
+                const convs = await res.json();
+                convs.reverse();
+
+                const container = document.getElementById('chatMessages');
+                container.innerHTML = convs.map(c => `
+                    <div class="chat-bubble ${c.direction}">
+                        ${isMediaMessage(c.message) ? '<span style="margin-right:3px">&#128206;</span>' : ''}${c.media_url ? `<a href="${escapeHtml(c.media_url)}" target="_blank" style="color:inherit;text-decoration:underline">${escapeHtml(c.message || '')}</a>` : escapeHtml(c.message || '')}
+                        <div class="bubble-time">
+                            ${formatTime(c.created_at)}
+                            ${c.replied_by ? ` - ${c.replied_by}` : ''}
+                            ${c.group_member ? ` | from ${c.group_member}` : ''}
+                        </div>
+                    </div>
+                `).join('');
+
+                container.scrollTop = container.scrollHeight;
+            } catch (e) {
+                document.getElementById('chatMessages').innerHTML = '<p style="text-align:center;color:var(--text-3)">Error loading chat</p>';
+            }
+        }
+
+        function closeChat() {
+            document.getElementById('chatView').classList.remove('open');
+            currentChatPhone = null;
+        }
+
+        async function sendChatReply() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message || !currentChatPhone) return;
+
+            input.value = '';
+
+            const container = document.getElementById('chatMessages');
+            container.innerHTML += `
+                <div class="chat-bubble outbound">
+                    ${escapeHtml(message)}
+                    <div class="bubble-time">Sending...</div>
+                </div>`;
+            container.scrollTop = container.scrollHeight;
+
+            try {
+                await fetch(`${API_BASE}/send`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        target: currentChatPhone,
+                        message: message,
+                        sent_by: 'staff'
+                    })
+                });
+                showToast('Pesan terkirim!');
+            } catch (e) {
+                showToast('Gagal kirim pesan');
+            }
+        }
+
+        // === SEND PANEL ===
+        async function sendMessage() {
+            const target = document.getElementById('sendTarget').value.trim();
+            const message = document.getElementById('sendMessage').value.trim();
+
+            if (!target || !message) {
+                showToast('Isi nomor dan pesan dulu');
+                return;
+            }
+
+            const btn = document.getElementById('sendBtn');
+            btn.textContent = 'Mengirim...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${API_BASE}/send`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target, message, sent_by: 'staff' })
+                });
+                const data = await res.json();
+
+                if (data.status === 'ok') {
+                    showToast('Pesan terkirim!');
+                    document.getElementById('sendMessage').value = '';
+                    loadStats();
+                } else {
+                    showToast('Gagal: ' + (data.detail || 'Unknown error'));
+                }
+            } catch (e) {
+                showToast('Error: ' + e.message);
+            } finally {
+                btn.textContent = 'Kirim Pesan';
+                btn.disabled = false;
+            }
+        }
+
+        // === TABS ===
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(`panel-${tabName}`).classList.add('active');
+
+            if (tabName === 'pipeline' && !pipelineData) {
+                loadPipeline();
+            }
+        }
+
+        // === HELPERS ===
+        function formatTime(dateStr) {
+            const d = new Date(dateStr);
+            const now = new Date();
+            const diffMs = now - d;
+
+            if (isNaN(d.getTime())) return dateStr;
+
+            if (diffMs < 60000) return 'Baru saja';
+            if (diffMs < 3600000) return `${Math.floor(diffMs/60000)}m lalu`;
+            if (diffMs < 86400000) return `${Math.floor(diffMs/3600000)}j lalu`;
+
+            return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+        }
+
+        function formatCurrency(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'jt';
+            if (num >= 1000) return (num / 1000).toFixed(0) + 'rb';
+            return num.toString();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function isMediaMessage(msg) {
+            if (!msg) return false;
+            return /^\[[\w]+:\s/.test(msg);
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        async function refreshAll() {
+            const btn = document.getElementById('refreshBtn');
+            btn.classList.add('spinning');
+            await Promise.all([loadStats(), loadPipeline(), loadMessages(), loadCustomers()]);
+            btn.classList.remove('spinning');
+            showToast('Updated!');
+        }
+
+        // Chat input enter to send
+        document.getElementById('chatInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendChatReply();
+            }
+        });
+
+        document.getElementById('detailChatInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendDetailChat();
+            }
+        });
+
+        // Handle window resize for kanban mobile/desktop switch
+        window.addEventListener('resize', () => {
+            if (pipelineData) renderKanban();
+        });
+
+        // Init
+        init();
+    </script>
+</body>
+</html>

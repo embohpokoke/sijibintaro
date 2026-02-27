@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karir di SIJI.Bintaro - Bergabunglah dengan Tim Kami</title>
+    <meta name="description" content="Bergabunglah dengan tim SIJI.Bintaro. Kami mencari orang-orang passionate untuk berbagai posisi di laundry premium kami.">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="images/logo90.png">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-dark: #0a0e27;
+            --secondary-dark: #151b35;
+            --tertiary-dark: #1e2447;
+            --gold-accent: #d4a843;
+            --gold-light: #f0d785;
+            --text-white: #ffffff;
+            --text-cream: #f8f6f0;
+            --text-gray: #b8c1d4;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--primary-dark);
+            color: var(--text-white);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1.5rem;
+            display: block;
+        }
+        
+        .title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--gold-accent);
+            margin-bottom: 1rem;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--text-gray);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        
+        .form-container {
+            background-color: var(--secondary-dark);
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            margin-bottom: 2rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-cream);
+            font-weight: 500;
+        }
+        
+        .required {
+            color: var(--gold-accent);
+        }
+        
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 1px solid var(--tertiary-dark);
+            border-radius: 8px;
+            background-color: var(--tertiary-dark);
+            color: var(--text-white);
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--gold-accent);
+        }
+        
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .form-file {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 2px dashed var(--tertiary-dark);
+            border-radius: 8px;
+            background-color: var(--tertiary-dark);
+            color: var(--text-gray);
+            transition: border-color 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .form-file:hover {
+            border-color: var(--gold-accent);
+        }
+        
+        .file-info {
+            font-size: 0.875rem;
+            color: var(--text-gray);
+            margin-top: 0.5rem;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--gold-accent) 0%, var(--gold-light) 100%);
+            color: var(--primary-dark);
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            margin-top: 1rem;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .success-message,
+        .error-message {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        
+        .success-message {
+            background-color: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        
+        .error-message {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            color: var(--gold-accent);
+            text-decoration: none;
+            font-weight: 500;
+            margin-bottom: 2rem;
+            transition: color 0.3s ease;
+        }
+        
+        .back-link:hover {
+            color: var(--gold-light);
+        }
+        
+        .back-link::before {
+            content: '←';
+            margin-right: 0.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .title {
+                font-size: 2rem;
+            }
+            
+            .form-container {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/siji" class="back-link">Kembali ke Beranda</a>
+        
+        <div class="header">
+            <img src="images/logo90.png" alt="SIJI.Bintaro Logo" class="logo">
+            <h1 class="title">Karir di SIJI.Bintaro</h1>
+            <p class="subtitle">
+                Mau jadi bagian dari tim SIJI.Bintaro? Kami selalu mencari orang-orang yang passionate dan bertanggung jawab. Isi form di bawah ini ya!
+            </p>
+        </div>
+        
+        <div class="form-container">
+            <div id="successMessage" class="success-message"></div>
+            <div id="errorMessage" class="error-message"></div>
+            
+            <form id="karirForm" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="nama" class="form-label">Nama Lengkap <span class="required">*</span></label>
+                    <input type="text" id="nama" name="nama" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="whatsapp" class="form-label">Nomor WhatsApp <span class="required">*</span></label>
+                    <input type="tel" id="whatsapp" name="whatsapp" class="form-input" placeholder="08xxx" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="domisili" class="form-label">Domisili</label>
+                    <input type="text" id="domisili" name="domisili" class="form-input" placeholder="Bintaro, Tangerang Selatan">
+                </div>
+                
+                <div class="form-group">
+                    <label for="posisi" class="form-label">Posisi yang Dilamar <span class="required">*</span></label>
+                    <select id="posisi" name="posisi" class="form-select" required>
+                        <option value="">Pilih posisi...</option>
+                        <option value="Operator Laundry">Operator Laundry</option>
+                        <option value="Admin / Kasir">Admin / Kasir</option>
+                        <option value="Kurir (Pickup & Delivery)">Kurir (Pickup & Delivery)</option>
+                        <option value="Teknisi Shoes/Bag Care">Teknisi Shoes/Bag Care</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="pengalaman" class="form-label">Ceritakan Tentang Kamu</label>
+                    <textarea id="pengalaman" name="pengalaman" class="form-textarea" placeholder="Contoh: Pernah kerja di laundry ABC selama 2 tahun bagian setrika. Atau ceritakan siapa kamu, tinggal di mana, kenapa mau kerja di SIJI..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="cv" class="form-label">Upload CV/Foto</label>
+                    <input type="file" id="cv" name="cv" class="form-file" accept=".pdf,.jpg,.jpeg,.png">
+                    <div class="file-info">Format: PDF, JPG, JPEG, PNG. Maksimal 5MB</div>
+                </div>
+                
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    Kirim Lamaran
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('karirForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const successMsg = document.getElementById('successMessage');
+            const errorMsg = document.getElementById('errorMessage');
+            
+            // Hide previous messages
+            successMsg.style.display = 'none';
+            errorMsg.style.display = 'none';
+            
+            // Disable submit button
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Mengirim...';
+            
+            try {
+                const formData = new FormData(this);
+                
+                const response = await fetch('/api/lamaran', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    successMsg.textContent = result.message;
+                    successMsg.style.display = 'block';
+                    
+                    // Reset form
+                    this.reset();
+                    
+                    // Redirect after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = '/terima-kasih';
+                    }, 2000);
+                } else {
+                    throw new Error(result.message);
+                }
+                
+            } catch (error) {
+                errorMsg.textContent = error.message || 'Terjadi kesalahan. Coba lagi ya!';
+                errorMsg.style.display = 'block';
+            } finally {
+                // Re-enable submit button
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Kirim Lamaran';
+            }
+        });
+        
+        // File input handling
+        document.getElementById('cv').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Check file size (5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('File terlalu besar. Maksimal 5MB ya!');
+                    e.target.value = '';
+                    return;
+                }
+                
+                // Check file type
+                const allowedTypes = ['.pdf', '.jpg', '.jpeg', '.png'];
+                const fileExt = '.' + file.name.split('.').pop().toLowerCase();
+                if (!allowedTypes.includes(fileExt)) {
+                    alert('Format file tidak didukung. Gunakan PDF, JPG, JPEG, atau PNG.');
+                    e.target.value = '';
+                    return;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

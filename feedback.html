@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback Pelanggan - SIJI.Bintaro</title>
+    <meta name="description" content="Berikan feedback untuk layanan SIJI.Bintaro. Pendapat kamu sangat berharga untuk kami!">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="images/logo90.png">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-dark: #0a0e27;
+            --secondary-dark: #151b35;
+            --tertiary-dark: #1e2447;
+            --gold-accent: #d4a843;
+            --gold-light: #f0d785;
+            --text-white: #ffffff;
+            --text-cream: #f8f6f0;
+            --text-gray: #b8c1d4;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--primary-dark);
+            color: var(--text-white);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1.5rem;
+            display: block;
+        }
+        
+        .title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--gold-accent);
+            margin-bottom: 1rem;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--text-gray);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        
+        .form-container {
+            background-color: var(--secondary-dark);
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            margin-bottom: 2rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-cream);
+            font-weight: 500;
+        }
+        
+        .required {
+            color: var(--gold-accent);
+        }
+        
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 1px solid var(--tertiary-dark);
+            border-radius: 8px;
+            background-color: var(--tertiary-dark);
+            color: var(--text-white);
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--gold-accent);
+        }
+        
+        .form-textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+        
+        /* Star Rating Styles */
+        .star-rating {
+            display: flex;
+            gap: 0.25rem;
+            margin-top: 0.5rem;
+        }
+        
+        .star {
+            font-size: 2.5rem;
+            color: #3a3f5c;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+            -webkit-text-stroke: 1px #555;
+        }
+        
+        .star.active {
+            color: #d4a843;
+            -webkit-text-stroke: 1px #d4a843;
+            transform: scale(1.1);
+        }
+        
+        .star.hover {
+            color: #e8c36a;
+            -webkit-text-stroke: 1px #e8c36a;
+        }
+        
+        .star:hover {
+            transform: scale(1.15);
+        }
+        
+        .rating-label {
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-gray);
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--gold-accent) 0%, var(--gold-light) 100%);
+            color: var(--primary-dark);
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            margin-top: 1rem;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .success-message,
+        .error-message {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        
+        .success-message {
+            background-color: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        
+        .error-message {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            color: var(--gold-accent);
+            text-decoration: none;
+            font-weight: 500;
+            margin-bottom: 2rem;
+            transition: color 0.3s ease;
+        }
+        
+        .back-link:hover {
+            color: var(--gold-light);
+        }
+        
+        .back-link::before {
+            content: '←';
+            margin-right: 0.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .title {
+                font-size: 2rem;
+            }
+            
+            .form-container {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/siji" class="back-link">Kembali ke Beranda</a>
+        
+        <div class="header">
+            <img src="images/logo90.png" alt="SIJI.Bintaro Logo" class="logo">
+            <h1 class="title">Feedback Pelanggan</h1>
+            <p class="subtitle">
+                Pendapat kamu sangat berharga buat kami, Kak! Bantu kami jadi lebih baik dengan isi feedback di bawah ini 🙏
+            </p>
+        </div>
+        
+        <div class="form-container">
+            <div id="successMessage" class="success-message"></div>
+            <div id="errorMessage" class="error-message"></div>
+            
+            <form id="feedbackForm">
+                <div class="form-group">
+                    <label for="nama" class="form-label">Nama</label>
+                    <input type="text" id="nama" name="nama" class="form-input" placeholder="Boleh anonim kok 😊">
+                </div>
+                
+                <div class="form-group">
+                    <label for="whatsapp" class="form-label">Nomor WhatsApp</label>
+                    <input type="tel" id="whatsapp" name="whatsapp" class="form-input" placeholder="08xxx (opsional)">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Rating <span class="required">*</span></label>
+                    <div class="star-rating" id="starRating">
+                        <span class="star" data-rating="1">&#9733;</span>
+                        <span class="star" data-rating="2">&#9733;</span>
+                        <span class="star" data-rating="3">&#9733;</span>
+                        <span class="star" data-rating="4">&#9733;</span>
+                        <span class="star" data-rating="5">&#9733;</span>
+                    </div>
+                    <div class="rating-label" id="ratingLabel">Pilih rating</div>
+                    <input type="hidden" id="rating" name="rating" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="layanan" class="form-label">Layanan yang Digunakan</label>
+                    <select id="layanan" name="layanan" class="form-select">
+                        <option value="">Pilih layanan...</option>
+                        <option value="shoes_spa">Shoes Spa</option>
+                        <option value="bag_spa">Bag Spa</option>
+                        <option value="fashion_care">Fashion Care</option>
+                        <option value="home_laundry">Home & Regular Laundry</option>
+                        <option value="lainnya">Lainnya</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="nomor_nota" class="form-label">Nomor Nota <span style="color:#8b8fa3;font-weight:normal">(opsional)</span></label>
+                    <input type="text" id="nomor_nota" name="nomor_nota" class="form-input" placeholder="Contoh: SIJI-20260201-001">
+                </div>
+
+                <div class="form-group">
+                    <label for="komentar" class="form-label">Komentar/Saran <span class="required">*</span></label>
+                    <textarea id="komentar" name="komentar" class="form-textarea" placeholder="Ceritain pengalaman kamu..." required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="foto" class="form-label">Lampiran Foto <span style="color:#8b8fa3;font-weight:normal">(opsional — bisa foto, screenshot, atau bukti lainnya)</span></label>
+                    <input type="file" id="foto" name="foto" class="form-input" accept=".jpg,.jpeg,.png,.pdf" style="padding:12px">
+                    <small style="color:#8b8fa3;font-size:0.8rem;margin-top:4px;display:block">Format: JPG, PNG, PDF. Maksimal 5MB</small>
+                </div>
+                
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    Kirim Feedback
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Star Rating Logic
+        const stars = document.querySelectorAll('.star');
+        const ratingInput = document.getElementById('rating');
+        const ratingLabel = document.getElementById('ratingLabel');
+        let currentRating = 0;
+        
+        const ratingTexts = {
+            1: 'Kurang banget 😞',
+            2: 'Kurang nih',
+            3: 'Biasa aja',
+            4: 'Bagus! 👍',
+            5: 'Luar biasa! 🌟'
+        };
+        
+        stars.forEach(star => {
+            star.addEventListener('click', () => {
+                const rating = parseInt(star.dataset.rating);
+                setRating(rating);
+            });
+            
+            star.addEventListener('mouseover', () => {
+                const rating = parseInt(star.dataset.rating);
+                highlightStars(rating, true);
+            });
+        });
+        
+        document.getElementById('starRating').addEventListener('mouseleave', () => {
+            highlightStars(currentRating);
+        });
+        
+        function setRating(rating) {
+            currentRating = rating;
+            ratingInput.value = rating;
+            ratingLabel.textContent = ratingTexts[rating];
+            highlightStars(rating);
+        }
+        
+        function highlightStars(rating, isHover = false) {
+            stars.forEach((star, index) => {
+                star.classList.remove('active', 'hover');
+                if (isHover) {
+                    if (index < rating) {
+                        star.classList.add('hover');
+                    } else if (index < currentRating) {
+                        star.classList.add('active');
+                    }
+                } else {
+                    if (index < rating) {
+                        star.classList.add('active');
+                    }
+                }
+            });
+        }
+        
+        // Form submission
+        document.getElementById('feedbackForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const successMsg = document.getElementById('successMessage');
+            const errorMsg = document.getElementById('errorMessage');
+            
+            // Hide previous messages
+            successMsg.style.display = 'none';
+            errorMsg.style.display = 'none';
+            
+            // Validate rating
+            if (!currentRating) {
+                errorMsg.textContent = 'Rating wajib diisi ya!';
+                errorMsg.style.display = 'block';
+                return;
+            }
+            
+            // Disable submit button
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Mengirim...';
+            
+            try {
+                const formData = new FormData();
+                formData.append('rating', currentRating);
+                if (document.getElementById('nama').value) formData.append('nama', document.getElementById('nama').value);
+                if (document.getElementById('whatsapp').value) formData.append('whatsapp', document.getElementById('whatsapp').value);
+                if (document.getElementById('layanan').value) formData.append('layanan', document.getElementById('layanan').value);
+                if (document.getElementById('komentar').value) formData.append('komentar', document.getElementById('komentar').value);
+                if (document.getElementById('nomor_nota').value) formData.append('nomor_nota', document.getElementById('nomor_nota').value);
+                const fotoFile = document.getElementById('foto').files[0];
+                if (fotoFile) formData.append('foto', fotoFile);
+                
+                const response = await fetch('/api/feedback', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    successMsg.textContent = result.message;
+                    successMsg.style.display = 'block';
+                    
+                    // Reset form
+                    this.reset();
+                    setRating(0);
+                    ratingLabel.textContent = 'Pilih rating';
+                    
+                    // Redirect after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = '/siji/terima-kasih.html';
+                    }, 2000);
+                } else {
+                    throw new Error(result.message);
+                }
+                
+            } catch (error) {
+                errorMsg.textContent = error.message || 'Terjadi kesalahan. Coba lagi ya!';
+                errorMsg.style.display = 'block';
+            } finally {
+                // Re-enable submit button
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Kirim Feedback';
+            }
+        });
+    </script>
+</body>
+</html>
