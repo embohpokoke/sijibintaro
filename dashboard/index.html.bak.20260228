@@ -484,98 +484,6 @@
             .detail-grid { grid-template-columns: 1fr; }
             .area-cards { grid-template-columns: 1fr; }
         }
-
-        /* ─── WhatsApp Page ──────────────────────────────────────── */
-        .wa-layout { display: flex; gap: 1rem; min-height: calc(100vh - 200px); }
-        .wa-left { width: 35%; min-width: 280px; display: flex; flex-direction: column; }
-        .wa-right { flex: 1; display: flex; flex-direction: column; }
-
-        .wa-conv-list {
-            flex: 1; overflow-y: auto; max-height: calc(100vh - 380px);
-            border: 1px solid var(--card-border); border-radius: 12px;
-            background: var(--card);
-        }
-        .wa-conv-item {
-            display: flex; gap: .75rem; padding: .75rem 1rem;
-            border-bottom: 1px solid #222; cursor: pointer; transition: all .15s;
-        }
-        .wa-conv-item:hover { background: var(--card-hover); }
-        .wa-conv-item.active { background: rgba(193,126,26,.08); border-left: 3px solid var(--gold); }
-        .wa-conv-avatar {
-            width: 40px; height: 40px; border-radius: 50%;
-            background: var(--card-border); display: flex; align-items: center;
-            justify-content: center; font-size: .9rem; flex-shrink: 0; color: var(--text-muted);
-        }
-        .wa-conv-avatar.customer { background: rgba(193,126,26,.15); color: var(--gold); }
-        .wa-conv-info { flex: 1; min-width: 0; }
-        .wa-conv-name { font-size: .85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .wa-conv-msg { font-size: .75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: .15rem; }
-        .wa-conv-meta { display: flex; flex-direction: column; align-items: flex-end; gap: .15rem; flex-shrink: 0; }
-        .wa-conv-time { font-size: .65rem; color: var(--text-muted); }
-        .wa-conv-badge { font-size: .6rem; background: var(--gold); color: #fff; border-radius: 10px; padding: .05rem .4rem; min-width: 18px; text-align: center; }
-
-        .wa-chat-area {
-            flex: 1; background: var(--card); border: 1px solid var(--card-border);
-            border-radius: 12px; display: flex; flex-direction: column;
-        }
-        .wa-chat-header {
-            padding: .75rem 1rem; border-bottom: 1px solid var(--card-border);
-            display: flex; align-items: center; justify-content: space-between;
-        }
-        .wa-chat-header-info { display: flex; align-items: center; gap: .5rem; }
-        .wa-chat-header-name { font-weight: 600; font-size: .9rem; }
-        .wa-chat-header-phone { font-size: .75rem; color: var(--text-muted); }
-        .wa-chat-header-actions { display: flex; gap: .5rem; }
-        .wa-chat-header-actions button {
-            background: var(--card); border: 1px solid var(--card-border);
-            color: var(--text-sec); border-radius: 6px; padding: .3rem .7rem;
-            font-size: .75rem; cursor: pointer;
-        }
-        .wa-chat-header-actions button:hover { border-color: var(--gold); color: var(--gold); }
-
-        .wa-chat-messages {
-            flex: 1; overflow-y: auto; padding: 1rem;
-            display: flex; flex-direction: column; gap: .5rem;
-            max-height: calc(100vh - 400px);
-        }
-        .wa-bubble {
-            max-width: 75%; padding: .6rem .9rem; border-radius: 12px;
-            font-size: .85rem; line-height: 1.5; word-wrap: break-word;
-        }
-        .wa-bubble.incoming { background: var(--bg); align-self: flex-start; border-bottom-left-radius: 4px; }
-        .wa-bubble.outgoing { background: rgba(193,126,26,.15); align-self: flex-end; border-bottom-right-radius: 4px; }
-        .wa-bubble-time { font-size: .6rem; color: var(--text-muted); margin-top: .25rem; }
-        .wa-bubble-media { font-size: .75rem; color: var(--blue); font-style: italic; }
-        .wa-chat-empty {
-            flex: 1; display: flex; align-items: center; justify-content: center;
-            color: var(--text-muted); font-size: .9rem; min-height: 300px;
-        }
-
-        .wa-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
-        .wa-analytics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
-
-        .wa-tab-bar {
-            display: flex; gap: 0; border-bottom: 2px solid var(--card-border);
-            margin-bottom: 1.25rem;
-        }
-        .wa-tab-btn {
-            padding: .65rem 1.25rem; background: none; border: none;
-            color: var(--text-muted); font-size: .85rem; cursor: pointer;
-            border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .15s;
-        }
-        .wa-tab-btn:hover { color: var(--text); }
-        .wa-tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
-        .wa-tab-content { display: none; }
-        .wa-tab-content.active { display: block; }
-
-        @media (max-width: 768px) {
-            .wa-layout { flex-direction: column; }
-            .wa-left { width: 100%; }
-            .wa-conv-list { max-height: 300px; }
-            .wa-chat-messages { max-height: 400px; }
-            .wa-stats { grid-template-columns: repeat(2, 1fr); }
-            .wa-analytics-grid { grid-template-columns: 1fr; }
-        }
     </style>
 </head>
 <body>
@@ -596,14 +504,11 @@
                 <div class="nav-item" data-page="customers">
                     <span class="nav-icon">&#x1f464;</span> Customers
                 </div>
-                <div class="nav-item" data-page="whatsapp">
-                    <span class="nav-icon">&#x1f4ac;</span> WhatsApp
-                </div>
                 <div class="nav-item" data-page="settings">
                     <span class="nav-icon">&#x2699;</span> Settings
                 </div>
             </nav>
-            <div class="sidebar-footer">SIJI Bintaro v2.5<br>13,180 transaksi | 2021-2026</div>
+            <div class="sidebar-footer">SIJI Bintaro v2.2<br>13,180 transaksi | 2021-2026</div>
         </aside>
 
         <!-- Main Content -->
@@ -920,165 +825,34 @@
                 </div>
             </div>
 
-            <!-- ═══════════════ WhatsApp Page ═══════════════ -->
-            <div class="page" id="pg-whatsapp">
-                <div class="header">
-                    <h1>WhatsApp</h1>
-                    <div class="header-controls">
-                        <input type="text" id="wa-search-input" placeholder="Cari pesan..." style="width:200px">
-                    </div>
-                </div>
-
-                <!-- WA Stats Cards -->
-                <div class="wa-stats">
-                    <div class="card">
-                        <div class="card-label">Total Chats</div>
-                        <div class="card-value" id="wa-total-chats">-</div>
-                    </div>
-                    <div class="card">
-                        <div class="card-label">Pesan Hari Ini</div>
-                        <div class="card-value" id="wa-today-msgs">-</div>
-                    </div>
-                    <div class="card">
-                        <div class="card-label">Avg Response</div>
-                        <div class="card-value" id="wa-avg-rt">-</div>
-                        <div class="card-sub" id="wa-avg-rt-sub"></div>
-                    </div>
-                    <div class="card">
-                        <div class="card-label">Total Pesan</div>
-                        <div class="card-value" id="wa-total-msgs">-</div>
-                    </div>
-                </div>
-
-                <!-- WA Tab Bar -->
-                <div class="wa-tab-bar">
-                    <button class="wa-tab-btn active" data-wa-tab="conversations">Conversations</button>
-                    <button class="wa-tab-btn" data-wa-tab="analytics">Analytics</button>
-                    <button class="wa-tab-btn" data-wa-tab="insights">AI Insight</button>
-                </div>
-
-                <!-- Tab: Conversations -->
-                <div class="wa-tab-content active" id="wa-tab-conversations">
-                    <!-- Filter chips -->
-                    <div class="filter-chips" id="wa-filter-chips">
-                        <div class="chip active" data-wa-filter="all">Semua</div>
-                        <div class="chip" data-wa-filter="customer">Pelanggan</div>
-                        <div class="chip" data-wa-filter="unknown">Unknown</div>
-                    </div>
-
-                    <div class="wa-layout">
-                        <!-- Left: Conversation list -->
-                        <div class="wa-left">
-                            <div class="wa-conv-list" id="wa-conv-list">
-                                <div class="loading"><div class="spinner"></div> Memuat...</div>
-                            </div>
-                            <div class="pagination" id="wa-conv-pagination" style="margin-top:.5rem"></div>
-                        </div>
-
-                        <!-- Right: Chat thread -->
-                        <div class="wa-right">
-                            <div class="wa-chat-area" id="wa-chat-area">
-                                <div class="wa-chat-empty">Pilih conversation untuk melihat chat</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tab: Analytics -->
-                <div class="wa-tab-content" id="wa-tab-analytics">
-                    <div class="wa-analytics-grid">
-                        <div class="panel">
-                            <div class="panel-title" style="margin-bottom:.75rem">Volume Pesan (30 Hari)</div>
-                            <div class="chart-wrap"><canvas id="wa-chart-volume"></canvas></div>
-                        </div>
-                        <div class="panel">
-                            <div class="panel-title" style="margin-bottom:.75rem">Jam Sibuk</div>
-                            <div class="chart-wrap"><canvas id="wa-chart-peak"></canvas></div>
-                        </div>
-                    </div>
-                    <div class="wa-analytics-grid">
-                        <div class="panel">
-                            <div class="panel-title" style="margin-bottom:.75rem">Response Time (7 Hari)</div>
-                            <div class="chart-wrap"><canvas id="wa-chart-rt"></canvas></div>
-                        </div>
-                        <div class="panel">
-                            <div class="panel-title" style="margin-bottom:.75rem">Topic Breakdown</div>
-                            <div class="chart-wrap"><canvas id="wa-chart-topics"></canvas></div>
-                        </div>
-                    </div>
-
-                    <!-- Most Active -->
-                    <div class="panel">
-                        <div class="panel-title" style="margin-bottom:.75rem">Pelanggan Paling Aktif (30 Hari)</div>
-                        <div class="table-wrap">
-                            <table>
-                                <thead><tr><th>Nama</th><th>Phone</th><th>Pesan</th></tr></thead>
-                                <tbody id="wa-active-table"></tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Silent Customers -->
-                    <div class="panel">
-                        <div class="panel-title" style="margin-bottom:.75rem">Silent Customers (60+ Hari Tanpa Order)</div>
-                        <div class="table-wrap">
-                            <table>
-                                <thead><tr><th>Nama</th><th>Phone</th><th>Terakhir Chat</th><th>Hari</th></tr></thead>
-                                <tbody id="wa-silent-table"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tab: AI Insight -->
-                <div class="wa-tab-content" id="wa-tab-insights">
-                    <div class="panel">
-                        <div class="panel-title" style="margin-bottom:.75rem">WA CRM Insight (AI)</div>
-                        <div id="wa-insight-box">
-                            <div class="loading"><div class="spinner"></div> Memuat insight dari AI...</div>
-                        </div>
-                    </div>
-                    <div class="panel" style="margin-top:1rem">
-                        <div class="panel-title" style="margin-bottom:.75rem">Data Summary</div>
-                        <div id="wa-insight-summary"></div>
-                    </div>
-                </div>
-            </div>
-
             <!-- ═══════════════ Settings Page ═══════════════ -->
             <div class="page" id="pg-settings">
                 <div class="header"><h1>Settings</h1></div>
                 <div class="panel">
                     <div class="panel-title" style="margin-bottom:1rem">Dashboard Info</div>
                     <table>
-                        <tr><td style="color:var(--text-muted);width:200px">Version</td><td>2.5</td></tr>
+                        <tr><td style="color:var(--text-muted);width:200px">Version</td><td>2.2</td></tr>
                         <tr><td style="color:var(--text-muted)">Database</td><td>SQLite (siji_database.db)</td></tr>
                         <tr><td style="color:var(--text-muted)">Transactions</td><td id="s-total-tx">-</td></tr>
                         <tr><td style="color:var(--text-muted)">Date Range</td><td>Feb 2021 - Feb 2026</td></tr>
                         <tr><td style="color:var(--text-muted)">Revenue Target</td><td>Rp 40.000.000 / bulan</td></tr>
                         <tr><td style="color:var(--text-muted)">API Endpoint</td><td>/api/dashboard/*</td></tr>
-                        <tr><td style="color:var(--text-muted)">Auth</td><td>Nginx Basic Auth (4 users)</td></tr>
+                        <tr><td style="color:var(--text-muted)">Auth</td><td>Nginx Basic Auth</td></tr>
                     </table>
                 </div>
                 <div class="panel" style="margin-top:1rem">
                     <div class="panel-title" style="margin-bottom:1rem">Documentation</div>
                     <div style="display:flex;gap:.75rem;flex-wrap:wrap">
-                        <a href="/README.md" target="_blank" style="color:var(--gold);font-size:.9rem">README (Project Overview)</a>
-                        <a href="/PAYMENT-INTEGRATION.md" target="_blank" style="color:var(--gold);font-size:.9rem">Payment Integration Plan</a>
-                        <a href="/PLAN-v2.2.md" target="_blank" style="color:var(--gold);font-size:.9rem">PLAN v2.2 (Implementation)</a>
+                        <a href="/api/dashboard/docs/README.md" target="_blank" style="color:var(--gold);font-size:.9rem">README (Project Overview)</a>
+                        <a href="/api/dashboard/docs/PLAN-v2.2.md" target="_blank" style="color:var(--gold);font-size:.9rem">PLAN v2.2 (Implementation)</a>
                     </div>
                 </div>
                 <div class="panel" style="margin-top:1rem">
                     <div class="panel-title" style="margin-bottom:1rem">Quick Links</div>
                     <div style="display:flex;gap:.75rem;flex-wrap:wrap">
-                        <a href="https://dashboard.sijibintaro.id" style="color:var(--gold);font-size:.9rem">Dashboard</a>
-                        <a href="https://crm.sijibintaro.id" style="color:var(--gold);font-size:.9rem">CRM</a>
-                        <a href="https://order.sijibintaro.id" style="color:var(--gold);font-size:.9rem">Order Tracking</a>
-                        <a href="https://ops.sijibintaro.id" style="color:var(--gold);font-size:.9rem">Ops Monitor</a>
-                        <a href="https://gowa.sijibintaro.id" style="color:var(--gold);font-size:.9rem">GOWA</a>
-                        <a href="https://ops.sijibintaro.id/docs" style="color:var(--gold);font-size:.9rem">API Docs</a>
-                        <a href="https://sijibintaro.id/admin.html" style="color:var(--gold);font-size:.9rem">Admin Panel</a>
-                        <a href="https://sijibintaro.id" style="color:var(--gold);font-size:.9rem">Website</a>
+                        <a href="/wa-dashboard/" style="color:var(--gold);font-size:.9rem">WA Dashboard</a>
+                        <a href="/admin.html" style="color:var(--gold);font-size:.9rem">Admin Panel</a>
+                        <a href="/" style="color:var(--gold);font-size:.9rem">Website</a>
                     </div>
                 </div>
             </div>
@@ -1137,10 +911,6 @@
                 <span class="bnav-icon">&#x1f464;</span>
                 <span>Customers</span>
             </div>
-            <div class="bottom-nav-item" data-page="whatsapp">
-                <span class="bnav-icon">&#x1f4ac;</span>
-                <span>WhatsApp</span>
-            </div>
             <div class="bottom-nav-item" data-page="settings">
                 <span class="bnav-icon">&#x2699;</span>
                 <span>Settings</span>
@@ -1150,9 +920,9 @@
 
     <script>
     /* ═══════════════════════════════════════════════════════════════════════
-       SIJI Bintaro Dashboard v2.5 — Frontend JS
+       SIJI Bintaro Dashboard v2.2 — Frontend JS
        Date picker: Bulanan | Tahunan | Custom (from-to)
-       Modals, SLA, Customer Search, Area Analysis, LLM Insights, WhatsApp CRM
+       Modals, SLA, Customer Search, Area Analysis, LLM Insights
        ═══════════════════════════════════════════════════════════════════════ */
 
     const API = '/api/dashboard';
@@ -1970,343 +1740,6 @@
         });
     }
 
-    // ─── WhatsApp Page ─────────────────────────────────────────────────────
-
-    const waState = { filter: 'all', page: 1, selectedPhone: null, analyticsLoaded: false, insightsLoaded: false };
-
-    // Tab switching
-    document.querySelectorAll('.wa-tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.wa-tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.wa-tab-content').forEach(c => c.classList.remove('active'));
-            btn.classList.add('active');
-            const tab = btn.dataset.waTab;
-            const el = $('wa-tab-' + tab);
-            if (el) el.classList.add('active');
-            if (tab === 'analytics' && !waState.analyticsLoaded) loadWaAnalytics();
-            if (tab === 'insights' && !waState.insightsLoaded) loadWaInsights();
-        });
-    });
-
-    // Filter chips
-    document.querySelectorAll('#wa-filter-chips .chip').forEach(chip => {
-        chip.addEventListener('click', () => {
-            document.querySelectorAll('#wa-filter-chips .chip').forEach(c => c.classList.remove('active'));
-            chip.classList.add('active');
-            waState.filter = chip.dataset.waFilter;
-            waState.page = 1;
-            loadWaConversations();
-        });
-    });
-
-    // Search
-    let waSearchTimeout;
-    $('wa-search-input').addEventListener('input', e => {
-        clearTimeout(waSearchTimeout);
-        waSearchTimeout = setTimeout(() => {
-            const q = e.target.value.trim();
-            if (q.length >= 2) loadWaSearch(q);
-            else loadWaConversations();
-        }, 400);
-    });
-
-    async function loadWhatsApp() {
-        waState.analyticsLoaded = false;
-        waState.insightsLoaded = false;
-        try {
-            const stats = await api('/wa/stats');
-            $('wa-total-chats').textContent = (stats.total_conversations || 0).toLocaleString('id-ID');
-            $('wa-today-msgs').textContent = (stats.total_today || 0).toLocaleString('id-ID');
-            $('wa-total-msgs').textContent = (stats.total_messages || 0).toLocaleString('id-ID');
-        } catch(e) { console.error('WA stats error:', e); }
-
-        try {
-            const ana = await api('/wa/analytics');
-            const avgRt = ana.response_time?.avg_minutes || 0;
-            $('wa-avg-rt').textContent = avgRt < 60 ? avgRt.toFixed(0) + 'm' : (avgRt / 60).toFixed(1) + 'h';
-            const medRt = ana.response_time?.median_minutes || 0;
-            $('wa-avg-rt-sub').textContent = 'Median: ' + (medRt < 60 ? medRt.toFixed(0) + 'm' : (medRt / 60).toFixed(1) + 'h');
-        } catch(e) {}
-
-        loadWaConversations();
-    }
-
-    async function loadWaConversations() {
-        const list = $('wa-conv-list');
-        list.innerHTML = '<div class="loading"><div class="spinner"></div> Memuat...</div>';
-        try {
-            const data = await api(`/wa/conversations?page=${waState.page}&limit=20&type=${waState.filter}`);
-            if (!data.conversations || data.conversations.length === 0) {
-                list.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text-muted)">Tidak ada conversation</div>';
-                $('wa-conv-pagination').innerHTML = '';
-                return;
-            }
-            let html = '';
-            for (const c of data.conversations) {
-                const initials = (c.display_name || '?').substring(0, 2).toUpperCase();
-                const isCustomer = c.customer_name ? ' customer' : '';
-                const time = c.last_message_time ? fmtWaTime(c.last_message_time) : '';
-                const badge = c.total_orders > 0 ? `<span class="badge badge-gold" style="font-size:.6rem">${c.total_orders} order</span>` : '';
-                const active = c.phone === waState.selectedPhone ? ' active' : '';
-                html += `<div class="wa-conv-item${active}" data-phone="${c.phone}" onclick="openWaChat('${c.phone}','${escHtml(c.display_name)}')">
-                    <div class="wa-conv-avatar${isCustomer}">${initials}</div>
-                    <div class="wa-conv-info">
-                        <div class="wa-conv-name">${escHtml(c.display_name)}</div>
-                        <div class="wa-conv-msg">${escHtml(c.last_message)}</div>
-                        ${badge}
-                    </div>
-                    <div class="wa-conv-meta">
-                        <span class="wa-conv-time">${time}</span>
-                        ${c.total_messages > 0 ? `<span style="font-size:.6rem;color:var(--text-muted)">${c.total_messages} msg</span>` : ''}
-                    </div>
-                </div>`;
-            }
-            list.innerHTML = html;
-
-            // Pagination
-            const pag = $('wa-conv-pagination');
-            if (data.pages > 1) {
-                pag.innerHTML = `
-                    <button ${waState.page <= 1 ? 'disabled' : ''} onclick="waState.page--;loadWaConversations()">Prev</button>
-                    <span class="page-info">${data.page} / ${data.pages}</span>
-                    <button ${waState.page >= data.pages ? 'disabled' : ''} onclick="waState.page++;loadWaConversations()">Next</button>`;
-            } else { pag.innerHTML = ''; }
-        } catch(e) {
-            list.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--red)">Gagal memuat conversation</div>';
-            console.error('WA conversations error:', e);
-        }
-    }
-
-    async function openWaChat(phone, name) {
-        waState.selectedPhone = phone;
-        // Highlight active conversation
-        document.querySelectorAll('.wa-conv-item').forEach(el => {
-            el.classList.toggle('active', el.dataset.phone === phone);
-        });
-
-        const area = $('wa-chat-area');
-        area.innerHTML = `<div class="wa-chat-header">
-            <div class="wa-chat-header-info">
-                <div class="wa-conv-avatar customer" style="width:32px;height:32px;font-size:.7rem">${(name||'?').substring(0,2).toUpperCase()}</div>
-                <div>
-                    <div class="wa-chat-header-name">${escHtml(name)}</div>
-                    <div class="wa-chat-header-phone">${phone}</div>
-                </div>
-            </div>
-            <div class="wa-chat-header-actions">
-                <button onclick="viewWaCustomer('${phone}')">Profile</button>
-                <button onclick="exportWaChat('${phone}')">Export CSV</button>
-            </div>
-        </div>
-        <div class="wa-chat-messages" id="wa-chat-msgs">
-            <div class="loading"><div class="spinner"></div></div>
-        </div>`;
-
-        try {
-            const data = await api(`/wa/messages?phone=${phone}&limit=100`);
-            const msgs = data.messages || [];
-            const container = $('wa-chat-msgs');
-            if (msgs.length === 0) {
-                container.innerHTML = '<div class="wa-chat-empty">Belum ada pesan</div>';
-                return;
-            }
-
-            let html = '';
-            let lastDate = '';
-            for (const m of msgs) {
-                const msgDate = m.timestamp ? m.timestamp.substring(0, 10) : '';
-                if (msgDate !== lastDate) {
-                    html += `<div style="text-align:center;font-size:.7rem;color:var(--text-muted);padding:.5rem 0">${fmtDate(msgDate)}</div>`;
-                    lastDate = msgDate;
-                }
-                const cls = m.is_from_me ? 'outgoing' : 'incoming';
-                const text = m.message_text || '';
-                const time = m.timestamp ? m.timestamp.substring(11, 16) : '';
-                const mediaTag = m.message_type && m.message_type !== 'text'
-                    ? `<div class="wa-bubble-media">[${m.message_type}]</div>` : '';
-                html += `<div class="wa-bubble ${cls}">
-                    ${mediaTag}
-                    <div>${escHtml(text)}</div>
-                    <div class="wa-bubble-time">${time}</div>
-                </div>`;
-            }
-            container.innerHTML = html;
-            container.scrollTop = container.scrollHeight;
-
-            // Show customer info in header if available
-            if (data.customer && data.customer.total_orders > 0) {
-                const c = data.customer;
-                const infoEl = area.querySelector('.wa-chat-header-phone');
-                if (infoEl) infoEl.textContent = `${phone} | ${c.total_orders} orders | ${rpShort(c.total_revenue)}`;
-            }
-        } catch(e) {
-            $('wa-chat-msgs').innerHTML = '<div class="wa-chat-empty" style="color:var(--red)">Gagal memuat pesan</div>';
-            console.error('WA messages error:', e);
-        }
-    }
-
-    async function loadWaSearch(query) {
-        const list = $('wa-conv-list');
-        list.innerHTML = '<div class="loading"><div class="spinner"></div> Mencari...</div>';
-        try {
-            const data = await api(`/wa/search?q=${encodeURIComponent(query)}&limit=30`);
-            if (!data.results || data.results.length === 0) {
-                list.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text-muted)">Tidak ditemukan</div>';
-                return;
-            }
-            let html = '';
-            for (const r of data.results) {
-                const time = r.timestamp ? fmtWaTime(r.timestamp) : '';
-                html += `<div class="wa-conv-item" data-phone="${r.phone}" onclick="openWaChat('${r.phone}','${escHtml(r.name)}')">
-                    <div class="wa-conv-avatar">${(r.name||'?').substring(0,2).toUpperCase()}</div>
-                    <div class="wa-conv-info">
-                        <div class="wa-conv-name">${escHtml(r.name)}</div>
-                        <div class="wa-conv-msg">${highlightText(escHtml(r.text), query)}</div>
-                    </div>
-                    <div class="wa-conv-meta"><span class="wa-conv-time">${time}</span></div>
-                </div>`;
-            }
-            list.innerHTML = html;
-            $('wa-conv-pagination').innerHTML = `<span class="page-info">${data.count} hasil</span>`;
-        } catch(e) {
-            list.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--red)">Gagal mencari</div>';
-        }
-    }
-
-    function highlightText(text, query) {
-        if (!query) return text;
-        const re = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-        return text.replace(re, '<span style="background:rgba(193,126,26,.3);border-radius:2px">$1</span>');
-    }
-
-    function viewWaCustomer(phone) {
-        showCustomerDetail(phone);
-    }
-
-    function exportWaChat(phone) {
-        window.open(API + `/wa/export?phone=${phone}&format=csv`, '_blank');
-    }
-
-    async function loadWaAnalytics() {
-        waState.analyticsLoaded = true;
-        try {
-            const data = await api('/wa/analytics');
-
-            // Volume chart
-            destroyChart('waVolume');
-            const volDays = (data.volume?.messages_by_day || []);
-            charts.waVolume = new Chart($('wa-chart-volume'), {
-                type: 'bar',
-                data: {
-                    labels: volDays.map(d => fmtDateShort(d.date)),
-                    datasets: [
-                        { label: 'Masuk', data: volDays.map(d => d.incoming), backgroundColor: chartColors.blue },
-                        { label: 'Keluar', data: volDays.map(d => d.outgoing), backgroundColor: chartColors.gold }
-                    ]
-                },
-                options: { ...defaultChartOpts, plugins: { ...defaultChartOpts.plugins, legend: { labels: { color: '#AAA', font: { size: 11 } } } }, scales: { ...defaultChartOpts.scales, x: { ...defaultChartOpts.scales.x, stacked: true }, y: { ...defaultChartOpts.scales.y, stacked: true } } }
-            });
-
-            // Peak hours chart
-            destroyChart('waPeak');
-            const peakH = data.volume?.peak_hours || [];
-            charts.waPeak = new Chart($('wa-chart-peak'), {
-                type: 'bar',
-                data: {
-                    labels: peakH.map(h => h.hour + ':00'),
-                    datasets: [{ label: 'Pesan', data: peakH.map(h => h.count), backgroundColor: chartColors.gold }]
-                },
-                options: { ...defaultChartOpts, plugins: { legend: { display: false } } }
-            });
-
-            // Response time trend
-            destroyChart('waRt');
-            const rtDays = data.response_time?.trend_7d || [];
-            charts.waRt = new Chart($('wa-chart-rt'), {
-                type: 'line',
-                data: {
-                    labels: rtDays.map(d => fmtDateShort(d.date)),
-                    datasets: [{ label: 'Avg (menit)', data: rtDays.map(d => d.avg_minutes), borderColor: chartColors.gold, backgroundColor: chartColors.goldAlpha, fill: true, tension: .3 }]
-                },
-                options: defaultChartOpts
-            });
-
-            // Topics donut
-            destroyChart('waTopics');
-            const topics = data.topics || {};
-            const topicLabels = { inquiry: 'Inquiry/Harga', complaint: 'Keluhan', order: 'Order/Laundry', feedback: 'Feedback Positif' };
-            charts.waTopics = new Chart($('wa-chart-topics'), {
-                type: 'doughnut',
-                data: {
-                    labels: Object.keys(topics).map(k => topicLabels[k] || k),
-                    datasets: [{ data: Object.values(topics), backgroundColor: [chartColors.blue, chartColors.red, chartColors.gold, chartColors.green] }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#AAA', font: { size: 11 } } } } }
-            });
-
-            // Most active table
-            const activeHtml = (data.customers?.most_active || []).map(c =>
-                `<tr class="clickable" onclick="openWaChat('${c.phone}','${escHtml(c.name)}')">
-                    <td>${escHtml(c.name)}</td><td style="font-family:monospace;font-size:.8rem">${c.phone}</td><td>${c.message_count}</td>
-                </tr>`
-            ).join('');
-            $('wa-active-table').innerHTML = activeHtml || '<tr><td colspan="3" style="text-align:center;color:var(--text-muted)">-</td></tr>';
-
-            // Silent customers table
-            const silentHtml = (data.customers?.silent_customers || []).map(c =>
-                `<tr class="clickable" onclick="viewWaCustomer('${c.phone}')">
-                    <td>${escHtml(c.name)}</td><td style="font-family:monospace;font-size:.8rem">${c.phone}</td>
-                    <td>${c.last_contact ? fmtDate(c.last_contact) : '-'}</td>
-                    <td><span class="${c.days_silent > 90 ? 'badge badge-red' : 'badge badge-orange'}">${c.days_silent}d</span></td>
-                </tr>`
-            ).join('');
-            $('wa-silent-table').innerHTML = silentHtml || '<tr><td colspan="4" style="text-align:center;color:var(--text-muted)">-</td></tr>';
-
-        } catch(e) {
-            console.error('WA analytics error:', e);
-        }
-    }
-
-    async function loadWaInsights() {
-        waState.insightsLoaded = true;
-        $('wa-insight-box').innerHTML = '<div class="loading"><div class="spinner"></div> Memuat insight dari AI (~10 detik)...</div>';
-        try {
-            const data = await api('/wa/insights');
-            $('wa-insight-box').innerHTML = `<div class="llm-box"><div class="llm-box-title">CRM Insight</div><div class="llm-box-content">${escHtml(data.insight || '')}</div></div>`;
-            if (data.data_summary) {
-                const s = data.data_summary;
-                $('wa-insight-summary').innerHTML = `
-                    <div class="detail-grid">
-                        <div class="detail-item"><div class="dl">Total Pesan (30d)</div><div class="dv">${s.total_messages}</div></div>
-                        <div class="detail-item"><div class="dl">Masuk</div><div class="dv">${s.incoming}</div></div>
-                        <div class="detail-item"><div class="dl">Keluar</div><div class="dv">${s.outgoing}</div></div>
-                        <div class="detail-item"><div class="dl">Kontak</div><div class="dv">${s.conversations}</div></div>
-                    </div>
-                    <div style="font-size:.8rem;color:var(--text-sec)">
-                        ${Object.entries(s.topics || {}).map(([k,v]) => `<span class="badge badge-gold" style="margin-right:.3rem">${k}: ${v}</span>`).join('')}
-                    </div>`;
-            }
-        } catch(e) {
-            $('wa-insight-box').innerHTML = '<div style="color:var(--text-muted)">AI insight tidak tersedia saat ini.</div>';
-        }
-    }
-
-    function fmtWaTime(ts) {
-        if (!ts) return '';
-        const d = new Date(ts);
-        const now = new Date();
-        const diffDays = Math.floor((now - d) / 86400000);
-        if (diffDays === 0) return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-        if (diffDays === 1) return 'Kemarin';
-        if (diffDays < 7) return d.toLocaleDateString('id-ID', { weekday: 'short' });
-        return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
-    }
-
-    function escHtml(s) {
-        if (!s) return '';
-        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-    }
-
     // ─── Settings Page ──────────────────────────────────────────────────────
 
     async function loadSettings() {
@@ -2321,19 +1754,13 @@
             case 'analytics': loadAnalytics(); break;
             case 'orders': loadOrders(); break;
             case 'customers': loadCustomers(); break;
-            case 'whatsapp': loadWhatsApp(); break;
             case 'settings': loadSettings(); break;
         }
     }
 
     // ─── Init ───────────────────────────────────────────────────────────────
 
-    // Auto-navigate based on subdomain
-    if (window.location.hostname === 'crm.sijibintaro.id') {
-        navigateTo('whatsapp');
-    } else {
-        loadDashboard();
-    }
+    loadDashboard();
 
     </script>
 </body>

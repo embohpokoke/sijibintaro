@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIJI Bintaro - Cek Status Order</title>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #0F0F0F; --card: #1A1A1A; --card-border: #333;
+            --gold: #C17E1A; --gold-light: #D4A03C;
+            --text: #F5F5F5; --text-sec: #AAAAAA; --text-muted: #777;
+            --green: #4CAF50; --red: #E53935; --blue: #2196F3; --orange: #FF9800;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg); color: var(--text); min-height: 100vh;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .container { max-width: 640px; width: 100%; padding: 2rem 1.5rem; }
+        .logo {
+            text-align: center; margin-bottom: 2rem;
+        }
+        .logo h1 {
+            font-size: 1.5rem; font-weight: 700; color: var(--gold);
+            display: flex; align-items: center; justify-content: center; gap: .5rem;
+        }
+        .logo .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--gold); }
+        .logo p { color: var(--text-muted); font-size: .85rem; margin-top: .3rem; }
+        .search-box {
+            background: var(--card); border: 1px solid var(--card-border);
+            border-radius: 14px; padding: 1.5rem; margin-bottom: 1.5rem;
+        }
+        .search-box label {
+            display: block; font-size: .8rem; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: .5px; margin-bottom: .6rem;
+        }
+        .search-row {
+            display: flex; gap: .5rem;
+        }
+        .search-row input {
+            flex: 1; background: var(--bg); color: var(--text);
+            border: 1px solid var(--card-border); border-radius: 10px;
+            padding: .7rem 1rem; font-size: 1rem; outline: none;
+        }
+        .search-row input:focus { border-color: var(--gold); }
+        .search-row input::placeholder { color: var(--text-muted); }
+        .search-row button {
+            background: var(--gold); color: #fff; border: none;
+            border-radius: 10px; padding: .7rem 1.5rem; font-size: .9rem;
+            font-weight: 600; cursor: pointer; white-space: nowrap;
+        }
+        .search-row button:hover { background: var(--gold-light); }
+        .search-row button:disabled { opacity: .5; cursor: default; }
+        .hint {
+            font-size: .75rem; color: var(--text-muted); margin-top: .5rem;
+        }
+        #results { margin-top: 1rem; }
+        .order-card {
+            background: var(--card); border: 1px solid var(--card-border);
+            border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem;
+        }
+        .order-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: .75rem;
+        }
+        .order-nota {
+            font-family: monospace; font-size: .75rem; color: var(--text-muted);
+        }
+        .order-date { font-size: .75rem; color: var(--text-muted); }
+        .order-service { font-weight: 600; font-size: .95rem; margin-bottom: .5rem; }
+        .order-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: .4rem .75rem;
+            font-size: .85rem; margin-bottom: .75rem;
+        }
+        .order-grid .label { color: var(--text-muted); }
+        .badge {
+            display: inline-block; padding: .2rem .6rem; border-radius: 6px;
+            font-size: .8rem; font-weight: 600;
+        }
+        .badge-green { background: #1B4D3E; color: var(--green); }
+        .badge-blue { background: #1B2D4D; color: var(--blue); }
+        .badge-orange { background: #4D3B1B; color: var(--orange); }
+        .badge-gold { background: rgba(193,126,26,.15); color: var(--gold); }
+        .badge-red { background: #4D1B1B; color: var(--red); }
+        .status-bar {
+            display: flex; gap: 0; border-radius: 8px; overflow: hidden;
+            height: 6px; background: #2A2A2A;
+        }
+        .status-fill {
+            height: 100%; transition: width .4s ease;
+        }
+        .empty {
+            text-align: center; padding: 2rem; color: var(--text-muted); font-size: .9rem;
+        }
+        .loading {
+            text-align: center; padding: 2rem; color: var(--text-muted);
+        }
+        .spinner {
+            display: inline-block; width: 20px; height: 20px;
+            border: 2px solid #333; border-top-color: var(--gold);
+            border-radius: 50%; animation: spin .6s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .footer {
+            text-align: center; padding: 2rem 1rem; color: var(--text-muted);
+            font-size: .75rem;
+        }
+        .footer a { color: var(--gold); text-decoration: none; }
+        @media (max-width: 480px) {
+            .container { padding: 1.25rem 1rem; }
+            .search-row { flex-direction: column; }
+            .search-row button { width: 100%; }
+            .order-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1><span class="dot"></span> SIJI Bintaro</h1>
+            <p>Cek Status Order Laundry</p>
+        </div>
+
+        <div class="search-box">
+            <label>Nomor Nota atau Nomor HP</label>
+            <div class="search-row">
+                <input type="text" id="search-input" placeholder="Contoh: SJRG260215... atau 0817..." autofocus>
+                <button id="search-btn" onclick="searchOrder()">Cari</button>
+            </div>
+            <div class="hint">Masukkan nomor nota dari struk laundry atau nomor HP yang terdaftar</div>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <div class="footer">
+        SIJI Bintaro Laundry &mdash; <a href="https://sijibintaro.id">sijibintaro.id</a>
+    </div>
+
+    <script>
+    const input = document.getElementById('search-input');
+    const btn = document.getElementById('search-btn');
+    const results = document.getElementById('results');
+
+    input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') searchOrder();
+    });
+
+    // Check URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    const qParam = urlParams.get('q') || urlParams.get('nota');
+    if (qParam) {
+        input.value = qParam;
+        searchOrder();
+    }
+
+    async function searchOrder() {
+        const q = input.value.trim();
+        if (q.length < 3) {
+            results.innerHTML = '<div class="empty">Masukkan minimal 3 karakter</div>';
+            return;
+        }
+
+        btn.disabled = true;
+        results.innerHTML = '<div class="loading"><div class="spinner"></div> Mencari...</div>';
+
+        try {
+            const resp = await fetch(`/api/order/track?q=${encodeURIComponent(q)}`);
+            if (!resp.ok) throw new Error('API error');
+            const data = await resp.json();
+
+            if (!data.orders || data.orders.length === 0) {
+                results.innerHTML = '<div class="empty">Tidak ditemukan order dengan pencarian tersebut.<br><span style="font-size:.8rem">Pastikan nomor nota atau HP sudah benar.</span></div>';
+                return;
+            }
+
+            let html = '';
+            for (const o of data.orders) {
+                const badgeClass = 'badge-' + o.status_color;
+                const payBadge = o.payment === 'Lunas'
+                    ? '<span class="badge badge-green">Lunas</span>'
+                    : '<span class="badge badge-red">Belum Lunas</span>';
+
+                // Status progress bar
+                let pct = 0;
+                if (o.status === 'Selesai') pct = 100;
+                else if (o.status === 'Siap Diambil') pct = 100;
+                else if (o.status === 'Proses') pct = 50;
+                else pct = 10;
+                const fillColor = o.status_color === 'green' ? 'var(--green)'
+                    : o.status_color === 'blue' ? 'var(--blue)'
+                    : o.status_color === 'orange' ? 'var(--orange)' : 'var(--gold)';
+
+                html += `<div class="order-card">
+                    <div class="order-header">
+                        <span class="order-nota">${esc(o.nota || '-')}</span>
+                        <span class="order-date">${fmtDate(o.date)}</span>
+                    </div>
+                    <div class="order-service">${esc(o.service || '-')}</div>
+                    <div class="order-grid">
+                        <span class="label">Customer</span><span>${esc(o.customer)}</span>
+                        <span class="label">Tipe</span><span>${esc(o.type || '-')}</span>
+                        <span class="label">Tagihan</span><span style="color:var(--gold);font-weight:600">${rp(o.amount)}</span>
+                        <span class="label">Pembayaran</span><span>${payBadge}</span>
+                        <span class="label">Status</span><span><span class="badge ${badgeClass}">${o.status}</span></span>
+                        <span class="label">Pengambilan</span><span>${esc(o.pickup || '-')}</span>
+                    </div>
+                    <div class="status-bar"><div class="status-fill" style="width:${pct}%;background:${fillColor}"></div></div>
+                </div>`;
+            }
+            results.innerHTML = html;
+        } catch(e) {
+            results.innerHTML = '<div class="empty" style="color:var(--red)">Gagal memuat data. Coba lagi nanti.</div>';
+            console.error(e);
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    function esc(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '-'; }
+    function rp(n) { return n ? 'Rp ' + Math.round(n).toLocaleString('id-ID') : 'Rp 0'; }
+    function fmtDate(d) {
+        if (!d) return '-';
+        return new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    </script>
+</body>
+</html>
