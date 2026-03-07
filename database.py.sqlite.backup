@@ -1,0 +1,125 @@
+import sqlite3
+import os
+from contextlib import contextmanager
+
+DATABASE_PATH = "/root/sijibintaro.id/api/siji.db"
+
+def init_db():
+    """Initialize database with required tables"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    
+    # Job applications table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS lamaran (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nama TEXT NOT NULL,
+            whatsapp TEXT NOT NULL,
+            domisili TEXT,
+            posisi TEXT NOT NULL,
+            pengalaman TEXT,
+            cv_path TEXT,
+            status TEXT DEFAULT 'baru',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    
+    # Customer feedback table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS feedback (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nama TEXT,
+            whatsapp TEXT,
+            rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
+            layanan TEXT,
+            komentar TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    
+    # Google reviews cache table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS google_reviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            author_name TEXT,
+            rating INTEGER,
+            text TEXT,
+            time TEXT,
+            profile_photo_url TEXT,
+            fetched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    
+    # Migrate lamaran table: add pipeline columns if missing
+    cursor.execute("PRAGMA table_info(lamaran)")
+    existing_cols = {row[1] for row in cursor.fetchall()}
+    if "notes" not in existing_cols:
+        cursor.execute("ALTER TABLE lamaran ADD COLUMN notes TEXT DEFAULT NULL")
+    if "tgl_dihubungi" not in existing_cols:
+        cursor.execute("ALTER TABLE lamaran ADD COLUMN tgl_dihubungi TIMESTAMP DEFAULT NULL")
+    if "tgl_interview" not in existing_cols:
+        cursor.execute("ALTER TABLE lamaran ADD COLUMN tgl_interview TIMESTAMP DEFAULT NULL")
+
+    # Employee (karyawan) table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS karyawan (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            lamaran_id INTEGER REFERENCES lamaran(id),
+            nama TEXT NOT NULL,
+            whatsapp TEXT,
+            posisi TEXT NOT NULL,
+            tipe_kontrak TEXT DEFAULT 'probation',
+            status_kerja TEXT DEFAULT 'aktif',
+            tgl_bergabung DATE,
+            tgl_akhir_kontrak DATE,
+            no_ktp TEXT,
+            alamat TEXT,
+            gaji_pokok INTEGER,
+            catatan TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # Attendance (presensi) table — Phase 2
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS presensi (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            karyawan_id INTEGER REFERENCES karyawan(id),
+            tanggal DATE NOT NULL,
+            jam_masuk TEXT,
+            jam_keluar TEXT,
+            tipe TEXT DEFAULT 'hadir',
+            catatan TEXT,
+            sumber TEXT DEFAULT 'manual',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    conn.commit()
+    conn.close()
+    print("Database initialized successfully!")
+
+@contextmanager
+def get_db():
+    """Context manager for database connections"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    conn.row_factory = sqlite3.Row  # Enable column access by name
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+def dict_factory(cursor, row):
+    """Convert SQLite row to dictionary"""
+    return {col[0]: row[idx] for idx, col in enumerate(cursor.description)}
+
+@contextmanager
+def get_db_dict():
+    """Context manager for database connections returning dictionaries"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    conn.row_factory = dict_factory
+    try:
+        yield conn
+    finally:
+        conn.close()

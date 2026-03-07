@@ -1,0 +1,151 @@
+[
+  {"canonical_name": "Emerald Residence", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["emerald residen", "emrald residence", "emerald res", "em res", "em residen", "emeral resideen", "emerald residences", "emerakd residence", "emerald residence", "em residence", "emerald resid", "residence"]},
+  
+  {"canonical_name": "Emerald Townhouse", "category": "Townhouse", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["emerald townhouse", "emrald townhose", "emerald town house", "emerlad townhous", "emerald touwnhous", "emerald towonhouse", "emrald towone hose", "em touwnhouse", "emerakd townhouse", "emeral townhouse", "emerald townhous"]},
+  
+  {"canonical_name": "Emerald Garden", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["emerald garden", "emerld garden", "emeral garden", "em garden", "emerald grden", "diemerald garden"]},
+  
+  {"canonical_name": "Emerald Terrace", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["emerald terrace", "emerald terace", "em terrace", "em terace", "emerald teraace", "emerld terrace"]},
+  
+  {"canonical_name": "Emerald View", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["emerald view", "emerld view", "em view", "emeral view"]},
+  
+  {"canonical_name": "Emerald Boulevard", "category": "Ruko", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["emerald boulevard", "emerald bintaro"]},
+  
+  {"canonical_name": "Apartemen Emerald Bintaro", "category": "Apartment", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["apt emerald bintaro", "apartemen emerald", "emerald apartment"]},
+  
+  {"canonical_name": "Discovery Amore", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["discovery amore", "disc amore", "dis amore", "dc amore"]},
+  
+  {"canonical_name": "Discovery Aluvia", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["discovery aluvia", "disc aluvia", "dis aluvia", "dis. aluvia", "dc aluvia"]},
+  
+  {"canonical_name": "Discovery Fiore", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["discovery fiore", "disc fiore", "dc fiore", "dc. fiore", "discoverry fiore", "discofery fiore", "cluzter fioren"]},
+  
+  {"canonical_name": "Discovery Eola", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["discovery eola", "disc eola", "dc eola"]},
+  
+  {"canonical_name": "Discovery Cielo", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["discovery cielo", "disc cielo", "disco cielo", "dc cielo"]},
+  
+  {"canonical_name": "Discovery Conserva", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["discovery conserva", "disc conserva", "dc conserva"]},
+  
+  {"canonical_name": "Discovery Lumina", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["discovery lumina", "disc lumina", "dc lumina", "discoverry lumina"]},
+  
+  {"canonical_name": "Discovery Serenity", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["discovery serenity", "disc serenity", "dc serenity"]},
+  
+  {"canonical_name": "Discovery Alteza", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["discovery alteza", "disc alteza", "discovery altezza", "discofery altezza", "dc alteza"]},
+  
+  {"canonical_name": "Discovery Terra", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["discovery terra", "disc terra", "dc terra"]},
+
+  {"canonical_name": "Discovery Alveza", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["discovery alveza", "disc alveza"]},
+  
+  {"canonical_name": "Neo Permata", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["neo permata", "cluster neo permata", "jl neo permata"]},
+  
+  {"canonical_name": "Neo Vierra", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["neo vierra", "neo viera", "neo vira"]},
+  
+  {"canonical_name": "Kebayoran Village", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["kebayoran village", "keb village"]},
+  
+  {"canonical_name": "Kebayoran Harmony", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["kebayoran harmony", "keb harmony"]},
+  
+  {"canonical_name": "Kebayoran Residence", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["kebayoran residen", "kebayoran resident"]},
+  
+  {"canonical_name": "Kebayoran Sinfoni", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["kebayoran sinfoni", "kebayoran simphoni", "kebayoran symphony"]},
+  
+  {"canonical_name": "Kebayoran Viazza", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["kebayoran viazza", "keb viazza"]},
+  
+  {"canonical_name": "Kebayoran Xsans", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["kebayoran xsans", "keb xsans"]},
+  
+  {"canonical_name": "Permata Adora", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["permata adora", "adora permata", "komplek adora permata", "cluster adora permata"]},
+  
+  {"canonical_name": "Permata Callista", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["permata callista", "permata callsyta", "callista", "callsyta"]},
+  
+  {"canonical_name": "Taman Permata", "category": "Perumahan", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["taman permata", "taman permata 2"]},
+  
+  {"canonical_name": "Permata Bintaro", "category": "Perumahan", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["permata bintaro", "kompleks permata bintaro"]},
+  
+  {"canonical_name": "Casa Deparco", "category": "Apartment", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["casa deparco", "casa deparco appart", "casa deparco apartment"]},
+  
+  {"canonical_name": "Embarcadero Apartment", "category": "Apartment", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["embarcadero", "apartement embarcadero", "apartemen embarcadero", "apt embarcadero"]},
+  
+  {"canonical_name": "Habitat", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["habitat"]},
+  
+  {"canonical_name": "Vasa Loka", "category": "Cluster", "kelurahan": "Parigi", "kecamatan": "Pondok Aren",
+   "aliases": ["vasa loka", "vasaloka"]},
+  
+  {"canonical_name": "Bumi Bintaro Asri", "category": "Perumahan", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["bumi bintaro asri", "bumi bihtaro asri"]},
+  
+  {"canonical_name": "Gracia Bintaro", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["gracia bintaro", "grasia bintaro", "grasia residen"]},
+  
+  {"canonical_name": "Rumina Bintaro", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["rumina bintaro", "rumina"]},
+  
+  {"canonical_name": "Golden Olive Residence", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["golden olive residence", "golden olive", "cluster golden olive"]},
+  
+  {"canonical_name": "Metadevi Residence", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["metadevi residence", "metadevi"]},
+  
+  {"canonical_name": "Shizen Residence", "category": "Cluster", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["shizen recidence", "shizen residence", "shizen"]},
+  
+  {"canonical_name": "Bukit Nusa Indah", "category": "Perumahan", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["bukit nusa indah"]},
+  
+  {"canonical_name": "Puri Bintaro", "category": "Perumahan", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["puri bintaro"]},
+  
+  {"canonical_name": "Graha Bintaro", "category": "Perumahan", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["graha bintaro", "graha raya"]},
+  
+  {"canonical_name": "Cirende Prima Indah", "category": "Perumahan", "kelurahan": "Parigi", "kecamatan": "Pondok Aren",
+   "aliases": ["cirende prima indah", "cirende"]},
+  
+  {"canonical_name": "Grad Studio", "category": "Apartment", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["grad studio"]},
+  
+  {"canonical_name": "Bintaro Jaya Sektor 9", "category": "Perumahan", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["bintaro sektor 9", "bintaro sek.9", "bintaro jaya sektor 9", "senayan 1 bintaro 9", "sektor ix"]},
+  
+  {"canonical_name": "Pondok Jaya Sektor 3A", "category": "Perumahan", "kelurahan": "Pondok Jaya", "kecamatan": "Pondok Aren",
+   "aliases": ["pondok jaya sektor 3a", "perumahan pondok jaya"]},
+  
+  {"canonical_name": "Parigi Baru", "category": "Kampung/Jalan", "kelurahan": "Parigi Baru", "kecamatan": "Pondok Aren",
+   "aliases": ["parigi baru", "prigi baru", "perigi baru", "jl perigi lama", "perigi lama"]},
+  
+  {"canonical_name": "Villa Bintaro Regency", "category": "Perumahan", "kelurahan": "Pondok Aren", "kecamatan": "Pondok Aren",
+   "aliases": ["villa bintaro regency"]},
+
+  {"canonical_name": "Jurang Mangu Barat", "category": "Kampung/Jalan", "kelurahan": "Jurang Mangu Barat", "kecamatan": "Pondok Aren",
+   "aliases": ["jurang mangu barat", "jurang mangu"]}
+]

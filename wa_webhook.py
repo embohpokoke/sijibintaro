@@ -1,0 +1,1244 @@
+"""
+WhatsApp Webhook for Fonnte - SIJI.Bintaro
+Handles inbound messages from WA1 (0812-8878-3088)
+Logs all customer communications to database.
+"""
+
+from fastapi import APIRouter, Request, HTTPException
+from datetime import datetime, timedelta
+import os
+import json
+import re
+import sqlite3
+import httpx
+
+router = APIRouter(prefix="/api/wa", tags=["WhatsApp"])
+
+# Fonnte config
+FONNTE_TOKEN = os.getenv("FONNTE_TOKEN", "")
+FONNTE_DEVICE = "6281288783088"
+AUTOREPLY_ENABLED = False  # Disabled by Erik 23 Feb 2026
+WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "")
+FONNTE_API_URL = "https://api.fonnte.com/send"
+TELEGRAM_BOT_TOKEN = "8510158455:AAHT5gd5xKtrCtzl3kAXuMVUsyCYTAyacjc"
+TELEGRAM_ADMIN_CHAT_ID = "5309429603"
+TELEGRAM_API_URL = "https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/sendMessage"
+
+
+# === CONDITIONAL ROUTING CONFIG ===
+ALLOWED_NUMBERS = [
+    "62811319003",    # Erik
+    "628118606999",   # Ocha SIJI
+    "62811309991",    # Ocha Property
+    "6282124046283",  # Filean
+    "6281288783088",  # Kasir SIJI
+    "6281227760808",  # Rizky (Kurir)
+    "6285892726416",  # Denisa (Produksi & Setrika)
+    "6285715247073",  # Unaesih (Kasir & Produksi)
+]
+
+ADMIN_NUMBERS = [
+    "62811319003",   # Erik
+    "628118606999",  # Ocha SIJI
+]
+
+# Landing page karir
+KARIR_URL = "https://sijibintaro.id/karir"
+
+# Job application keywords
+JOB_KEYWORDS = ["lamar", "kerja", "lowongan", "pelamar", "apply", "hiring", "rekrut", "karyawan baru"]
+
+# Auto-reply untuk nomor tidak dikenal
+AUTO_REPLY_UNKNOWN = (
+    "Halo! Terima kasih sudah menghubungi SIJI.Bintaro 👋\n\n"
+    "Untuk layanan laundry dan pertanyaan umum, silakan chat ke nomor customer service kami.\n\n"
+    "Sedang mencari info lowongan kerja? Cek di sini:\n"
+    "👉 {karir_url}\n\n"
+    "Tim kami akan segera menghubungi Anda. Terima kasih! 🙏"
+).format(karir_url=KARIR_URL)
+
+AUTO_REPLY_JOB = (
+    "Halo! Terima kasih sudah tertarik bergabung dengan SIJI.Bintaro 🙌\n\n"
+    "Silakan lengkapi form lamaran di sini:\n"
+    "👉 {karir_url}\n\n"
+    "Tim kami akan menghubungi Anda jika ada posisi yang sesuai. Terima kasih! 💪"
+).format(karir_url=KARIR_URL)
+
+# Keyword auto-replies
+KEYWORD_REPLIES = {
+    "harga": (
+        "Halo! Ini daftar harga SIJI.Bintaro 👕\n\n"
+        "*KILOAN (min. 3kg):*\n"
+        "🧺 Cuci Kering Setrika Reguler: Rp 16.000/kg (3 hari)\n"
+        "👔 Cuci Kering Lipat Reguler: Rp 12.000/kg (3 hari)\n"
+        "🔥 Setrika Kiloan Reguler: Rp 12.000/kg (3 hari)\n\n"
+        "*EXPRESS:*\n"
+        "⚡ Cuci Kering Setrika Express 24 jam: Rp 30.000/kg\n"
+        "🚀 Same Day 10 jam: Rp 36.000/kg\n\n"
+        "*SATUAN:*\n"
+        "👗 Laundry Satuan Reguler: Rp 40.000/pcs\n"
+        "🛏️ Bedcover: Rp 70.000/lembar\n"
+        "🛏️ Sprei 1 Set: Rp 35.000/paket\n"
+        "🥿 Sepatu Reguler: Rp 90.000/pasang\n\n"
+        "Info lengkap & order: wa.me/6281288783088 😊"
+    ),
+    "jam": (
+        "Jam operasional SIJI.Bintaro ⏰\n\n"
+        "Senin - Sabtu: 07.00 - 21.00\n"
+        "Minggu: 08.00 - 20.00\n\n"
+        "Bisa jemput & antar juga lho! 🛵"
+    ),
+    "lokasi": (
+        "📍 SIJI.Bintaro\n"
+        "Jl. Bintaro Utama 3A No. 3B\n"
+        "Bintaro Jaya, Tangerang Selatan\n\n"
+        "Google Maps: https://maps.app.goo.gl/sijibintaro\n"
+        "Ditunggu ya Kak! 😊"
+    ),
+    "promo": (
+        "Promo SIJI.Bintaro bulan ini 🎁\n\n"
+        "Cek update terbaru di Instagram kami:\n"
+        "@siji.bintaro\n\n"
+        "Atau tanya langsung aja ya Kak! 😊"
+    ),
+}
+
+# Keywords that trigger each reply
+KEYWORD_MAP = {
+    "harga": ["harga", "price", "berapa", "tarif", "biaya"],
+    "jam": ["jam", "buka", "tutup", "operasional", "waktu"],
+    "lokasi": ["lokasi", "alamat", "dimana", "di mana", "maps", "map"],
+    "promo": ["promo", "diskon", "discount", "voucher"],
+}
+
+
+def match_keyword(message: str) -> str | None:
+    """Match message to keyword category"""
+    msg_lower = message.lower().strip()
+    for category, keywords in KEYWORD_MAP.items():
+        for kw in keywords:
+            if kw in msg_lower:
+                return category
+    return None
+
+
+def is_whitelisted(sender: str) -> bool:
+    """Check if sender is in the whitelist"""
+    # Normalize: strip +, spaces
+    normalized = sender.replace("+", "").replace(" ", "").strip()
+    return normalized in ALLOWED_NUMBERS
+
+
+def is_job_application(message: str) -> bool:
+    """Detect if message is about job application"""
+    msg_lower = message.lower().strip()
+    return any(kw in msg_lower for kw in JOB_KEYWORDS)
+
+
+# ─── Presensi (Attendance) Handler ───────────────────────────────────────────
+
+PRESENSI_MASUK_KW  = ["hadir", "masuk", "checkin", "check in", "absen masuk", "absen"]
+PRESENSI_PULANG_KW = ["pulang", "keluar", "checkout", "check out", "absen pulang"]
+PRESENSI_IZIN_KW   = ["izin"]
+PRESENSI_SAKIT_KW  = ["sakit"]
+
+
+def normalize_wa(number: str) -> str:
+    """Normalize WA number to 62xxx format"""
+    n = number.replace("+", "").replace("-", "").replace(" ", "").strip()
+    if n.startswith("0"):
+        n = "62" + n[1:]
+    return n
+
+
+async def handle_presensi(conn, sender: str, message: str) -> bool:
+    """
+    Check if sender is an active karyawan and message is attendance-related.
+    Returns True if handled (presensi recorded + reply sent).
+    """
+    from datetime import datetime as dt
+    msg_lower = message.lower().strip()
+
+    is_masuk  = any(kw in msg_lower for kw in PRESENSI_MASUK_KW)
+    is_pulang = any(kw in msg_lower for kw in PRESENSI_PULANG_KW)
+    is_izin   = any(kw in msg_lower for kw in PRESENSI_IZIN_KW)
+    is_sakit  = any(kw in msg_lower for kw in PRESENSI_SAKIT_KW)
+
+    if not any([is_masuk, is_pulang, is_izin, is_sakit]):
+        return False
+
+    # Check if sender is a registered active karyawan
+    normalized = normalize_wa(sender)
+    cursor = conn.cursor()
+    cursor.execute(
+        """SELECT id, nama, posisi FROM karyawan
+           WHERE status_kerja='aktif'
+           AND REPLACE(REPLACE(REPLACE(whatsapp,'+',''),'-',''),' ','') = ?""",
+        (normalized,)
+    )
+    k = cursor.fetchone()
+    if not k:
+        return False  # Not a karyawan, skip presensi handling
+
+    karyawan_id = k["id"]
+    nama        = k["nama"]
+    today       = dt.now().strftime("%Y-%m-%d")
+    now_time    = dt.now().strftime("%H:%M")
+    reply       = None
+
+    if is_masuk and not is_pulang:
+        cursor.execute(
+            "SELECT id FROM presensi WHERE karyawan_id=? AND tanggal=? AND tipe='hadir'",
+            (karyawan_id, today)
+        )
+        existing = cursor.fetchone()
+        if existing:
+            reply = (
+                f"Halo {nama}! Absen masuk kamu hari ini sudah tercatat ✅\n"
+                f"Selamat bekerja! 💛"
+            )
+        else:
+            conn.execute(
+                "INSERT INTO presensi (karyawan_id, tanggal, jam_masuk, tipe, sumber) VALUES (?,?,?,?,?)",
+                (karyawan_id, today, now_time, "hadir", "wa")
+            )
+            conn.commit()
+            reply = (
+                f"✅ *Absen Masuk Tercatat!*\n\n"
+                f"👤 {nama}\n"
+                f"💼 {k['posisi']}\n"
+                f"🕐 Jam masuk: *{now_time}*\n"
+                f"📅 {today}\n\n"
+                f"Selamat bekerja! 💪"
+            )
+
+    elif is_pulang and not is_masuk:
+        cursor.execute(
+            "SELECT id, jam_masuk FROM presensi WHERE karyawan_id=? AND tanggal=? AND tipe='hadir' AND jam_keluar IS NULL",
+            (karyawan_id, today)
+        )
+        existing = cursor.fetchone()
+        if existing:
+            conn.execute(
+                "UPDATE presensi SET jam_keluar=? WHERE id=?",
+                (now_time, existing["id"])
+            )
+            conn.commit()
+            reply = (
+                f"✅ *Absen Pulang Tercatat!*\n\n"
+                f"👤 {nama}\n"
+                f"🕐 Masuk: {existing['jam_masuk']} → Pulang: *{now_time}*\n"
+                f"📅 {today}\n\n"
+                f"Hati-hati di jalan ya! 🙏"
+            )
+        else:
+            reply = (
+                f"Halo {nama}! Belum ada absen masuk hari ini.\n"
+                f"Kirim 'hadir' atau 'masuk' dulu ya 😊"
+            )
+
+    elif is_izin:
+        cursor.execute(
+            "SELECT id FROM presensi WHERE karyawan_id=? AND tanggal=? AND tipe='izin'",
+            (karyawan_id, today)
+        )
+        if not cursor.fetchone():
+            catatan_izin = message if len(message) > 4 else None
+            conn.execute(
+                "INSERT INTO presensi (karyawan_id, tanggal, tipe, sumber, catatan) VALUES (?,?,?,?,?)",
+                (karyawan_id, today, "izin", "wa", catatan_izin)
+            )
+            conn.commit()
+        reply = (
+            f"✅ *Izin Tercatat!*\n\n"
+            f"👤 {nama}\n"
+            f"📅 {today}\n\n"
+            f"Semoga lancar urusannya ya! 🙏"
+        )
+
+    elif is_sakit:
+        cursor.execute(
+            "SELECT id FROM presensi WHERE karyawan_id=? AND tanggal=? AND tipe='sakit'",
+            (karyawan_id, today)
+        )
+        if not cursor.fetchone():
+            conn.execute(
+                "INSERT INTO presensi (karyawan_id, tanggal, tipe, sumber, catatan) VALUES (?,?,?,?,?)",
+                (karyawan_id, today, "sakit", "wa", message)
+            )
+            conn.commit()
+        reply = (
+            f"✅ *Sakit Tercatat!*\n\n"
+            f"👤 {nama}\n"
+            f"📅 {today}\n\n"
+            f"Semoga cepat sembuh ya! 🤒\n"
+            f"Istirahat yang cukup!"
+        )
+
+    if reply:
+        await send_fonnte_message(sender, reply)
+        log_message(
+            conn=conn,
+            wa_number=FONNTE_DEVICE,
+            sender=FONNTE_DEVICE,
+            recipient=sender,
+            direction="outbound",
+            message=reply,
+            category="presensi",
+            replied_by="auto"
+        )
+        return True
+
+    return False
+
+# ─── End Presensi Handler ────────────────────────────────────────────────────
+
+
+async def forward_to_admins(sender: str, message: str, media_url: str = None):
+    """Forward unknown sender message to admin numbers"""
+    notif = (
+        f"⚠️ *Pesan dari nomor tidak dikenal*\n\n"
+        f"Dari: +{sender}\n"
+        f"Pesan: {message[:300]}"
+    )
+    if media_url:
+        notif += f"\nMedia: {media_url}"
+
+    for admin in ADMIN_NUMBERS:
+        await send_fonnte_message(admin, notif)
+
+
+async def notify_telegram(sender: str, message: str, category: str = "", routing: str = ""):
+    """Send Telegram notification to admin when inbound WA message arrives"""
+    try:
+        route_label = {
+            "whitelist": "Whitelist",
+            "job": "Lamaran kerja",
+            "unknown": "Nomor tidak dikenal"
+        }.get(routing, routing or "-")
+
+        cat_label = " | " + category if category else ""
+        now_str = datetime.now().strftime("%d %b %Y %H:%M")
+
+        lines = [
+            "WA Masuk - SIJI.Bintaro",
+            "",
+            "Dari: +" + sender,
+            "Pesan: " + message[:300],
+            "Routing: " + route_label + cat_label,
+            "Waktu: " + now_str + " WIB",
+        ]
+        text = "\n".join(lines)
+
+        async with httpx.AsyncClient() as client:
+            await client.post(
+                TELEGRAM_API_URL,
+                json={"chat_id": TELEGRAM_ADMIN_CHAT_ID, "text": text},
+                timeout=10.0
+            )
+    except Exception as e:
+        print(f"[Telegram notify error] {e}")
+
+
+async def send_fonnte_message(target: str, message: str, url: str = None) -> dict:
+    """Send message via Fonnte API"""
+    if not FONNTE_TOKEN:
+        return {"error": "FONNTE_TOKEN not configured"}
+    
+    payload = {
+        "target": target,
+        "message": message,
+        "delay": "2",
+    }
+    if url:
+        payload["url"] = url
+    
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            FONNTE_API_URL,
+            headers={"Authorization": FONNTE_TOKEN},
+            data=payload,
+            timeout=30.0
+        )
+        return resp.json()
+
+
+def init_wa_tables(conn):
+    """Create WA-related tables if not exist"""
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS wa_conversations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            wa_number TEXT NOT NULL,
+            sender TEXT NOT NULL,
+            recipient TEXT,
+            direction TEXT NOT NULL CHECK(direction IN ('inbound', 'outbound')),
+            message TEXT,
+            media_url TEXT,
+            media_filename TEXT,
+            media_extension TEXT,
+            wa_timestamp TEXT,
+            inbox_id TEXT,
+            group_member TEXT,
+            category TEXT,
+            replied_by TEXT,
+            response_time_sec INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # Migrate existing tables: add new columns if missing
+    cursor.execute("PRAGMA table_info(wa_conversations)")
+    existing_cols = {row[1] for row in cursor.fetchall()}
+    for col, coltype in [("media_extension", "TEXT"), ("wa_timestamp", "TEXT"),
+                         ("inbox_id", "TEXT"), ("group_member", "TEXT")]:
+        if col not in existing_cols:
+            cursor.execute(f"ALTER TABLE wa_conversations ADD COLUMN {col} {coltype}")
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS wa_customers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            no_hp TEXT UNIQUE NOT NULL,
+            nama TEXT,
+            alamat TEXT,
+            segment TEXT DEFAULT 'Baru',
+            total_messages INTEGER DEFAULT 0,
+            first_contact TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            last_contact TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    
+    # Indexes
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_wa_conv_sender ON wa_conversations(sender)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_wa_conv_date ON wa_conversations(created_at)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_wa_cust_hp ON wa_customers(no_hp)")
+    
+    conn.commit()
+
+
+def log_message(conn, wa_number: str, sender: str, recipient: str,
+                direction: str, message: str, media_url: str = None,
+                media_filename: str = None, category: str = None,
+                replied_by: str = None, media_extension: str = None,
+                wa_timestamp: str = None, inbox_id: str = None,
+                group_member: str = None):
+    """Log a message to wa_conversations"""
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO wa_conversations
+        (wa_number, sender, recipient, direction, message, media_url, media_filename,
+         media_extension, wa_timestamp, inbox_id, group_member, category, replied_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (wa_number, sender, recipient, direction, message, media_url, media_filename,
+          media_extension, wa_timestamp, inbox_id, group_member, category, replied_by))
+    conn.commit()
+    return cursor.lastrowid
+
+
+def upsert_customer(conn, no_hp: str, name: str = ""):
+    """Find or create customer by phone number"""
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM wa_customers WHERE no_hp = ?", (no_hp,))
+    customer = cursor.fetchone()
+
+    if customer:
+        if name and not customer["nama"]:
+            cursor.execute("""
+                UPDATE wa_customers
+                SET total_messages = total_messages + 1, last_contact = CURRENT_TIMESTAMP, nama = ?
+                WHERE no_hp = ?
+            """, (name, no_hp))
+        else:
+            cursor.execute("""
+                UPDATE wa_customers
+                SET total_messages = total_messages + 1, last_contact = CURRENT_TIMESTAMP
+                WHERE no_hp = ?
+            """, (no_hp,))
+    else:
+        cursor.execute("""
+            INSERT INTO wa_customers (no_hp, nama, total_messages) VALUES (?, ?, 1)
+        """, (no_hp, name if name else None))
+    
+    conn.commit()
+    cursor.execute("SELECT * FROM wa_customers WHERE no_hp = ?", (no_hp,))
+    return cursor.fetchone()
+
+
+# === ROUTES ===
+
+@router.api_route("/webhook/{token}", methods=["GET", "POST"])
+async def fonnte_webhook(request: Request, token: str):
+    # Validate webhook token
+    if not WEBHOOK_SECRET or token != WEBHOOK_SECRET:
+        return {"status": "unauthorized"}
+    import sqlite3
+    
+    try:
+        # Fonnte sends JSON (not form data) — try JSON first, fallback to form
+        try:
+            data = await request.json()
+        except Exception:
+            data = dict(await request.form())
+
+        sender = data.get("sender", "")
+        message = data.get("message", "")
+        name = data.get("name", "")
+        device = data.get("device", "")
+        media_url = data.get("url", "")
+        filename = data.get("filename", "")
+        # Fonnte "all feature" package fields
+        extension = data.get("extension", "")
+        timestamp = data.get("timestamp", "")
+        inboxid = data.get("inboxid", "")
+        member = data.get("member", "")
+
+        # Display-friendly message for non-text (media-only) messages
+        if not message and media_url:
+            message = f"[{extension or 'file'}: {filename or 'attachment'}]"
+
+        if not sender or not message:
+            # Could be status callback, ignore
+            return {"status": "ignored", "reason": "no sender or message"}
+        
+        # Connect to DB
+        conn = sqlite3.connect("/opt/siji-dashboard/siji_database.db")
+        conn.row_factory = sqlite3.Row
+        init_wa_tables(conn)
+        
+        try:
+            # 1. Upsert customer
+            customer = upsert_customer(conn, sender, name=name)
+
+            # 2. === CONDITIONAL ROUTING ===
+            whitelisted = is_whitelisted(sender)
+            job_inquiry = is_job_application(message)
+            category = match_keyword(message)
+            reply_sent = False
+            routing = "whitelist" if whitelisted else ("job" if job_inquiry else "unknown")
+
+            # 3. Log inbound message
+            msg_id = log_message(
+                conn=conn,
+                wa_number=device or FONNTE_DEVICE,
+                sender=sender,
+                recipient=device or FONNTE_DEVICE,
+                direction="inbound",
+                message=message,
+                media_url=media_url if media_url else None,
+                media_filename=filename if filename else None,
+                media_extension=extension if extension else None,
+                wa_timestamp=timestamp if timestamp else None,
+                inbox_id=inboxid if inboxid else None,
+                group_member=member if member else None,
+                category=category or routing
+            )
+
+            # 4. === PRESENSI CHECK (priority: runs before whitelist routing) ===
+            if AUTOREPLY_ENABLED:
+                presensi_handled = await handle_presensi(conn, sender, message)
+                if presensi_handled:
+                    reply_sent = True
+
+            if reply_sent:
+                pass  # presensi handled — skip further routing
+            elif whitelisted:
+                # === WHITELIST: full interaction, keyword auto-reply only ===
+                if AUTOREPLY_ENABLED and category and category in KEYWORD_REPLIES:
+                    reply_text = KEYWORD_REPLIES[category]
+                    await send_fonnte_message(sender, reply_text)
+                    log_message(
+                        conn=conn,
+                        wa_number=FONNTE_DEVICE,
+                        sender=FONNTE_DEVICE,
+                        recipient=sender,
+                        direction="outbound",
+                        message=reply_text,
+                        category=category,
+                        replied_by="auto"
+                    )
+                    reply_sent = True
+
+            elif job_inquiry:
+                # === PELAMAR: auto-reply ke landing page karir ===
+                if AUTOREPLY_ENABLED:
+                    await send_fonnte_message(sender, AUTO_REPLY_JOB)
+                    log_message(
+                        conn=conn,
+                        wa_number=FONNTE_DEVICE,
+                        sender=FONNTE_DEVICE,
+                        recipient=sender,
+                        direction="outbound",
+                        message=AUTO_REPLY_JOB,
+                        category="job_application",
+                        replied_by="auto"
+                    )
+                    await forward_to_admins(sender, message, media_url or None)
+                    reply_sent = True
+
+            else:
+                # === NOMOR TIDAK DIKENAL: auto-reply + forward ke admin ===
+                if AUTOREPLY_ENABLED:
+                    await send_fonnte_message(sender, AUTO_REPLY_UNKNOWN)
+                    log_message(
+                        conn=conn,
+                        wa_number=FONNTE_DEVICE,
+                        sender=FONNTE_DEVICE,
+                        recipient=sender,
+                        direction="outbound",
+                        message=AUTO_REPLY_UNKNOWN,
+                        category="unknown",
+                        replied_by="auto"
+                    )
+                    await forward_to_admins(sender, message, media_url or None)
+                    reply_sent = True
+
+            return {
+                "status": "ok",
+                "message_id": msg_id,
+                "customer_hp": sender,
+                "routing": routing,
+                "category": category,
+                "auto_replied": reply_sent
+            }
+        
+        finally:
+            conn.close()
+    
+    except Exception as e:
+        # Log error but don't crash — Fonnte needs 200 response
+        print(f"[WA Webhook Error] {e}")
+        return {"status": "error", "detail": str(e)}
+
+
+@router.post("/send")
+async def send_wa_message(request: Request):
+    """
+    Send outbound message via Fonnte + log to DB.
+    Body: { "target": "628xxx", "message": "...", "url": "optional media", "sent_by": "staff|system" }
+    """
+    import sqlite3
+    
+    data = await request.json()
+    target = data.get("target")
+    message = data.get("message")
+    media_url = data.get("url")
+    sent_by = data.get("sent_by", "staff")
+    
+    if not target or not message:
+        raise HTTPException(status_code=400, detail="target and message required")
+    
+    # Send via Fonnte
+    result = await send_fonnte_message(target, message, url=media_url)
+    
+    # Log to DB
+    conn = sqlite3.connect("/opt/siji-dashboard/siji_database.db")
+    conn.row_factory = sqlite3.Row
+    init_wa_tables(conn)
+    
+    try:
+        log_message(
+            conn=conn,
+            wa_number=FONNTE_DEVICE,
+            sender=FONNTE_DEVICE,
+            recipient=target,
+            direction="outbound",
+            message=message,
+            media_url=media_url,
+            replied_by=sent_by
+        )
+    finally:
+        conn.close()
+    
+    return {"status": "ok", "fonnte_response": result}
+
+
+@router.get("/conversations/{phone}")
+async def get_conversations(phone: str, limit: int = 50):
+    """Get conversation history for a phone number"""
+    import sqlite3
+    
+    conn = sqlite3.connect("/opt/siji-dashboard/siji_database.db")
+    conn.row_factory = sqlite3.Row
+    init_wa_tables(conn)
+    
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT * FROM wa_conversations 
+            WHERE sender = ? OR recipient = ?
+            ORDER BY created_at DESC 
+            LIMIT ?
+        """, (phone, phone, limit))
+        
+        rows = cursor.fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+@router.get("/customers")
+async def get_wa_customers(limit: int = 100):
+    """Get all WA customers"""
+    import sqlite3
+    
+    conn = sqlite3.connect("/opt/siji-dashboard/siji_database.db")
+    conn.row_factory = sqlite3.Row
+    init_wa_tables(conn)
+    
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT * FROM wa_customers 
+            ORDER BY last_contact DESC 
+            LIMIT ?
+        """, (limit,))
+        
+        rows = cursor.fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+@router.get("/stats")
+async def get_wa_stats():
+    """Get WA messaging statistics"""
+    import sqlite3
+    
+    conn = sqlite3.connect("/opt/siji-dashboard/siji_database.db")
+    conn.row_factory = sqlite3.Row
+    init_wa_tables(conn)
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Total messages today
+        cursor.execute("""
+            SELECT COUNT(*) as total FROM wa_conversations 
+            WHERE date(created_at) = date('now')
+        """)
+        today_total = cursor.fetchone()["total"]
+        
+        # Inbound vs outbound today
+        cursor.execute("""
+            SELECT direction, COUNT(*) as count FROM wa_conversations 
+            WHERE date(created_at) = date('now')
+            GROUP BY direction
+        """)
+        direction_stats = {row["direction"]: row["count"] for row in cursor.fetchall()}
+        
+        # Total customers
+        cursor.execute("SELECT COUNT(*) as total FROM wa_customers")
+        total_customers = cursor.fetchone()["total"]
+        
+        # Auto-reply rate today
+        cursor.execute("""
+            SELECT COUNT(*) as total FROM wa_conversations 
+            WHERE date(created_at) = date('now') AND replied_by = 'auto'
+        """)
+        auto_replies = cursor.fetchone()["total"]
+        
+        # Category breakdown today
+        cursor.execute("""
+            SELECT category, COUNT(*) as count FROM wa_conversations 
+            WHERE date(created_at) = date('now') AND direction = 'inbound'
+            GROUP BY category
+        """)
+        categories = {row["category"]: row["count"] for row in cursor.fetchall()}
+        
+        return {
+            "today": {
+                "total_messages": today_total,
+                "inbound": direction_stats.get("inbound", 0),
+                "outbound": direction_stats.get("outbound", 0),
+                "auto_replies": auto_replies,
+            },
+            "total_customers": total_customers,
+            "categories_today": categories,
+        }
+    finally:
+        conn.close()
+
+
+# === DB PATHS ===
+WA_DB = "/opt/siji-dashboard/siji_database.db"  # FIXED: was siji.db
+TX_DB = "/opt/siji-dashboard/siji_database.db"
+
+
+def normalize_phone(phone) -> str:
+    """Normalize phone number: strip .0 suffix, +62 prefix, convert 08xx to 628xx"""
+    if phone is None:
+        return ""
+    s = str(phone).strip()
+    # Remove trailing .0 (float artifact from Excel)
+    if s.endswith(".0"):
+        s = s[:-2]
+    # Strip non-digit except leading +
+    s = re.sub(r"[^\d+]", "", s)
+    # Remove +
+    s = s.replace("+", "")
+    # Convert 08xx to 628xx
+    if s.startswith("0"):
+        s = "62" + s[1:]
+    return s
+
+
+def _classify_customer(orders, today):
+    """Classify a customer into exactly one pipeline bucket based on their orders.
+    Priority: belum_lunas > proses > siap_ambil > churn_risk > returning > selesai
+    Returns bucket name string.
+    """
+    if not orders:
+        return "lead"
+
+    has_unpaid = False
+    has_in_progress = False
+    has_ready_pickup = False
+    total_completed = 0
+    last_order_date = None
+
+    for o in orders:
+        odate = o.get("date_of_transaction") or ""
+        try:
+            d = datetime.strptime(odate[:10], "%Y-%m-%d").date()
+        except (ValueError, TypeError):
+            d = None
+
+        if last_order_date is None or (d and d > last_order_date):
+            last_order_date = d
+
+        pembayaran = (o.get("pembayaran") or "").strip()
+        progress = (o.get("progress_status") or "").strip()
+        pengambilan = (o.get("pengambilan") or "").strip()
+
+        if pembayaran == "Belum Lunas":
+            has_unpaid = True
+        if progress and progress != "100%":
+            has_in_progress = True
+        if progress == "100%" and pengambilan in ("Belum Diambil", "Diambil Sebagian"):
+            if d and (today - d).days <= 90:
+                has_ready_pickup = True
+        if progress == "100%" and pengambilan == "Diambil Semua" and pembayaran == "Lunas":
+            total_completed += 1
+
+    # Priority classification
+    if has_unpaid:
+        return "belum_lunas"
+    if has_in_progress:
+        return "proses"
+    if has_ready_pickup:
+        return "siap_ambil"
+
+    days_since = (today - last_order_date).days if last_order_date else 9999
+    total_orders = len(orders)
+
+    if total_orders >= 2 and days_since > 60:
+        return "churn_risk"
+    if total_orders >= 2 and days_since <= 60:
+        return "returning"
+    return "selesai"
+
+
+@router.get("/pipeline")
+async def get_pipeline(mode: str = "wa"):
+    """
+    CRM Pipeline: classify customers into funnel buckets.
+    mode=wa  — only WA contacts, cross-referenced with transactions
+    mode=all — all transaction customers + WA data
+    """
+    today = datetime.now().date()
+
+    bucket_config = {
+        "lead":        {"label": "Lead",        "color": "#C17E1A"},
+        "belum_lunas": {"label": "Belum Lunas", "color": "#E53935"},
+        "proses":      {"label": "Proses",      "color": "#FF9800"},
+        "siap_ambil":  {"label": "Siap Ambil",  "color": "#2196F3"},
+        "returning":   {"label": "Returning",   "color": "#4CAF50"},
+        "churn_risk":  {"label": "Churn Risk",  "color": "#E53935"},
+        "selesai":     {"label": "Selesai",     "color": "#777777"},
+    }
+
+    wa_conn = sqlite3.connect(WA_DB)
+    wa_conn.row_factory = sqlite3.Row
+    init_wa_tables(wa_conn)
+
+    tx_conn = sqlite3.connect(TX_DB)
+    tx_conn.row_factory = sqlite3.Row
+
+    try:
+        wa_cur = wa_conn.cursor()
+        tx_cur = tx_conn.cursor()
+
+        # Build WA contact map
+        wa_cur.execute("SELECT * FROM wa_customers")
+        wa_map = {}
+        for row in wa_cur.fetchall():
+            p = normalize_phone(row["no_hp"])
+            if p:
+                wa_map[p] = dict(row)
+
+        # Build phone list depending on mode
+        if mode == "all":
+            tx_cur.execute("""
+                SELECT DISTINCT customer_phone FROM transactions
+                WHERE customer_phone IS NOT NULL AND customer_phone != ''
+            """)
+            phone_set = set()
+            for row in tx_cur.fetchall():
+                p = normalize_phone(row["customer_phone"])
+                if p:
+                    phone_set.add(p)
+            phone_set.update(wa_map.keys())
+        else:
+            phone_set = set(wa_map.keys())
+
+        # Fetch all transactions grouped by normalized phone
+        tx_cur.execute("""
+            SELECT customer_phone, customer_name, customer_address,
+                   date_of_transaction, progress_status, pembayaran, pengambilan,
+                   total_tagihan, no_nota, nama_layanan
+            FROM transactions
+            WHERE customer_phone IS NOT NULL AND customer_phone != ''
+            ORDER BY date_of_transaction DESC
+        """)
+        orders_by_phone = {}
+        name_by_phone = {}
+        addr_by_phone = {}
+        for row in tx_cur.fetchall():
+            p = normalize_phone(row["customer_phone"])
+            if not p:
+                continue
+            orders_by_phone.setdefault(p, []).append(dict(row))
+            if p not in name_by_phone and row["customer_name"]:
+                name_by_phone[p] = row["customer_name"]
+            if p not in addr_by_phone and row["customer_address"]:
+                addr_by_phone[p] = row["customer_address"]
+
+        # Get last WA message per phone
+        wa_cur.execute("""
+            SELECT sender, recipient, message, direction, created_at
+            FROM wa_conversations ORDER BY created_at DESC
+        """)
+        last_msg_by_phone = {}
+        for row in wa_cur.fetchall():
+            pk = normalize_phone(row["sender"]) if row["direction"] == "inbound" else normalize_phone(row["recipient"])
+            if pk and pk not in last_msg_by_phone:
+                last_msg_by_phone[pk] = dict(row)
+
+        # Classify each customer
+        buckets = {k: [] for k in bucket_config}
+        summary = {k: 0 for k in bucket_config}
+
+        for phone in phone_set:
+            orders = orders_by_phone.get(phone, [])
+            bucket = _classify_customer(orders, today)
+
+            wa_info = wa_map.get(phone)
+            name = (wa_info or {}).get("nama") or name_by_phone.get(phone) or phone
+            total_orders = len(orders)
+            total_spent = sum(o.get("total_tagihan") or 0 for o in orders)
+            last_order_date = orders[0]["date_of_transaction"] if orders else None
+            unpaid = sum(1 for o in orders if (o.get("pembayaran") or "") == "Belum Lunas")
+            last_msg = last_msg_by_phone.get(phone)
+
+            days_since = None
+            if last_order_date:
+                try:
+                    days_since = (today - datetime.strptime(str(last_order_date)[:10], "%Y-%m-%d").date()).days
+                except (ValueError, TypeError):
+                    pass
+
+            card = {
+                "phone": phone,
+                "name": name,
+                "address": addr_by_phone.get(phone, ""),
+                "total_orders": total_orders,
+                "total_spent": total_spent,
+                "unpaid_orders": unpaid,
+                "days_since_order": days_since,
+                "last_order_date": last_order_date,
+                "has_wa": phone in wa_map,
+                "last_message": last_msg.get("message", "")[:80] if last_msg else None,
+                "last_message_time": last_msg.get("created_at") if last_msg else None,
+                "wa_total_messages": (wa_info or {}).get("total_messages", 0),
+            }
+
+            buckets[bucket].append(card)
+            summary[bucket] += 1
+
+        return {
+            "mode": mode,
+            "total_customers": len(phone_set),
+            "summary": summary,
+            "bucket_config": bucket_config,
+            "buckets": buckets,
+        }
+
+    finally:
+        wa_conn.close()
+        tx_conn.close()
+
+
+@router.get("/pipeline/customer/{phone}")
+async def get_pipeline_customer(phone: str):
+    """Detailed customer view: WA info + conversation + transaction history."""
+    phone = normalize_phone(phone)
+    if not phone:
+        raise HTTPException(status_code=400, detail="Invalid phone number")
+
+    today = datetime.now().date()
+
+    wa_conn = sqlite3.connect(WA_DB)
+    wa_conn.row_factory = sqlite3.Row
+    init_wa_tables(wa_conn)
+
+    tx_conn = sqlite3.connect(TX_DB)
+    tx_conn.row_factory = sqlite3.Row
+
+    try:
+        wa_cur = wa_conn.cursor()
+        tx_cur = tx_conn.cursor()
+
+        # WA customer info
+        wa_cur.execute("SELECT * FROM wa_customers WHERE no_hp = ?", (phone,))
+        wa_row = wa_cur.fetchone()
+        wa_info = dict(wa_row) if wa_row else None
+
+        # WA conversations (last 30)
+        wa_cur.execute("""
+            SELECT * FROM wa_conversations
+            WHERE sender = ? OR recipient = ?
+            ORDER BY created_at DESC LIMIT 30
+        """, (phone, phone))
+        conversations = [dict(r) for r in wa_cur.fetchall()]
+
+        # Transaction history
+        tx_cur.execute("""
+            SELECT customer_phone, customer_name, customer_address,
+                   no_nota, date_of_transaction, nama_layanan, group_layanan,
+                   progress_status, pembayaran, pengambilan,
+                   total_tagihan, jenis, tgl_selesai, tgl_pengambilan
+            FROM transactions
+            WHERE customer_phone IS NOT NULL AND customer_phone != ''
+            ORDER BY date_of_transaction DESC
+        """)
+        orders = []
+        customer_name = None
+        customer_address = None
+        for row in tx_cur.fetchall():
+            if normalize_phone(row["customer_phone"]) == phone:
+                orders.append(dict(row))
+                if not customer_name and row["customer_name"]:
+                    customer_name = row["customer_name"]
+                if not customer_address and row["customer_address"]:
+                    customer_address = row["customer_address"]
+
+        total_spent = sum(o.get("total_tagihan") or 0 for o in orders)
+        unpaid = [o for o in orders if (o.get("pembayaran") or "") == "Belum Lunas"]
+        unpaid_amount = sum(o.get("total_tagihan") or 0 for o in unpaid)
+        bucket = _classify_customer(orders, today)
+
+        name = (wa_info or {}).get("nama") or customer_name or phone
+
+        return {
+            "phone": phone,
+            "name": name,
+            "address": customer_address or (wa_info or {}).get("alamat", ""),
+            "bucket": bucket,
+            "wa_info": wa_info,
+            "summary": {
+                "total_orders": len(orders),
+                "total_spent": total_spent,
+                "unpaid_count": len(unpaid),
+                "unpaid_amount": unpaid_amount,
+                "last_order_date": orders[0]["date_of_transaction"] if orders else None,
+            },
+            "orders": orders[:15],
+            "conversations": conversations,
+        }
+
+    finally:
+        wa_conn.close()
+        tx_conn.close()
+
+# ============================================================
+# GOWA Webhook — go-whatsapp-web-multidevice
+# Menerima events dari GOWA (message in/out, read receipt, etc)
+# Payload docs: /opt/gowa/docs/webhook-payload.md
+# HMAC secret must match WHATSAPP_WEBHOOK_SECRET in GOWA .env
+# ============================================================
+GOWA_WEBHOOK_SECRET = "secret"  # GOWA default
+TX_DB_PATH = "/opt/siji-dashboard/siji_database.db"
+
+
+def _detect_message_type(payload: dict) -> tuple[str, str]:
+    """Detect message type and media path from GOWA webhook payload.
+    Returns (message_type, media_path_or_url)."""
+    for mtype in ("image", "video", "audio", "document", "sticker", "video_note"):
+        val = payload.get(mtype)
+        if val is not None:
+            if isinstance(val, str):
+                return mtype, val
+            elif isinstance(val, dict):
+                return mtype, val.get("path") or val.get("url", "")
+    if payload.get("contact") or payload.get("contacts_array"):
+        return "contact", ""
+    if payload.get("location") or payload.get("live_location"):
+        return "location", ""
+    return "text", ""
+
+
+@router.post("/gowa-webhook")
+async def gowa_webhook(request: Request):
+    import sqlite3 as _sqlite3
+    import hmac as _hmac
+    import hashlib as _hashlib
+
+    # Verify HMAC signature
+    signature = request.headers.get("X-Hub-Signature-256", "")
+    body = await request.body()
+
+    if GOWA_WEBHOOK_SECRET and signature:
+        expected = "sha256=" + _hmac.new(
+            GOWA_WEBHOOK_SECRET.encode(), body, _hashlib.sha256
+        ).hexdigest()
+        if not _hmac.compare_digest(signature, expected):
+            return {"status": "unauthorized"}
+
+    try:
+        data = json.loads(body)
+    except Exception:
+        return {"status": "ignored", "reason": "invalid json"}
+
+    event = data.get("event", "")
+    payload = data.get("payload", {})
+    device_id = data.get("device_id", "")
+
+    # --- Log to Fonnte-era siji.db (existing pipeline) ---
+    wa_conn = _sqlite3.connect("/opt/siji-dashboard/siji_database.db")
+    wa_conn.row_factory = _sqlite3.Row
+    init_wa_tables(wa_conn)
+
+    # --- Also log to siji_database.db (new GOWA pipeline) ---
+    tx_conn = _sqlite3.connect(TX_DB_PATH)
+
+    try:
+        if event == "message":
+            from_jid = payload.get("from", "")
+            chat_jid = payload.get("chat_id", from_jid)
+            sender = from_jid.replace("@s.whatsapp.net", "").replace("@c.us", "")
+            is_from_me = payload.get("is_from_me", False)
+            from_name = payload.get("from_name", "")
+            timestamp = payload.get("timestamp", "")
+            msg_id_wa = payload.get("id", "")
+            body_text = payload.get("body", "")
+            is_forwarded = payload.get("forwarded", False)
+            replied_to = payload.get("replied_to_id", "")
+
+            msg_type, media_path = _detect_message_type(payload)
+            if msg_type != "text" and not body_text:
+                body_text = f"[{msg_type}]"
+
+            direction = "outbound" if is_from_me else "inbound"
+            wa_number = device_id.replace("@s.whatsapp.net", "")
+            is_group = "@g.us" in chat_jid
+
+            # 1) Existing siji.db pipeline (Fonnte-compatible)
+            if not is_from_me and sender:
+                upsert_customer(wa_conn, sender, name=from_name)
+
+            fonnte_msg_id = log_message(
+                conn=wa_conn,
+                wa_number=wa_number,
+                sender=sender if not is_from_me else wa_number,
+                recipient=wa_number if not is_from_me else sender,
+                direction=direction,
+                message=body_text,
+                media_url=media_path or None,
+                category="gowa",
+                replied_by="gowa",
+                wa_timestamp=timestamp,
+                inbox_id=msg_id_wa,
+            )
+
+            # 2) New siji_database.db pipeline (wa_conversations + wa_messages)
+            phone = chat_jid.split("@")[0] if "@" in chat_jid else chat_jid
+            now = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+
+            tx_conn.execute("""
+                INSERT INTO wa_conversations (jid, phone, contact_name, is_group, last_message, last_message_time, synced_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(jid) DO UPDATE SET
+                    contact_name = COALESCE(NULLIF(excluded.contact_name, ''), wa_conversations.contact_name),
+                    last_message = excluded.last_message,
+                    last_message_time = excluded.last_message_time,
+                    total_messages = wa_conversations.total_messages + 1,
+                    synced_at = excluded.synced_at
+            """, (chat_jid, phone, from_name if not is_from_me else None,
+                  is_group, body_text, timestamp, now))
+
+            tx_conn.execute("""
+                INSERT OR IGNORE INTO wa_messages
+                (conversation_jid, message_id, sender_jid, sender_name, message_text, message_type,
+                 media_url, is_from_me, is_forwarded, quoted_message_id, timestamp)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (chat_jid, msg_id_wa, from_jid, from_name, body_text, msg_type,
+                  media_path or None, is_from_me, is_forwarded, replied_to or None, timestamp))
+
+            tx_conn.commit()
+            wa_conn.commit()
+
+            print(f"[GOWA] {direction} {sender} → {body_text[:60]}")
+            return {"status": "ok", "message_id": fonnte_msg_id, "direction": direction}
+
+        elif event == "message.ack":
+            # Read/delivery receipt
+            receipt_type = payload.get("receipt_type", "")
+            msg_ids = payload.get("ids", [])
+            if receipt_type == "read" and msg_ids:
+                placeholders = ",".join("?" for _ in msg_ids)
+                tx_conn.execute(
+                    f"UPDATE wa_messages SET status = 'read' WHERE message_id IN ({placeholders})",
+                    msg_ids)
+                tx_conn.commit()
+            elif receipt_type == "delivered" and msg_ids:
+                placeholders = ",".join("?" for _ in msg_ids)
+                tx_conn.execute(
+                    f"UPDATE wa_messages SET status = 'delivered' WHERE message_id IN ({placeholders}) AND status IS NULL",
+                    msg_ids)
+                tx_conn.commit()
+            return {"status": "ok", "event": "ack", "receipt_type": receipt_type}
+
+        elif event == "message.revoked":
+            revoked_id = payload.get("revoked_message_id", "")
+            if revoked_id:
+                tx_conn.execute(
+                    "UPDATE wa_messages SET message_text = '[message deleted]', message_type = 'revoked' WHERE message_id = ?",
+                    (revoked_id,))
+                tx_conn.commit()
+            return {"status": "ok", "event": "revoked"}
+
+        elif event == "message.edited":
+            orig_id = payload.get("original_message_id", "")
+            new_body = payload.get("body", "")
+            if orig_id and new_body:
+                tx_conn.execute(
+                    "UPDATE wa_messages SET message_text = ? WHERE message_id = ?",
+                    (new_body, orig_id))
+                tx_conn.commit()
+            return {"status": "ok", "event": "edited"}
+
+        else:
+            return {"status": "ignored", "reason": f"event {event} not handled"}
+
+    except Exception as e:
+        print(f"[GOWA Webhook Error] {e}")
+        try:
+            wa_conn.rollback()
+            tx_conn.rollback()
+        except Exception:
+            pass
+        return {"status": "error", "detail": str(e)}
+    finally:
+        wa_conn.close()
+        tx_conn.close()
