@@ -28,7 +28,12 @@ app.include_router(order_tracking_router)
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://sijibintaro.id",
+        "https://www.sijibintaro.id",
+        "https://dashboard.sijibintaro.id",
+        "https://gowa.sijibintaro.id",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

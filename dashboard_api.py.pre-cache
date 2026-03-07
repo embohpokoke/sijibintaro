@@ -7,7 +7,6 @@ New: SLA alerts, customer search/detail, area analysis, LLM insights
 """
 
 from fastapi import APIRouter, HTTPException, Query
-from cache_decorator import cached
 from pydantic import BaseModel
 from typing import Optional
 import sqlite3
@@ -107,7 +106,6 @@ def date_params():
 
 
 # ─── Overview ──────────────────────────────────────────────────────────────────
-@cached(ttl=300, prefix="overview")
 
 @router.get("/overview")
 async def get_overview(
@@ -279,7 +277,6 @@ async def get_overview(
 
 # ─── Revenue ───────────────────────────────────────────────────────────────────
 
-@cached(ttl=300, prefix="revenue_monthly")
 @router.get("/revenue/monthly")
 async def get_revenue_monthly():
     conn = get_db()
@@ -301,7 +298,6 @@ async def get_revenue_monthly():
         conn.close()
 
 
-@cached(ttl=180, prefix="revenue_daily")
 @router.get("/revenue/daily")
 async def get_revenue_daily(
     month: Optional[str] = Query(default=None, pattern=r"^\d{4}-\d{2}$"),
@@ -1018,21 +1014,3 @@ async def get_doc(filename: str):
         raise HTTPException(status_code=404, detail="File not found")
     with open(filepath, "r") as f:
         return f.read()
-
-
-@router.get("/cache/stats")
-async def get_cache_stats():
-    """Get cache performance statistics"""
-    from cache_manager import cache
-    return cache.get_stats()
-
-
-@router.post("/cache/invalidate")
-async def invalidate_cache(prefix: Optional[str] = None):
-    """Invalidate cache (admin only - add auth later)"""
-    from cache_manager import cache
-    cache.invalidate(prefix)
-    return {
-        "success": True,
-        "message": f"Cache invalidated" + (f" for prefix: {prefix}" if prefix else " (all)")
-    }
