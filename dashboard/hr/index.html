@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>SIJI HR Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f5f5;color:#222;font-size:14px}
@@ -94,6 +95,39 @@ textarea{min-height:75px;resize:vertical}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;animation:fi .3s}
 @keyframes fi{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 </style>
+<style>
+:root {
+  --gold: #D4A017; --gold-light: #F5C842; --gold-deep: #B8860B;
+  --gold-subtle: rgba(212,160,23,0.08);
+  --bg: #F5F5F0; --surface: #FFFFFF; --surface-2: #F0EDE8;
+  --text-primary: #1A1A1A; --text-secondary: #6B6B6B; --text-muted: #9E9E9E;
+  --border: #E5E2DC; --success: #2D7A4F; --danger: #C0392B;
+  --radius-md: 12px; --radius-lg: 16px; --radius-full: 9999px;
+  --font-sans: 'Inter', -apple-system, sans-serif;
+  --header-bg: #1a1a1a; --header-sub: #111; --header-card: #2a2a2a;
+}
+[data-theme="dark"] {
+  --bg: #111; --surface: #1C1C1C; --surface-2: #252525;
+  --text-primary: #F0EDE8; --text-secondary: #A0A0A0; --text-muted: #6b6b6b;
+  --border: #2A2A2A; --header-bg:#0f0f0f; --header-sub:#111; --header-card:#1c1c1c;
+}
+body{font-family:var(--font-sans);background:var(--bg);color:var(--text-primary)}
+.login-box,.card,.p-card,.rekap-table,.modal,.tabs,.tab,.main-nav-item{background:var(--surface)}
+.login-box input,select,textarea,input[type=text],input[type=date],input[type=number]{background:var(--surface-2);border-color:var(--border);color:var(--text-primary)}
+.header,.stats{background:var(--header-bg)}
+.main-nav{background:var(--header-sub);border-bottom-color:var(--border)}
+.stat-card{background:var(--header-card)}
+.header .logout,.header .back-btn,.header .theme-btn{color:var(--gold);border:1px solid var(--gold)}
+.header .logout,.header .back-btn,.header .theme-btn{font-size:12px;cursor:pointer;padding:6px 10px;border-radius:6px;background:transparent}
+.header-actions{display:flex;align-items:center;gap:8px}
+.tab.active,.main-nav-item.active{color:var(--gold);border-bottom-color:var(--gold)}
+.btn-primary{background:var(--gold-light);color:#1a1a1a}
+.fab{background:var(--gold-light);color:#1a1a1a}
+.section-title,.card-meta,.p-card-meta,.stat-label,.tab{color:var(--text-muted)}
+.card-posisi,.modal-posisi{color:var(--text-secondary)}
+.toast{background:var(--header-bg)}
+@media(max-width:768px){.header-actions{gap:6px}.header .back-btn span{display:none}}
+</style>
 </head>
 <body>
 
@@ -112,7 +146,11 @@ textarea{min-height:75px;resize:vertical}
 <div id="app" class="hidden">
   <div class="header">
     <h1 id="header-title">💛 SIJI HR</h1>
-    <span class="logout" onclick="doLogout()">Keluar</span>
+    <div class="header-actions">
+      <a class="back-btn" href="/dashboard/" title="Kembali ke Dashboard">← <span>Dashboard</span></a>
+      <button class="theme-btn" onclick="toggleTheme()" title="Toggle dark mode">🌓</button>
+      <span class="logout" onclick="doLogout()">Keluar</span>
+    </div>
   </div>
   <div class="main-nav">
     <div class="main-nav-item active" id="nav-lamaran" onclick="switchPage('lamaran')">📋 Lamaran</div>
@@ -327,7 +365,7 @@ async function loadData(){
       fetch(API+'/api/admin/lamaran',{headers:hdrs()})
     ]);
     if(sr.status===401||lr.status===401){
-      alert('Token salah!');localStorage.removeItem('siji_hr_token');location.reload();return;
+      console.warn('Auth error - reloading');location.reload();return;
     }
     renderStats(await sr.json());
     allData=await lr.json();
@@ -686,8 +724,19 @@ function showToast(m){
   document.body.appendChild(t);setTimeout(()=>t.remove(),3500);
 }
 
-const saved=localStorage.getItem('siji_hr_token');
-if(saved){TOKEN=saved;boot();}
+function setTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('siji-hr-theme', theme);
+}
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')||'light';
+  setTheme(cur==='dark'?'light':'dark');
+}
+
+// Token auth disabled — nginx basic auth handles access
+TOKEN='sijiadmin2026';
+setTheme(localStorage.getItem('siji-hr-theme') || 'light');
+boot();
 </script>
 </body>
 </html>

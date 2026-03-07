@@ -321,110 +321,10 @@
         .bottom-nav-item .bnav-icon svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
         .bottom-nav-item.active{color:var(--gold)}
 
-        /* MOBILE TOPBAR */
-        .mobile-topbar {
-            display: none;
-            position: fixed; top: 0; left: 0; right: 0;
-            height: 52px; z-index: 220;
-            background: var(--sidebar-bg);
-            border-bottom: 1px solid var(--sidebar-border);
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 16px;
-        }
-        .mobile-brand { display:flex; align-items:center; gap:8px; color:var(--gold); font-weight:700; font-size:.95rem; }
-        .mobile-dot { width:8px; height:8px; border-radius:50%; background:var(--gold); animation:pulse 2s infinite; }
-        .hamburger {
-            width:44px; height:44px; border:none; background:transparent;
-            display:flex; flex-direction:column; align-items:center;
-            justify-content:center; gap:5px; cursor:pointer;
-            -webkit-tap-highlight-color:transparent;
-        }
-        .hamburger span {
-            display:block; width:20px; height:2px;
-            background:var(--gold); border-radius:2px;
-            transition:all .25s ease;
-        }
-        .hamburger.open span:nth-child(1) { transform:translateY(7px) rotate(45deg); }
-        .hamburger.open span:nth-child(2) { opacity:0; }
-        .hamburger.open span:nth-child(3) { transform:translateY(-7px) rotate(-45deg); }
-
-        /* SIDEBAR OVERLAY */
-        .sidebar-overlay {
-            display:none; position:fixed; inset:0;
-            background:rgba(0,0,0,0.6); z-index:98;
-            backdrop-filter:blur(2px);
-        }
-        .sidebar-overlay.visible { display:block; }
-
-        /* MOBILE MORE SHEET */
-        .more-overlay{
-            display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:250;
-        }
-        .more-overlay.visible{display:block}
-        .more-sheet{
-            position:fixed;left:0;right:0;bottom:0;z-index:260;background:var(--surface);
-            border-radius:20px 20px 0 0;border:1px solid var(--border);border-bottom:none;
-            transform:translateY(100%);transition:transform .25s ease;padding:.6rem 1rem calc(1rem + env(safe-area-inset-bottom,0));
-        }
-        .more-sheet.open{transform:translateY(0)}
-        .more-handle{width:36px;height:4px;border-radius:2px;background:var(--border);margin:.35rem auto .7rem}
-        .more-title{font-size:.85rem;font-weight:700;margin-bottom:.7rem;text-align:center}
-        .more-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem}
-        .more-item{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:.7rem .35rem;display:flex;flex-direction:column;gap:.35rem;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.68rem;text-decoration:none}
-        .more-item:active{transform:scale(.98)}
-        .more-icon{font-size:1.1rem}
-
-        /* TABLE MOBILE WRAP + STICKY FIRST COLUMN */
-        .table-wrap{
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            background:
-                linear-gradient(to right, var(--surface) 30%, transparent),
-                linear-gradient(to left, var(--surface) 30%, transparent) right,
-                radial-gradient(ellipse at left, rgba(0,0,0,.15) 0%, transparent 70%) 0 50%,
-                radial-gradient(ellipse at right, rgba(0,0,0,.15) 0%, transparent 70%) 100% 50%;
-            background-repeat: no-repeat;
-            background-attachment: local, local, scroll, scroll;
-            background-size: 40px 100%, 40px 100%, 14px 60%, 14px 60%;
-        }
-        .table-wrap table th:first-child,
-        .table-wrap table td:first-child {
-            position: sticky; left: 0; z-index: 2;
-            background: var(--surface);
-            box-shadow: 2px 0 8px rgba(0,0,0,0.08);
-        }
-        [data-theme="dark"] .table-wrap table th:first-child,
-        [data-theme="dark"] .table-wrap table td:first-child {
-            background: var(--surface);
-        }
-
-        .customer-name-cell {
-            max-width: 130px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            cursor: pointer;
-        }
-        .customer-name-cell:hover,
-        .customer-name-cell:focus {
-            white-space: normal;
-            word-break: break-word;
-        }
-
-        .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.25rem;color:var(--text-muted);text-align:center}
-        .empty-icon{font-size:1.4rem;margin-bottom:.35rem}
-        .empty-title{font-size:.82rem;color:var(--text-secondary);font-weight:600}
-        .empty-desc{font-size:.72rem;max-width:220px}
-
         /* ═══ MOBILE RESPONSIVE ═══ */
         @media(max-width:768px){
-            .mobile-topbar { display:flex; }
             .sidebar{transform:translateX(-100%)}
-            .sidebar{z-index:99}
-            .sidebar.open{transform:translateX(0)!important}
             .main{margin-left:0;padding:1rem 1rem 5rem}
-            .main{padding-top:calc(52px + 1rem)!important}
             .bottom-nav{display:block}
             .cards{grid-template-columns:repeat(2,1fr);gap:.65rem}
             .card{padding:.85rem}
@@ -441,27 +341,9 @@
             .wa-layout.chat-open .wa-right{display:flex}
             .wa-chat-back{display:flex}
             .wa-conv-list{max-height:400px}
-            .wa-chat-messages{max-height: calc(100dvh - 200px); overflow-y: auto;}
-            .wa-reply-bar{position:sticky;bottom:0;background:var(--surface);padding-bottom:env(safe-area-inset-bottom,0)}
+            .wa-chat-messages{max-height:calc(100vh - 300px)}
             .wa-stats{grid-template-columns:repeat(2,1fr)}
             .wa-analytics-grid{grid-template-columns:1fr}
-            .modal-overlay{align-items:flex-end;padding:0}
-            .modal{
-                max-width:100%; width:100%;
-                border-radius:20px 20px 0 0;
-                max-height:92vh;
-                margin:0;
-                padding-bottom:env(safe-area-inset-bottom,0);
-            }
-            .modal::before {
-                content:''; display:block;
-                width:36px; height:4px;
-                background:var(--border);
-                border-radius:2px;
-                margin:.8rem auto 0;
-            }
-            .table-wrap table{min-width:480px}
-            .customer-name-cell { max-width: 110px; }
         }
         @media(max-width:480px){
             .cards{grid-template-columns:1fr 1fr;gap:.5rem}
@@ -472,95 +354,30 @@
             .detail-grid{grid-template-columns:1fr}
             .area-cards{grid-template-columns:1fr}
         }
-
-        /* === PHASE 2 UX IMPROVEMENTS === */
-        /* UX-02: Enhanced mobile responsive - 375px, 414px breakpoints */
-        @media(max-width:414px){
-            .header-bar h1{font-size:1.05rem}
-            .card-value{font-size:1rem}
-            .chart-wrap{height:220px}
-            button,select,input{min-height:44px}
-            .cards { grid-template-columns: repeat(2,1fr); gap:.5rem; }
-            .card { padding:.75rem; cursor:pointer; }
-            .card-value { font-size:1.1rem; font-weight:800; }
-            .card-label { font-size:.6rem; }
-            .card:active { transform: scale(0.97); }
-        }
-        @media(max-width:375px){
-            .main{padding:.75rem .75rem 4.5rem}
-            .card{padding:.6rem}
-            .card-value{font-size:1rem}
-            .panel-title{font-size:.85rem}
-            .chart-wrap{height:180px}
-            table{font-size:.7rem}
-        }
-        /* UX-03: Inline form validation */
-        .form-field{position:relative;margin-bottom:1rem}
-        .form-error{color:var(--danger);font-size:.72rem;margin-top:.25rem;display:none;animation:fadeInError .2s ease}
-        .form-field.error .form-error{display:block}
-        .form-field.error input,.form-field.error select{border-color:var(--danger);box-shadow:0 0 0 3px var(--danger-bg)}
-        .form-field.success input,.form-field.success select{border-color:var(--success);box-shadow:0 0 0 3px var(--success-bg)}
-        @keyframes fadeInError{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
-        /* UX-04: Touch targets >= 44px on mobile */
-        @media(max-width:768px){
-            .nav-item{min-height:44px;padding:.8rem 1.25rem}
-            .theme-toggle{width:44px;height:44px}
-            button,select,input{min-height:44px;padding:.6rem 1rem}
-            .chip{min-height:44px;padding:.6rem 1rem}
-        }
-        /* UX-05: Loading states and skeleton loaders */
-        .loading{position:relative;pointer-events:none;opacity:.6}
-        .loading::after{content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:24px;height:24px;border:3px solid var(--gold-subtle);border-top-color:var(--gold);border-radius:50%;animation:spinLoad .8s linear infinite}
-        @keyframes spinLoad{to{transform:translate(-50%,-50%) rotate(360deg)}}
-        .skeleton{background:linear-gradient(90deg,var(--surface-2) 25%,var(--border-subtle) 50%,var(--surface-2) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:var(--radius-sm);height:20px;margin-bottom:.5rem}
-        @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-        .skeleton-card{height:120px;border-radius:var(--radius-lg)}
-        .spinner{display:inline-block;width:20px;height:20px;border:3px solid var(--gold-subtle);border-top-color:var(--gold);border-radius:50%;animation:spinLoad .8s linear infinite}
-        /* UX-06: User-friendly error messages */
-        .error-message{background:var(--danger-bg);border:1px solid var(--danger);color:var(--danger);padding:1rem;border-radius:var(--radius-md);margin-bottom:1rem;display:flex;align-items:start;gap:.75rem}
-        .success-message{background:var(--success-bg);border:1px solid var(--success);color:var(--success);padding:1rem;border-radius:var(--radius-md);margin-bottom:1rem;display:flex;align-items:center;gap:.75rem}
-        .toast{position:fixed;bottom:2rem;right:2rem;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-modal);padding:1rem 1.25rem;border-radius:var(--radius-md);max-width:400px;z-index:1000;animation:slideInToast .3s ease}
-        @keyframes slideInToast{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
-        .toast.success{border-left:4px solid var(--success)}
-        .toast.error{border-left:4px solid var(--danger)}
-        @media(max-width:768px){.toast{bottom:5rem;right:1rem;left:1rem;max-width:none}}
-
     </style>
 </head>
 <body>
-    <a href="#main-content" class="skip-to-main">Skip to main content</a>
-    <!-- Mobile Header Bar -->
-    <div class="mobile-topbar" id="mobileTopbar">
-        <div class="mobile-brand">
-            <span class="mobile-dot"></span>
-            <span>SIJI Bintaro</span>
-        </div>
-        <button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()" aria-label="Menu navigasi" aria-expanded="false">
-            <span></span><span></span><span></span>
-        </button>
-    </div>
-    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
     <div class="app">
         <!-- Sidebar (desktop) — always dark -->
-        <aside class="sidebar" role="navigation" aria-label="Main navigation">
+        <aside class="sidebar">
             <div class="sidebar-logo"><div class="dot"></div> SIJI Bintaro</div>
             <nav>
-                <div class="nav-item active" data-page="dashboard" role="button" tabindex="0" aria-label="Navigate to Dashboard">
+                <div class="nav-item active" data-page="dashboard">
                     <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></span> Dashboard
                 </div>
-                <div class="nav-item" data-page="analytics" role="button" tabindex="0" aria-label="Navigate to Analytics">
+                <div class="nav-item" data-page="analytics">
                     <span class="nav-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span> Analytics
                 </div>
-                <div class="nav-item" data-page="orders" role="button" tabindex="0" aria-label="Navigate to Orders">
+                <div class="nav-item" data-page="orders">
                     <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg></span> Orders
                 </div>
-                <div class="nav-item" data-page="customers" role="button" tabindex="0" aria-label="Navigate to Customers">
+                <div class="nav-item" data-page="customers">
                     <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span> Customers
                 </div>
-                <div class="nav-item" data-page="whatsapp" role="button" tabindex="0" aria-label="Navigate to WhatsApp">
+                <div class="nav-item" data-page="whatsapp">
                     <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg></span> WhatsApp
                 </div>
-                <div class="nav-item" data-page="settings" role="button" tabindex="0" aria-label="Navigate to Settings">
+                <div class="nav-item" data-page="settings">
                     <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.73 12.73l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></span> Settings
                 </div>
             </nav>
@@ -568,7 +385,7 @@
         </aside>
 
         <!-- Main Content -->
-        <main class="main" id="main-content" role="main" aria-label="Main content">
+        <main class="main">
             <!-- ═══ Dashboard Page ═══ -->
             <div class="page active" id="pg-dashboard">
                 <div class="header-bar">
@@ -577,20 +394,20 @@
                         <div class="header-controls">
                             <div class="date-picker" id="dp-dash">
                                 <div class="dp-modes">
-                                    <div class="dp-mode active" data-mode="month" role="button" tabindex="0" aria-label="Monthly view">Bulanan</div>
-                                    <div class="dp-mode" data-mode="year" role="button" tabindex="0" aria-label="Yearly view">Tahunan</div>
-                                    <div class="dp-mode" data-mode="custom" role="button" tabindex="0" aria-label="Custom range">Custom</div>
+                                    <div class="dp-mode active" data-mode="month">Bulanan</div>
+                                    <div class="dp-mode" data-mode="year">Tahunan</div>
+                                    <div class="dp-mode" data-mode="custom">Custom</div>
                                 </div>
                                 <div class="dp-controls">
-                                    <select class="dp-month" aria-label="Select month"></select>
-                                    <select class="dp-year" aria-label="Select year" style="display:none"></select>
-                                    <input type="date" class="dp-from" aria-label="Start date" style="display:none">
+                                    <select class="dp-month"></select>
+                                    <select class="dp-year" style="display:none"></select>
+                                    <input type="date" class="dp-from" style="display:none">
                                     <span class="dp-sep" style="display:none">s/d</span>
-                                    <input type="date" class="dp-to" aria-label="End date" style="display:none">
+                                    <input type="date" class="dp-to" style="display:none">
                                 </div>
                             </div>
                         </div>
-                        <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme" onclick="ThemeManager.toggle()" title="Toggle theme"></button>
+                        <button class="theme-toggle" id="theme-toggle" onclick="ThemeManager.toggle()" title="Toggle theme"></button>
                     </div>
                 </div>
 
@@ -635,13 +452,13 @@
                         <div class="panel-title">Sales Overview</div>
                         <span style="color:var(--text-muted);font-size:.78rem">Semua periode</span>
                     </div>
-                    <div class="chart-wrap"><canvas id="chart-trend" role="img" aria-label="Sales trend"></canvas></div>
+                    <div class="chart-wrap"><canvas id="chart-trend"></canvas></div>
                 </div>
 
                 <div class="grid-2">
                     <div class="panel">
                         <div class="panel-header"><div class="panel-title">Order Status</div></div>
-                        <div class="chart-wrap small"><canvas id="chart-order-status" role="img" aria-label="Order status"></canvas></div>
+                        <div class="chart-wrap small"><canvas id="chart-order-status"></canvas></div>
                     </div>
                     <div class="panel">
                         <div class="panel-header"><div class="panel-title">Top Layanan</div></div>
@@ -666,16 +483,16 @@
                         <div class="header-controls">
                             <div class="date-picker" id="dp-ana">
                                 <div class="dp-modes">
-                                    <div class="dp-mode active" data-mode="month" role="button" tabindex="0" aria-label="Monthly view">Bulanan</div>
-                                    <div class="dp-mode" data-mode="year" role="button" tabindex="0" aria-label="Yearly view">Tahunan</div>
-                                    <div class="dp-mode" data-mode="custom" role="button" tabindex="0" aria-label="Custom range">Custom</div>
+                                    <div class="dp-mode active" data-mode="month">Bulanan</div>
+                                    <div class="dp-mode" data-mode="year">Tahunan</div>
+                                    <div class="dp-mode" data-mode="custom">Custom</div>
                                 </div>
                                 <div class="dp-controls">
-                                    <select class="dp-month" aria-label="Select month"></select>
-                                    <select class="dp-year" aria-label="Select year" style="display:none"></select>
-                                    <input type="date" class="dp-from" aria-label="Start date" style="display:none">
+                                    <select class="dp-month"></select>
+                                    <select class="dp-year" style="display:none"></select>
+                                    <input type="date" class="dp-from" style="display:none">
                                     <span class="dp-sep" style="display:none">s/d</span>
-                                    <input type="date" class="dp-to" aria-label="End date" style="display:none">
+                                    <input type="date" class="dp-to" style="display:none">
                                 </div>
                             </div>
                         </div>
@@ -690,23 +507,23 @@
 
                 <div class="panel">
                     <div class="panel-header"><div class="panel-title">Daily Revenue</div></div>
-                    <div class="chart-wrap"><canvas id="chart-daily" role="img" aria-label="Daily revenue"></canvas></div>
+                    <div class="chart-wrap"><canvas id="chart-daily"></canvas></div>
                 </div>
 
                 <div class="grid-2">
                     <div class="panel">
                         <div class="panel-header"><div class="panel-title">By Service Category</div></div>
-                        <div class="chart-wrap small"><canvas id="chart-category" role="img" aria-label="Categories"></canvas></div>
+                        <div class="chart-wrap small"><canvas id="chart-category"></canvas></div>
                     </div>
                     <div class="panel">
                         <div class="panel-header"><div class="panel-title">Payment Status</div></div>
-                        <div class="chart-wrap small"><canvas id="chart-payment" role="img" aria-label="Payment status"></canvas></div>
+                        <div class="chart-wrap small"><canvas id="chart-payment"></canvas></div>
                     </div>
                 </div>
 
                 <div class="panel">
                     <div class="panel-header"><div class="panel-title">Monthly Trend</div></div>
-                    <div class="chart-wrap"><canvas id="chart-monthly-trend" role="img" aria-label="Monthly trend"></canvas></div>
+                    <div class="chart-wrap"><canvas id="chart-monthly-trend"></canvas></div>
                 </div>
             </div>
 
@@ -715,20 +532,20 @@
                 <div class="header-bar">
                     <h1>Orders</h1>
                     <div class="header-bar-actions">
-                        <input type="text" id="ord-search" placeholder="Cari nota/nama..." aria-label="Search orders">
+                        <input type="text" id="ord-search" placeholder="Cari nota/nama...">
                         <div class="header-controls">
                             <div class="date-picker" id="dp-ord">
                                 <div class="dp-modes">
-                                    <div class="dp-mode active" data-mode="month" role="button" tabindex="0" aria-label="Monthly view">Bulanan</div>
-                                    <div class="dp-mode" data-mode="year" role="button" tabindex="0" aria-label="Yearly view">Tahunan</div>
-                                    <div class="dp-mode" data-mode="custom" role="button" tabindex="0" aria-label="Custom range">Custom</div>
+                                    <div class="dp-mode active" data-mode="month">Bulanan</div>
+                                    <div class="dp-mode" data-mode="year">Tahunan</div>
+                                    <div class="dp-mode" data-mode="custom">Custom</div>
                                 </div>
                                 <div class="dp-controls">
-                                    <select class="dp-month" aria-label="Select month"></select>
-                                    <select class="dp-year" aria-label="Select year" style="display:none"></select>
-                                    <input type="date" class="dp-from" aria-label="Start date" style="display:none">
+                                    <select class="dp-month"></select>
+                                    <select class="dp-year" style="display:none"></select>
+                                    <input type="date" class="dp-from" style="display:none">
                                     <span class="dp-sep" style="display:none">s/d</span>
-                                    <input type="date" class="dp-to" aria-label="End date" style="display:none">
+                                    <input type="date" class="dp-to" style="display:none">
                                 </div>
                             </div>
                         </div>
@@ -736,11 +553,11 @@
                 </div>
 
                 <div class="filter-chips" id="ord-filters">
-                    <div class="chip active" data-status="all" role="button" tabindex="0" aria-label="Show all">Semua</div>
-                    <div class="chip" data-status="Proses" role="button" tabindex="0" aria-label="Filter Proses">Proses</div>
-                    <div class="chip" data-status="Siap Diambil" role="button" tabindex="0" aria-label="Filter Siap Diambil">Siap Diambil</div>
-                    <div class="chip" data-status="Lunas" role="button" tabindex="0" aria-label="Filter Lunas">Lunas</div>
-                    <div class="chip" data-status="Belum Lunas" role="button" tabindex="0" aria-label="Filter Belum Lunas">Belum Lunas</div>
+                    <div class="chip active" data-status="all">Semua</div>
+                    <div class="chip" data-status="Proses">Proses</div>
+                    <div class="chip" data-status="Siap Diambil">Siap Diambil</div>
+                    <div class="chip" data-status="Lunas">Lunas</div>
+                    <div class="chip" data-status="Belum Lunas">Belum Lunas</div>
                 </div>
 
                 <div class="panel">
@@ -759,9 +576,9 @@
                 <div class="header-bar"><h1>Customers</h1><div class="header-bar-actions"></div></div>
 
                 <div class="tab-bar" id="cust-tabs">
-                    <button class="tab-btn active" role="tab" aria-selected="true" data-tab="cust-overview">Overview</button>
-                    <button class="tab-btn" role="tab" aria-selected="false" data-tab="cust-search">Search</button>
-                    <button class="tab-btn" role="tab" aria-selected="false" data-tab="cust-areas">Area Analysis</button>
+                    <button class="tab-btn active" data-tab="cust-overview">Overview</button>
+                    <button class="tab-btn" data-tab="cust-search">Search</button>
+                    <button class="tab-btn" data-tab="cust-areas">Area Analysis</button>
                 </div>
 
                 <div class="tab-content active" id="cust-overview">
@@ -775,11 +592,11 @@
                     <div class="grid-2">
                         <div class="panel">
                             <div class="panel-header"><div class="panel-title">Customer Segments</div></div>
-                            <div class="chart-wrap small"><canvas id="chart-segments" role="img" aria-label="Customer segments"></canvas></div>
+                            <div class="chart-wrap small"><canvas id="chart-segments"></canvas></div>
                         </div>
                         <div class="panel">
                             <div class="panel-header"><div class="panel-title">Order Frequency</div></div>
-                            <div class="chart-wrap small"><canvas id="chart-frequency" role="img" aria-label="Order frequency"></canvas></div>
+                            <div class="chart-wrap small"><canvas id="chart-frequency"></canvas></div>
                         </div>
                     </div>
 
@@ -802,9 +619,9 @@
 
                 <div class="tab-content" id="cust-search">
                     <div class="search-row">
-                        <input type="text" id="cs-query" aria-label="Search customers" placeholder="Cari nama, telepon, atau alamat...">
+                        <input type="text" id="cs-query" placeholder="Cari nama, telepon, atau alamat...">
                         <select id="cs-area"><option value="">Semua Area</option></select>
-                        <button onclick="doCustomerSearch()" aria-label="Search">Cari</button>
+                        <button onclick="doCustomerSearch()">Cari</button>
                     </div>
                     <div class="panel">
                         <div class="table-wrap">
@@ -828,7 +645,7 @@
                 <div class="header-bar">
                     <h1>WhatsApp</h1>
                     <div class="header-bar-actions">
-                        <input type="text" id="wa-search-input" aria-label="Search messages" placeholder="Cari pesan..." style="width:200px">
+                        <input type="text" id="wa-search-input" placeholder="Cari pesan..." style="width:200px">
                     </div>
                 </div>
 
@@ -840,16 +657,16 @@
                 </div>
 
                 <div class="wa-tab-bar">
-                    <button class="wa-tab-btn active" role="tab" aria-selected="true" data-wa-tab="conversations">Conversations</button>
-                    <button class="wa-tab-btn" role="tab" aria-selected="false" data-wa-tab="analytics">Analytics</button>
-                    <button class="wa-tab-btn" role="tab" aria-selected="false" data-wa-tab="insights">AI Insight</button>
+                    <button class="wa-tab-btn active" data-wa-tab="conversations">Conversations</button>
+                    <button class="wa-tab-btn" data-wa-tab="analytics">Analytics</button>
+                    <button class="wa-tab-btn" data-wa-tab="insights">AI Insight</button>
                 </div>
 
                 <div class="wa-tab-content active" id="wa-tab-conversations">
                     <div class="filter-chips" id="wa-filter-chips">
-                        <div class="chip active" data-wa-filter="all" role="button" tabindex="0" aria-label="Show all chats">Semua</div>
-                        <div class="chip" data-wa-filter="customer" role="button" tabindex="0" aria-label="Customer chats">Pelanggan</div>
-                        <div class="chip" data-wa-filter="unknown" role="button" tabindex="0" aria-label="Unknown chats">Unknown</div>
+                        <div class="chip active" data-wa-filter="all">Semua</div>
+                        <div class="chip" data-wa-filter="customer">Pelanggan</div>
+                        <div class="chip" data-wa-filter="unknown">Unknown</div>
                     </div>
                     <div class="wa-layout" id="wa-layout">
                         <div class="wa-left">
@@ -866,12 +683,12 @@
 
                 <div class="wa-tab-content" id="wa-tab-analytics">
                     <div class="wa-analytics-grid">
-                        <div class="panel"><div class="panel-title" style="margin-bottom:.75rem">Volume Pesan (30 Hari)</div><div class="chart-wrap"><canvas id="wa-chart-volume" role="img" aria-label="Message volume"></canvas></div></div>
-                        <div class="panel"><div class="panel-title" style="margin-bottom:.75rem">Jam Sibuk</div><div class="chart-wrap"><canvas id="wa-chart-peak" role="img" aria-label="Peak hours"></canvas></div></div>
+                        <div class="panel"><div class="panel-title" style="margin-bottom:.75rem">Volume Pesan (30 Hari)</div><div class="chart-wrap"><canvas id="wa-chart-volume"></canvas></div></div>
+                        <div class="panel"><div class="panel-title" style="margin-bottom:.75rem">Jam Sibuk</div><div class="chart-wrap"><canvas id="wa-chart-peak"></canvas></div></div>
                     </div>
                     <div class="wa-analytics-grid">
-                        <div class="panel"><div class="panel-title" style="margin-bottom:.75rem">Response Time (7 Hari)</div><div class="chart-wrap"><canvas id="wa-chart-rt" role="img" aria-label="Response time"></canvas></div></div>
-                        <div class="panel"><div class="panel-title" style="margin-bottom:.75rem">Topic Breakdown</div><div class="chart-wrap"><canvas id="wa-chart-topics" role="img" aria-label="Topics"></canvas></div></div>
+                        <div class="panel"><div class="panel-title" style="margin-bottom:.75rem">Response Time (7 Hari)</div><div class="chart-wrap"><canvas id="wa-chart-rt"></canvas></div></div>
+                        <div class="panel"><div class="panel-title" style="margin-bottom:.75rem">Topic Breakdown</div><div class="chart-wrap"><canvas id="wa-chart-topics"></canvas></div></div>
                     </div>
                     <div class="panel"><div class="panel-title" style="margin-bottom:.75rem">Pelanggan Paling Aktif (30 Hari)</div><div class="table-wrap"><table><thead><tr><th>Nama</th><th>Phone</th><th>Pesan</th></tr></thead><tbody id="wa-active-table"></tbody></table></div></div>
                     <div class="panel"><div class="panel-title" style="margin-bottom:.75rem">Silent Customers (60+ Hari Tanpa Order)</div><div class="table-wrap"><table><thead><tr><th>Nama</th><th>Phone</th><th>Terakhir Chat</th><th>Hari</th></tr></thead><tbody id="wa-silent-table"></tbody></table></div></div>
@@ -925,13 +742,13 @@
     </div>
 
     <!-- Order Detail Modal -->
-    <div class="modal-overlay" id="order-modal" role="dialog" aria-modal="true" aria-labelledby="om-title"><div class="modal"><div class="modal-head"><h3 id="om-title">Detail Order</h3><button class="modal-close" aria-label="Close modal" onclick="closeModal('order-modal')">&times;</button></div><div class="modal-body" id="om-body"></div></div></div>
+    <div class="modal-overlay" id="order-modal"><div class="modal"><div class="modal-head"><h3 id="om-title">Detail Order</h3><button class="modal-close" onclick="closeModal('order-modal')">&times;</button></div><div class="modal-body" id="om-body"></div></div></div>
 
     <!-- Customer Detail Modal -->
-    <div class="modal-overlay" id="customer-modal" role="dialog" aria-modal="true" aria-labelledby="cm-title"><div class="modal" style="max-width:700px"><div class="modal-head"><h3 id="cm-title">Detail Customer</h3><button class="modal-close" aria-label="Close modal" onclick="closeModal('customer-modal')">&times;</button></div><div class="modal-body" id="cm-body"></div></div></div>
+    <div class="modal-overlay" id="customer-modal"><div class="modal" style="max-width:700px"><div class="modal-head"><h3 id="cm-title">Detail Customer</h3><button class="modal-close" onclick="closeModal('customer-modal')">&times;</button></div><div class="modal-body" id="cm-body"></div></div></div>
 
     <!-- Area Detail Modal -->
-    <div class="modal-overlay" id="area-modal" role="dialog" aria-modal="true" aria-labelledby="am-title"><div class="modal" style="max-width:700px"><div class="modal-head"><h3 id="am-title">Detail Area</h3><button class="modal-close" aria-label="Close modal" onclick="closeModal('area-modal')">&times;</button></div><div class="modal-body" id="am-body"></div></div></div>
+    <div class="modal-overlay" id="area-modal"><div class="modal" style="max-width:700px"><div class="modal-head"><h3 id="am-title">Detail Area</h3><button class="modal-close" onclick="closeModal('area-modal')">&times;</button></div><div class="modal-body" id="am-body"></div></div></div>
 
     <!-- Bottom Nav (mobile) -->
     <div class="bottom-nav">
@@ -955,30 +772,6 @@
             <div class="bottom-nav-item" data-page="whatsapp">
                 <span class="bnav-icon"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg></span>
                 <span>WhatsApp</span>
-            </div>
-            <div class="bottom-nav-item" onclick="toggleMoreSheet()" aria-label="Menu lainnya">
-                <span class="bnav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>
-                <span>Lainnya</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="more-overlay" id="moreOverlay" onclick="closeMoreSheet()"></div>
-    <div class="more-sheet" id="moreSheet">
-        <div class="more-handle"></div>
-        <div class="more-title">Menu Lainnya</div>
-        <div class="more-grid">
-            <a class="more-item" href="/dashboard/hr/" target="_blank" rel="noopener">
-                <div class="more-icon">👥</div><span>HR</span>
-            </a>
-            <a class="more-item" href="/ops/" target="_blank" rel="noopener">
-                <div class="more-icon">⚙️</div><span>Operasional</span>
-            </a>
-            <a class="more-item" href="/admin/" target="_blank" rel="noopener">
-                <div class="more-icon">🔧</div><span>Admin</span>
-            </a>
-            <div class="more-item" onclick="closeMoreSheet();navigateTo('settings')">
-                <div class="more-icon">⚡</div><span>Pengaturan</span>
             </div>
         </div>
     </div>
@@ -1039,56 +832,6 @@
         t.textContent = msg;
         t.classList.add('show');
         setTimeout(function() { t.classList.remove('show'); }, duration);
-    }
-    function emptyStateHtml() {
-        return '<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">Belum ada data</div><div class="empty-desc">Data akan muncul setelah ada transaksi.</div></div>';
-    }
-
-    function toggleSidebar() {
-        var sidebar = document.querySelector('.sidebar');
-        if (!sidebar) return;
-        var isOpen = sidebar.classList.contains('open');
-        isOpen ? closeSidebar() : openSidebar();
-    }
-    function openSidebar() {
-        var sidebar = document.querySelector('.sidebar');
-        if (!sidebar) return;
-        sidebar.classList.add('open');
-        $('sidebarOverlay').classList.add('visible');
-        $('hamburgerBtn').classList.add('open');
-        $('hamburgerBtn').setAttribute('aria-expanded', 'true');
-        document.body.style.overflow = 'hidden';
-    }
-    function closeSidebar() {
-        var sidebar = document.querySelector('.sidebar');
-        if (!sidebar) return;
-        sidebar.classList.remove('open');
-        $('sidebarOverlay').classList.remove('visible');
-        $('hamburgerBtn').classList.remove('open');
-        $('hamburgerBtn').setAttribute('aria-expanded', 'false');
-        document.body.style.overflow = '';
-    }
-    function toggleMoreSheet() {
-        var sheet = $('moreSheet');
-        if (!sheet) return;
-        sheet.classList.contains('open') ? closeMoreSheet() : openMoreSheet();
-    }
-    function openMoreSheet() {
-        $('moreSheet').classList.add('open');
-        $('moreOverlay').classList.add('visible');
-        document.body.style.overflow = 'hidden';
-    }
-    function closeMoreSheet() {
-        $('moreSheet').classList.remove('open');
-        $('moreOverlay').classList.remove('visible');
-        document.body.style.overflow = '';
-    }
-    function applyMobileChartTicks(chart) {
-        if (window.innerWidth > 414 || !chart || !chart.options || !chart.options.scales || !chart.options.scales.x) return;
-        chart.options.scales.x.ticks = chart.options.scales.x.ticks || {};
-        chart.options.scales.x.ticks.maxTicksLimit = 7;
-        chart.options.scales.x.ticks.maxRotation = 0;
-        chart.update('none');
     }
 
     function getCssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
@@ -1214,7 +957,6 @@
     // ─── Navigation ──────────────────────────────────────────────────
     var currentPage = 'dashboard';
     function navigateTo(page) {
-        if (!page) return;
         currentPage = page;
         document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active')});
         document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active')});
@@ -1222,19 +964,10 @@
         var pg = $('pg-' + page); if (pg) pg.classList.add('active');
         document.querySelectorAll('.nav-item[data-page="'+page+'"]').forEach(function(n){n.classList.add('active')});
         document.querySelectorAll('.bottom-nav-item[data-page="'+page+'"]').forEach(function(n){n.classList.add('active')});
-        if (window.innerWidth <= 768) {
-            closeSidebar();
-            closeMoreSheet();
-        }
         loadPageData(page);
     }
-    document.querySelectorAll('.nav-item, .bottom-nav-item[data-page]').forEach(function(el) {
+    document.querySelectorAll('.nav-item, .bottom-nav-item').forEach(function(el) {
         el.addEventListener('click', function() { navigateTo(el.dataset.page); });
-    });
-    document.querySelectorAll('.nav-item').forEach(function(el) {
-        el.addEventListener('click', function() {
-            if (window.innerWidth <= 768) closeSidebar();
-        });
     });
 
     // ─── Chart Instances ─────────────────────────────────────────────
@@ -1295,7 +1028,6 @@
                 },
                 options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{labels:{color:ct.text,font:{size:11,family:"'Inter',sans-serif"}}}, tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label==='Revenue'?rp(ctx.raw):ctx.raw+' orders'}}} }, scales:{ x:{ticks:{color:ct.text},grid:{color:ct.grid}}, y:{ticks:{color:ct.text,callback:function(v){return rpShort(v)}},grid:{color:ct.grid}}, y1:{position:'right',ticks:{color:ct.text},grid:{display:false}} } }
             });
-            applyMobileChartTicks(charts.trend);
             // Donut
             destroyChart('orderStatus');
             var statusData = overview.orders.by_status;
@@ -1305,10 +1037,10 @@
             });
             // Top services
             var top5 = products.by_service.slice(0,6);
-            $('d-top-services').innerHTML = top5.length===0 ? emptyStateHtml() : top5.map(function(s,i){ return '<div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;'+(i<top5.length-1?'border-bottom:1px solid var(--border-subtle);':'')+'"><div><span style="color:var(--text-muted);font-size:.72rem;margin-right:.5rem">'+(i+1)+'</span><span style="font-size:.82rem">'+(s.name||'-')+'</span></div><span style="color:var(--text-metric);font-weight:600;font-size:.82rem">'+rpShort(s.revenue)+'</span></div>'; }).join('');
+            $('d-top-services').innerHTML = top5.length===0 ? '<div class="loading">Tidak ada data</div>' : top5.map(function(s,i){ return '<div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;'+(i<top5.length-1?'border-bottom:1px solid var(--border-subtle);':'')+'"><div><span style="color:var(--text-muted);font-size:.72rem;margin-right:.5rem">'+(i+1)+'</span><span style="font-size:.82rem">'+(s.name||'-')+'</span></div><span style="color:var(--text-metric);font-weight:600;font-size:.82rem">'+rpShort(s.revenue)+'</span></div>'; }).join('');
             // Ongoing
             var ongoingHtml = ongoing.orders.slice(0,15).map(function(o){ return '<div class="order-card"><div class="order-card-id">'+(o.no_nota?'#'+o.no_nota.slice(-8):'-')+'</div><div class="order-card-name">'+(o.customer||'-')+'</div><div class="order-card-service">'+(o.service||'-')+'</div><div class="order-card-amount">'+rp(o.amount)+'</div><div class="order-card-status"><span class="badge '+(o.status==='Siap Diambil'?'badge-green':'badge-orange')+'">'+o.status+'</span>'+(o.payment==='Belum Lunas'?' <span class="badge badge-red">Belum Lunas</span>':'')+'</div></div>'; }).join('');
-            $('d-ongoing').innerHTML = ongoingHtml || emptyStateHtml();
+            $('d-ongoing').innerHTML = ongoingHtml || '<div style="color:var(--text-muted);padding:1rem">Tidak ada order ongoing</div>';
         } catch(e) { console.error('Dashboard error:', e); }
     }
 
@@ -1330,7 +1062,6 @@
                 type:'bar', data:{ labels:daily.data.map(function(d){ var dt=new Date(d.date); return overview.mode==='year'?dt.toLocaleDateString('id-ID',{day:'numeric',month:'short'}):dt.getDate(); }), datasets:[{label:'Revenue',data:daily.data.map(function(d){return d.revenue}),backgroundColor:chartColors.gold,borderRadius:4}] },
                 options:{ responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return rp(ctx.raw)}}}}, scales:{x:{ticks:{color:ct.text,maxTicksLimit:31},grid:{display:false}},y:{ticks:{color:ct.text,callback:function(v){return rpShort(v)}},grid:{color:ct.grid}}} }
             });
-            applyMobileChartTicks(charts.daily);
             // Category
             destroyChart('category');
             var cats = products.by_category.slice(0,7);
@@ -1350,7 +1081,6 @@
                 type:'line', data:{ labels:monthly.data.map(function(d){var p=d.month.split('-');return new Date(p[0],p[1]-1).toLocaleDateString('id-ID',{month:'short',year:'2-digit'})}), datasets:[{label:'Revenue',data:monthly.data.map(function(d){return d.revenue}),borderColor:chartColors.gold,backgroundColor:chartColors.goldAlpha,fill:true,tension:.4,pointRadius:3,pointBackgroundColor:chartColors.gold},{label:'Orders',data:monthly.data.map(function(d){return d.orders}),borderColor:chartColors.blue,yAxisID:'y1',tension:.4,pointRadius:2,borderDash:[5,5]}] },
                 options:{ responsive:true,maintainAspectRatio:false, plugins:{legend:{labels:{color:ct.text,font:{size:11,family:"'Inter',sans-serif"}}},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label==='Revenue'?rp(ctx.raw):ctx.raw+' orders'}}}}, scales:{x:{ticks:{color:ct.text},grid:{color:ct.grid}},y:{ticks:{color:ct.text,callback:function(v){return rpShort(v)}},grid:{color:ct.grid}},y1:{position:'right',ticks:{color:ct.text},grid:{display:false}}} }
             });
-            applyMobileChartTicks(charts.monthlyTrend);
         } catch(e) { console.error('Analytics error:', e); }
     }
 
@@ -1366,7 +1096,7 @@
             window._ordersData = data.orders;
             var tbody = $('ord-table');
             if (data.orders.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">Belum ada data</div><div class="empty-desc">Data akan muncul setelah ada transaksi.</div></div></td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:2rem">Tidak ada data</td></tr>';
             } else {
                 tbody.innerHTML = data.orders.map(function(o, idx) {
                     var statusBadge = o.status==='Selesai'?'badge-green':o.status==='Siap Diambil'?'badge-blue':'badge-orange';
@@ -1428,12 +1158,11 @@
                 type:'bar', data:{ labels:summary.frequency.map(function(f){return f.range}), datasets:[{data:summary.frequency.map(function(f){return f.count}),backgroundColor:chartColors.gold,borderRadius:4}] },
                 options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:ct.text,font:{size:10}},grid:{display:false}},y:{ticks:{color:ct.text},grid:{color:ct.grid}}}}
             });
-            applyMobileChartTicks(charts.frequency);
             function segBadge(seg) { var cls=seg==='VIP'?'badge-gold':seg==='High-Value'?'badge-orange':seg==='Regular'?'badge-blue':''; return cls?'<span class="badge '+cls+'">'+seg+'</span>':'<span style="color:var(--text-muted);font-size:.78rem">'+seg+'</span>'; }
-            $('c-top-table').innerHTML = top.customers.map(function(c){ var cn=(c.customer_name||c.name||'-'); return '<tr class="clickable" onclick="showCustomerDetail(\''+c.customer_phone+'\')"><td class="customer-name-cell" title="'+escHtml(cn)+'">'+cn+'</td><td>'+(c.total_orders||c.orders)+'</td><td style="color:var(--text-metric);font-weight:600">'+rp(c.total_spent||c.spent)+'</td><td>'+rp(c.avg_order)+'</td><td>'+fmtDate(c.last_order)+'</td><td>'+segBadge(c.segment)+'</td></tr>'; }).join('');
+            $('c-top-table').innerHTML = top.customers.map(function(c){ return '<tr class="clickable" onclick="showCustomerDetail(\''+c.customer_phone+'\')"><td>'+(c.customer_name||c.name||'-')+'</td><td>'+(c.total_orders||c.orders)+'</td><td style="color:var(--text-metric);font-weight:600">'+rp(c.total_spent||c.spent)+'</td><td>'+rp(c.avg_order)+'</td><td>'+fmtDate(c.last_order)+'</td><td>'+segBadge(c.segment)+'</td></tr>'; }).join('');
             function riskBadge(risk) { return '<span class="badge '+(risk==='High'?'badge-red':risk==='Medium'?'badge-orange':'badge-blue')+'">'+risk+'</span>'; }
             var churnList = churn.churn_risk.slice(0,30);
-            $('c-churn-table').innerHTML = churnList.length===0 ? '<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">Belum ada data</div><div class="empty-desc">Data akan muncul setelah ada transaksi.</div></div></td></tr>' : churnList.map(function(c){ var cn=(c.customer_name||c.name||'-'); return '<tr class="clickable" onclick="showCustomerDetail(\''+c.customer_phone+'\')"><td class="customer-name-cell" title="'+escHtml(cn)+'">'+cn+'</td><td>'+(c.total_orders||c.orders)+'</td><td style="color:var(--text-metric);font-weight:600">'+rp(c.total_spent||c.spent)+'</td><td>'+fmtDate(c.last_order)+'</td><td>'+c.days_since+' hari</td><td>'+riskBadge(c.risk)+'</td></tr>'; }).join('');
+            $('c-churn-table').innerHTML = churnList.length===0 ? '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:1.5rem">Tidak ada customer at risk</td></tr>' : churnList.map(function(c){ return '<tr class="clickable" onclick="showCustomerDetail(\''+c.customer_phone+'\')"><td>'+(c.customer_name||c.name||'-')+'</td><td>'+(c.total_orders||c.orders)+'</td><td style="color:var(--text-metric);font-weight:600">'+rp(c.total_spent||c.spent)+'</td><td>'+fmtDate(c.last_order)+'</td><td>'+c.days_since+' hari</td><td>'+riskBadge(c.risk)+'</td></tr>'; }).join('');
         } catch(e) { console.error('Customers error:', e); }
     }
 
@@ -1471,8 +1200,8 @@
             if (area) url += 'area='+encodeURIComponent(area)+'&';
             var data = await api(url);
             function segBadge(seg) { var cls=seg==='VIP'?'badge-gold':seg==='High-Value'?'badge-orange':seg==='Regular'?'badge-blue':''; return cls?'<span class="badge '+cls+'">'+seg+'</span>':'<span style="color:var(--text-muted);font-size:.78rem">'+seg+'</span>'; }
-            if (data.results.length === 0) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">Belum ada data</div><div class="empty-desc">Data akan muncul setelah ada transaksi.</div></div></td></tr>'; }
-            else { tbody.innerHTML = data.results.map(function(c){ var cn=(c.customer_name||'-'); return '<tr class="clickable" onclick="showCustomerDetail(\''+c.customer_phone+'\')"><td class="customer-name-cell" title="'+escHtml(cn)+'">'+cn+'</td><td style="font-size:.78rem;color:var(--text-muted)">'+(c.customer_phone||'-')+'</td><td>'+(c.normalized_area||'-')+'</td><td>'+c.total_orders+'</td><td style="color:var(--text-metric);font-weight:600">'+rp(c.total_spent)+'</td><td>'+segBadge(c.segment)+'</td></tr>'; }).join(''); }
+            if (data.results.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:2rem">Tidak ditemukan</td></tr>'; }
+            else { tbody.innerHTML = data.results.map(function(c){ return '<tr class="clickable" onclick="showCustomerDetail(\''+c.customer_phone+'\')"><td>'+(c.customer_name||'-')+'</td><td style="font-size:.78rem;color:var(--text-muted)">'+(c.customer_phone||'-')+'</td><td>'+(c.normalized_area||'-')+'</td><td>'+c.total_orders+'</td><td style="color:var(--text-metric);font-weight:600">'+rp(c.total_spent)+'</td><td>'+segBadge(c.segment)+'</td></tr>'; }).join(''); }
         } catch(e) { console.error('Search error:', e); tbody.innerHTML = '<tr><td colspan="6" style="color:var(--danger)">Error</td></tr>'; }
     }
     $('cs-query').addEventListener('keydown', function(e) { if (e.key === 'Enter') doCustomerSearch(); });
@@ -1590,12 +1319,12 @@
         var layout = $('wa-layout'); if (layout) layout.classList.add('chat-open');
         document.querySelectorAll('.wa-conv-item').forEach(function(el) { el.classList.toggle('active', el.dataset.phone===phone); });
         var area = $('wa-chat-area');
-        area.innerHTML = '<div class="wa-chat-header"><div class="wa-chat-header-info"><button class="wa-chat-back" onclick="closeWaChat()"><svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg></button><div class="wa-conv-avatar customer" style="width:32px;height:32px;font-size:.7rem">'+(name||'?').substring(0,2).toUpperCase()+'</div><div><div class="wa-chat-header-name">'+escHtml(name)+'</div><div class="wa-chat-header-phone">'+phone+'</div></div></div><div class="wa-chat-header-actions"><button onclick="viewWaCustomer(\''+phone+'\')">Profile</button><button onclick="exportWaChat(\''+phone+'\')">Export CSV</button></div></div><div class="wa-chat-messages" id="wa-chat-msgs"><div class="loading"><div class="spinner"></div></div></div><div class="wa-reply-bar"><input class="wa-reply-input" id="wa-reply-input" aria-label="Type message" type="text" placeholder="Ketik pesan..." onkeydown="if(event.key===\'Enter\')sendWaReply()"><button class="wa-reply-send" onclick="sendWaReply()" title="Kirim"><svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div>';
+        area.innerHTML = '<div class="wa-chat-header"><div class="wa-chat-header-info"><button class="wa-chat-back" onclick="closeWaChat()"><svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg></button><div class="wa-conv-avatar customer" style="width:32px;height:32px;font-size:.7rem">'+(name||'?').substring(0,2).toUpperCase()+'</div><div><div class="wa-chat-header-name">'+escHtml(name)+'</div><div class="wa-chat-header-phone">'+phone+'</div></div></div><div class="wa-chat-header-actions"><button onclick="viewWaCustomer(\''+phone+'\')">Profile</button><button onclick="exportWaChat(\''+phone+'\')">Export CSV</button></div></div><div class="wa-chat-messages" id="wa-chat-msgs"><div class="loading"><div class="spinner"></div></div></div><div class="wa-reply-bar"><input class="wa-reply-input" id="wa-reply-input" type="text" placeholder="Ketik pesan..." onkeydown="if(event.key===\'Enter\')sendWaReply()"><button class="wa-reply-send" onclick="sendWaReply()" title="Kirim"><svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div>';
         try {
             var data = await api('/wa/messages?phone='+phone+'&limit=100');
             var msgs = data.messages || [];
             var container = $('wa-chat-msgs');
-            if (msgs.length===0) { container.innerHTML=emptyStateHtml(); return; }
+            if (msgs.length===0) { container.innerHTML='<div class="wa-chat-empty">Belum ada pesan</div>'; return; }
             var html='', lastDate='';
             for (var i=0; i<msgs.length; i++) {
                 var m = msgs[i];
@@ -1634,7 +1363,7 @@
         list.innerHTML = '<div class="loading"><div class="spinner"></div> Mencari...</div>';
         try {
             var data = await api('/wa/search?q='+encodeURIComponent(query)+'&limit=30');
-            if (!data.results || data.results.length===0) { list.innerHTML=emptyStateHtml(); return; }
+            if (!data.results || data.results.length===0) { list.innerHTML='<div style="padding:2rem;text-align:center;color:var(--text-muted)">Tidak ditemukan</div>'; return; }
             var html='';
             for (var i=0; i<data.results.length; i++) {
                 var r = data.results[i];
@@ -1658,23 +1387,20 @@
             destroyChart('waVolume');
             var volDays = data.volume?.messages_by_day || [];
             charts.waVolume = new Chart($('wa-chart-volume'), { type:'bar', data:{ labels:volDays.map(function(d){return fmtDateShort(d.date)}), datasets:[{label:'Masuk',data:volDays.map(function(d){return d.incoming}),backgroundColor:chartColors.blue},{label:'Keluar',data:volDays.map(function(d){return d.outgoing}),backgroundColor:chartColors.gold}] }, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:ct.text,font:{size:11,family:"'Inter',sans-serif"}}}},scales:{x:{stacked:true,ticks:{color:ct.text},grid:{color:ct.grid}},y:{stacked:true,ticks:{color:ct.text},grid:{color:ct.grid}}}} });
-            applyMobileChartTicks(charts.waVolume);
             destroyChart('waPeak');
             var peakH = data.volume?.peak_hours || [];
             charts.waPeak = new Chart($('wa-chart-peak'), { type:'bar', data:{ labels:peakH.map(function(h){return h.hour+':00'}), datasets:[{label:'Pesan',data:peakH.map(function(h){return h.count}),backgroundColor:chartColors.gold}] }, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:ct.text},grid:{color:ct.grid}},y:{ticks:{color:ct.text},grid:{color:ct.grid}}}} });
-            applyMobileChartTicks(charts.waPeak);
             destroyChart('waRt');
             var rtDays = data.response_time?.trend_7d || [];
             charts.waRt = new Chart($('wa-chart-rt'), { type:'line', data:{ labels:rtDays.map(function(d){return fmtDateShort(d.date)}), datasets:[{label:'Avg (menit)',data:rtDays.map(function(d){return d.avg_minutes}),borderColor:chartColors.gold,backgroundColor:chartColors.goldAlpha,fill:true,tension:.3}] }, options:dco });
-            applyMobileChartTicks(charts.waRt);
             destroyChart('waTopics');
             var topics = data.topics || {};
             var topicLabels = {inquiry:'Inquiry/Harga',complaint:'Keluhan',order:'Order/Laundry',feedback:'Feedback Positif'};
             charts.waTopics = new Chart($('wa-chart-topics'), { type:'doughnut', data:{ labels:Object.keys(topics).map(function(k){return topicLabels[k]||k}), datasets:[{data:Object.values(topics),backgroundColor:[chartColors.blue,chartColors.red,chartColors.gold,chartColors.green]}] }, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:ct.text,font:{size:11,family:"'Inter',sans-serif"}}}}} });
-            var activeHtml = (data.customers?.most_active||[]).map(function(c){ return '<tr class="clickable" onclick="openWaChat(\''+c.phone+'\',\''+escHtml(c.name)+'\')"><td class="customer-name-cell" title="'+escHtml(c.name)+'">'+escHtml(c.name)+'</td><td style="font-family:var(--font-mono);font-size:.78rem">'+c.phone+'</td><td>'+c.message_count+'</td></tr>'; }).join('');
-            $('wa-active-table').innerHTML = activeHtml || '<tr><td colspan="3"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">Belum ada data</div><div class="empty-desc">Data akan muncul setelah ada transaksi.</div></div></td></tr>';
-            var silentHtml = (data.customers?.silent_customers||[]).map(function(c){ return '<tr class="clickable" onclick="viewWaCustomer(\''+c.phone+'\')"><td class="customer-name-cell" title="'+escHtml(c.name)+'">'+escHtml(c.name)+'</td><td style="font-family:var(--font-mono);font-size:.78rem">'+c.phone+'</td><td>'+(c.last_contact?fmtDate(c.last_contact):'-')+'</td><td><span class="'+(c.days_silent>90?'badge badge-red':'badge badge-orange')+'">'+c.days_silent+'d</span></td></tr>'; }).join('');
-            $('wa-silent-table').innerHTML = silentHtml || '<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">Belum ada data</div><div class="empty-desc">Data akan muncul setelah ada transaksi.</div></div></td></tr>';
+            var activeHtml = (data.customers?.most_active||[]).map(function(c){ return '<tr class="clickable" onclick="openWaChat(\''+c.phone+'\',\''+escHtml(c.name)+'\')"><td>'+escHtml(c.name)+'</td><td style="font-family:var(--font-mono);font-size:.78rem">'+c.phone+'</td><td>'+c.message_count+'</td></tr>'; }).join('');
+            $('wa-active-table').innerHTML = activeHtml || '<tr><td colspan="3" style="text-align:center;color:var(--text-muted)">-</td></tr>';
+            var silentHtml = (data.customers?.silent_customers||[]).map(function(c){ return '<tr class="clickable" onclick="viewWaCustomer(\''+c.phone+'\')"><td>'+escHtml(c.name)+'</td><td style="font-family:var(--font-mono);font-size:.78rem">'+c.phone+'</td><td>'+(c.last_contact?fmtDate(c.last_contact):'-')+'</td><td><span class="'+(c.days_silent>90?'badge badge-red':'badge badge-orange')+'">'+c.days_silent+'d</span></td></tr>'; }).join('');
+            $('wa-silent-table').innerHTML = silentHtml || '<tr><td colspan="4" style="text-align:center;color:var(--text-muted)">-</td></tr>';
         } catch(e) { console.error('WA analytics error:', e); }
     }
     async function loadWaInsights() {
@@ -1714,233 +1440,10 @@
     }
 
     // ─── Init ────────────────────────────────────────────────────────
-    if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', function() {
-            var waInputBar = document.querySelector('.wa-reply-bar');
-            if (waInputBar) {
-                waInputBar.style.bottom = (window.innerHeight - window.visualViewport.height) + 'px';
-            }
-        });
-    }
-    window.addEventListener('resize', function() {
-        if (window.innerWidth > 768) {
-            closeSidebar();
-            closeMoreSheet();
-        }
-    });
     ThemeManager.init();
     if (window.location.hostname === 'crm.sijibintaro.id') { navigateTo('whatsapp'); }
     else { loadDashboard(); }
 
     </script>
-    <script>
-
-    // ═══════════════════════════════════════════════════════════
-    // PHASE 1: ACCESSIBILITY - KEYBOARD NAVIGATION (A11Y-02)
-    // ═══════════════════════════════════════════════════════════
-
-    (function() {
-        console.log('[A11Y] Keyboard navigation initialized');
-
-        // 1. Navigation items - Enter/Space to activate
-        document.querySelectorAll('.nav-item').forEach(function(nav) {
-            nav.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    var page = this.getAttribute('data-page');
-                    if (page) navigateTo(page);
-                }
-            });
-        });
-
-        // 2. Filter chips - Enter/Space to toggle
-        document.querySelectorAll('.chip').forEach(function(chip) {
-            chip.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    this.click();
-                }
-            });
-        });
-
-        // 3. Date picker modes - Enter/Space to toggle
-        document.querySelectorAll('.dp-mode').forEach(function(mode) {
-            mode.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    this.click();
-                }
-            });
-        });
-
-        // 4. Modal - Escape to close
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                var modals = document.querySelectorAll('.modal-overlay.show');
-                modals.forEach(function(modal) {
-                    modal.classList.remove('show');
-                });
-            }
-        });
-
-        // 5. Trap focus inside modals when open
-        document.querySelectorAll('.modal-overlay').forEach(function(modalOverlay) {
-            var observer = new MutationObserver(function(mutations) {
-                mutations.forEach(function(mutation) {
-                    if (mutation.target.classList.contains('show')) {
-                        var focusable = modalOverlay.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-                        if (focusable.length > 0) {
-                            focusable[0].focus();
-                        }
-                    }
-                });
-            });
-            observer.observe(modalOverlay, { attributes: true, attributeFilter: ['class'] });
-        });
-
-        // 6. Search inputs - Enter to submit
-        var ordSearch = document.getElementById('ord-search');
-        if (ordSearch) {
-            ordSearch.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    // Filter orders table
-                    filterOrders();
-                }
-            });
-        }
-
-        var csQuery = document.getElementById('cs-query');
-        if (csQuery) {
-            csQuery.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    doCustomerSearch();
-                }
-            });
-        }
-
-        // 7. Tab buttons - Arrow keys navigation
-        var tabGroups = [
-            document.querySelectorAll('.tab-btn'),
-            document.querySelectorAll('.wa-tab-btn')
-        ];
-        
-        tabGroups.forEach(function(tabs) {
-            if (tabs.length === 0) return;
-            tabs.forEach(function(tab, index) {
-                tab.addEventListener('keydown', function(e) {
-                    var nextIndex;
-                    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        nextIndex = (index + 1) % tabs.length;
-                        tabs[nextIndex].focus();
-                        tabs[nextIndex].click();
-                    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        nextIndex = (index - 1 + tabs.length) % tabs.length;
-                        tabs[nextIndex].focus();
-                        tabs[nextIndex].click();
-                    }
-                });
-            });
-        });
-
-        // 8. Area cards - Enter to open
-        document.addEventListener('click', function(e) {
-            if (e.target.closest('.area-card')) {
-                var card = e.target.closest('.area-card');
-                card.setAttribute('tabindex', '0');
-                card.setAttribute('role', 'button');
-                card.setAttribute('aria-label', 'View area details');
-            }
-        });
-
-        // 9. Table rows - Enter to open details
-        document.addEventListener('click', function(e) {
-            if (e.target.closest('tr.clickable')) {
-                var row = e.target.closest('tr.clickable');
-                row.setAttribute('tabindex', '0');
-                row.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter') {
-                        this.click();
-                    }
-                });
-            }
-        });
-
-        // 10. Focus visible styles for keyboard users
-        var style = document.createElement('style');
-        style.innerHTML = `
-            /* Keyboard focus indicators */
-            .nav-item:focus,
-            .chip:focus,
-            .dp-mode:focus,
-            .tab-btn:focus,
-            .wa-tab-btn:focus,
-            button:focus,
-            input:focus,
-            select:focus,
-            textarea:focus,
-            [tabindex]:focus {
-                outline: 2px solid var(--gold) !important;
-                outline-offset: 2px !important;
-            }
-
-            /* Remove outline for mouse users */
-            .nav-item:focus:not(:focus-visible),
-            .chip:focus:not(:focus-visible),
-            .dp-mode:focus:not(:focus-visible),
-            button:focus:not(:focus-visible) {
-                outline: none !important;
-            }
-
-            /* Skip to main content link (hidden until focused) */
-            .skip-to-main {
-                position: absolute;
-                top: -40px;
-                left: 0;
-                background: var(--gold);
-                color: #000;
-                padding: 8px 16px;
-                z-index: 1000;
-                text-decoration: none;
-                font-weight: 600;
-            }
-            .skip-to-main:focus {
-                top: 0;
-            }
-
-            /* Improve touch targets (44px minimum) */
-            .nav-item,
-            .chip,
-            .dp-mode,
-            button,
-            .tab-btn,
-            .wa-tab-btn {
-                min-height: 44px !important;
-                display: inline-flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-            }
-        `;
-        document.head.appendChild(style);
-
-        console.log('[A11Y] ✅ Keyboard navigation ready');
-        console.log('[A11Y] - Nav: Enter/Space to navigate');
-        console.log('[A11Y] - Filters: Enter/Space to toggle');
-        console.log('[A11Y] - Modals: Esc to close');
-        console.log('[A11Y] - Tabs: Arrow keys to navigate');
-        console.log('[A11Y] - Forms: Enter to submit');
-    })();
-    </script>
-
-<script>
-// Phase 2 UX Improvements
-(function(){
-window.showToast=function(m,t,d){t=t||'info';d=d||3000;var ic={success:'✓',error:'✗',warning:'⚠',info:'ℹ'};var el=document.createElement('div');el.className='toast '+t;el.innerHTML='<span style="font-size:1.2rem;margin-right:.5rem">'+(ic[t]||'')+'</span><span>'+m+'</span>';document.body.appendChild(el);setTimeout(function(){el.style.opacity='0';el.style.transform='translateX(100%)';setTimeout(function(){el.remove()},300)},d)};
-window.showLoading=function(e){if(typeof e==='string')e=document.getElementById(e);if(e)e.classList.add('loading')};
-window.hideLoading=function(e){if(typeof e==='string')e=document.getElementById(e);if(e)e.classList.remove('loading')};
-console.log('✅ Phase 2 UX loaded');
-})();
-</script>
 </body>
 </html>

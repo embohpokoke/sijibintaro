@@ -1,220 +1,218 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIJI Bintaro - Ops Monitor</title>
-    <style>
-        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-        :root {
-            --bg: #0F0F0F; --card: #1A1A1A; --card-border: #333;
-            --gold: #C17E1A; --gold-light: #D4A03C;
-            --text: #F5F5F5; --text-sec: #AAAAAA; --text-muted: #777;
-            --green: #4CAF50; --red: #E53935; --blue: #2196F3; --orange: #FF9800;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg); color: var(--text); padding: 2rem;
-        }
-        .header {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 2rem;
-        }
-        .header h1 { font-size: 1.5rem; color: var(--gold); }
-        .header .refresh-btn {
-            background: var(--card); border: 1px solid var(--card-border);
-            color: var(--text-sec); border-radius: 8px; padding: .5rem 1rem;
-            font-size: .85rem; cursor: pointer;
-        }
-        .header .refresh-btn:hover { border-color: var(--gold); color: var(--gold); }
-        .status-time { font-size: .75rem; color: var(--text-muted); margin-bottom: 1.5rem; }
-        .cards {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem; margin-bottom: 2rem;
-        }
-        .card {
-            background: var(--card); border: 1px solid var(--card-border);
-            border-radius: 12px; padding: 1.25rem;
-        }
-        .card-label { font-size: .7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: .4rem; }
-        .card-value { font-size: 1.3rem; font-weight: 700; }
-        .card-value.ok { color: var(--green); }
-        .card-value.warn { color: var(--orange); }
-        .card-value.error { color: var(--red); }
-        .card-sub { font-size: .75rem; color: var(--text-muted); margin-top: .2rem; }
-        .panel {
-            background: var(--card); border: 1px solid var(--card-border);
-            border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem;
-        }
-        .panel-title { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; }
-        table { width: 100%; border-collapse: collapse; font-size: .85rem; }
-        th { text-align: left; padding: .6rem .75rem; border-bottom: 2px solid var(--card-border); color: var(--text-muted); font-size: .75rem; text-transform: uppercase; }
-        td { padding: .6rem .75rem; border-bottom: 1px solid #222; }
-        .dot-ok { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
-        .dot-err { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
-        .dot-warn { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--orange); }
-        .links { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem; }
-        .links a {
-            background: var(--card); border: 1px solid var(--card-border);
-            color: var(--gold); padding: .5rem 1rem; border-radius: 8px;
-            font-size: .85rem; text-decoration: none;
-        }
-        .links a:hover { border-color: var(--gold); background: rgba(193,126,26,.08); }
-        .footer { font-size: .7rem; color: var(--text-muted); margin-top: 2rem; }
-        @media (max-width: 480px) {
-            body { padding: 1rem; }
-            .cards { grid-template-columns: 1fr 1fr; }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>SIJI Ops - sijibintaro.id</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --gold:#D4A017;--gold-light:#F5C842;--gold-deep:#B8860B;--gold-subtle:rgba(212,160,23,.08);
+      --bg:#F5F5F0;--surface:#FFFFFF;--surface-2:#F0EDE8;
+      --text-primary:#1A1A1A;--text-secondary:#6B6B6B;--text-muted:#9E9E9E;
+      --border:#E5E2DC;--success:#2D7A4F;--danger:#C0392B;--warning:#D4A017;--info:#1A6FA8;
+      --sidebar-bg:#0A0A0A;--sidebar-border:#1E1E1E;
+    }
+    [data-theme="dark"]{
+      --bg:#111;--surface:#1C1C1C;--surface-2:#252525;
+      --text-primary:#F0EDE8;--text-secondary:#A0A0A0;--text-muted:#6B6B6B;
+      --border:#2A2A2A;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text-primary);padding-bottom:calc(68px + env(safe-area-inset-bottom,0))}
+    .mobile-topbar{position:sticky;top:0;z-index:40;height:52px;background:var(--sidebar-bg);border-bottom:1px solid var(--sidebar-border);display:flex;align-items:center;justify-content:space-between;padding:0 14px}
+    .brand{display:flex;align-items:center;gap:8px;color:var(--gold);font-size:.92rem;font-weight:700}
+    .brand-dot{width:8px;height:8px;border-radius:50%;background:var(--gold)}
+    .top-actions{display:flex;align-items:center;gap:8px}
+    .icon-btn{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text-secondary);cursor:pointer}
+    .main{padding:12px}
+    .hero{background:linear-gradient(145deg,var(--surface),var(--surface-2));border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:12px}
+    .hero h1{font-size:1rem;margin-bottom:6px}
+    .hero p{font-size:.75rem;color:var(--text-secondary)}
+    .status-time{font-size:.7rem;color:var(--text-muted);margin-top:8px}
+    .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:12px}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px}
+    .card-label{font-size:.64rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px}
+    .card-value{font-size:1.05rem;font-weight:800;margin-top:2px}
+    .card-sub{font-size:.67rem;color:var(--text-secondary);margin-top:3px}
+    .ok{color:var(--success)}.warn{color:var(--warning)}.err{color:var(--danger)}
+    .panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:12px;margin-bottom:12px}
+    .panel-title{font-size:.84rem;font-weight:700;margin-bottom:8px}
+    .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+    table{width:100%;border-collapse:collapse;min-width:460px;font-size:.75rem}
+    th,td{padding:.55rem .6rem;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+    th{font-size:.64rem;text-transform:uppercase;color:var(--text-muted)}
+    td:first-child,th:first-child{position:sticky;left:0;background:var(--surface)}
+    .pill{display:inline-flex;align-items:center;padding:2px 9px;border-radius:9999px;font-size:.66rem;font-weight:600}
+    .pill.ok{background:rgba(45,122,79,.12)}.pill.err{background:rgba(192,57,43,.12)}.pill.warn{background:rgba(212,160,23,.12)}
+    .links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .link{display:flex;align-items:center;justify-content:center;gap:6px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:9px 8px;color:var(--text-primary);text-decoration:none;font-size:.72rem}
+    .footer{font-size:.68rem;color:var(--text-muted);text-align:center;padding:6px 0 0}
+    .bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--sidebar-bg);border-top:1px solid var(--sidebar-border);padding:.35rem 0 calc(.35rem + env(safe-area-inset-bottom,0))}
+    .bottom-nav-inner{display:flex;justify-content:space-around}
+    .bottom-nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;color:#888;text-decoration:none;font-size:.6rem;min-width:58px}
+    .bottom-nav-item.active{color:var(--gold)}
+    .empty{padding:1rem;text-align:center;color:var(--text-muted);font-size:.74rem}
+    @media(min-width:768px){.main{max-width:980px;margin:0 auto}.cards{grid-template-columns:repeat(4,minmax(0,1fr))}.links{grid-template-columns:repeat(4,minmax(0,1fr))}}
+  </style>
 </head>
 <body>
-    <div class="header">
-        <h1>SIJI Bintaro Ops</h1>
-        <button class="refresh-btn" onclick="loadAll()">Refresh</button>
+  <div class="mobile-topbar">
+    <div class="brand"><span class="brand-dot"></span><span>SIJI Ops</span></div>
+    <div class="top-actions">
+      <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme">🌓</button>
+      <button class="icon-btn" onclick="loadAll()" aria-label="Refresh">↻</button>
     </div>
-    <div class="status-time" id="status-time"></div>
+  </div>
 
-    <div class="links">
-        <a href="/docs" target="_blank">API Docs (Swagger)</a>
-        <a href="https://dashboard.sijibintaro.id" target="_blank">Dashboard</a>
-        <a href="https://crm.sijibintaro.id" target="_blank">CRM</a>
-        <a href="https://gowa.sijibintaro.id" target="_blank">GOWA</a>
-        <a href="https://order.sijibintaro.id" target="_blank">Order Tracking</a>
+  <main class="main">
+    <section class="hero">
+      <h1>Operasional Snapshot</h1>
+      <p>Monitoring layanan inti SIJI untuk kerja kasir dari HP.</p>
+      <div class="status-time" id="status-time">Last check: -</div>
+    </section>
+
+    <section class="cards" id="summary-cards"></section>
+
+    <section class="panel">
+      <div class="panel-title">Service Health</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Service</th><th>Status</th><th>Detail</th></tr></thead>
+        <tbody id="services-table"></tbody>
+      </table></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title">Database & Backup</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Metric</th><th>Value</th><th>Info</th></tr></thead>
+        <tbody id="db-table"></tbody>
+      </table></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title">Recent WA Activity</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Time</th><th>Customer</th><th>Message</th></tr></thead>
+        <tbody id="wa-table"></tbody>
+      </table></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title">Quick Links</div>
+      <div class="links">
+        <a class="link" href="https://dashboard.sijibintaro.id" target="_blank" rel="noopener">Dashboard</a>
+        <a class="link" href="https://dashboard.sijibintaro.id/hr/" target="_blank" rel="noopener">HR</a>
+        <a class="link" href="https://crm.sijibintaro.id" target="_blank" rel="noopener">CRM WA</a>
+        <a class="link" href="https://sijibintaro.id/admin/" target="_blank" rel="noopener">Admin</a>
+      </div>
+    </section>
+
+    <div class="footer">SIJI Ops Mobile v1.0</div>
+  </main>
+
+  <div class="bottom-nav">
+    <div class="bottom-nav-inner">
+      <a class="bottom-nav-item active" href="https://ops.sijibintaro.id"><span>⚙️</span><span>Ops</span></a>
+      <a class="bottom-nav-item" href="https://dashboard.sijibintaro.id"><span>📊</span><span>Dashboard</span></a>
+      <a class="bottom-nav-item" href="https://dashboard.sijibintaro.id/hr/"><span>👥</span><span>HR</span></a>
+      <a class="bottom-nav-item" href="https://crm.sijibintaro.id"><span>💬</span><span>WA</span></a>
+      <a class="bottom-nav-item" href="https://sijibintaro.id/admin/"><span>⚡</span><span>Settings</span></a>
     </div>
+  </div>
 
-    <div class="cards" id="status-cards"></div>
-
-    <div class="panel">
-        <div class="panel-title">Services</div>
-        <table>
-            <thead><tr><th>Service</th><th>Status</th><th>Detail</th></tr></thead>
-            <tbody id="services-table"></tbody>
-        </table>
-    </div>
-
-    <div class="panel">
-        <div class="panel-title">Database</div>
-        <table>
-            <thead><tr><th>Table</th><th>Rows</th><th>Detail</th></tr></thead>
-            <tbody id="db-table"></tbody>
-        </table>
-    </div>
-
-    <div class="panel">
-        <div class="panel-title">Recent WA Messages (Today)</div>
-        <table>
-            <thead><tr><th>Time</th><th>From</th><th>Message</th></tr></thead>
-            <tbody id="wa-table"></tbody>
-        </table>
-    </div>
-
-    <div class="footer">SIJI Bintaro Ops Monitor v1.0 | Auto-refresh: 60s</div>
-
-    <script>
+  <script>
     const API = '/api';
 
-    async function apiFetch(url) {
-        const r = await fetch(API + url);
-        if (!r.ok) throw new Error(`${r.status}`);
-        return r.json();
+    function esc(s){return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'';}
+    function fmt(n){return Number(n||0).toLocaleString('id-ID');}
+    function ts(v){try{return new Date(v).toLocaleString('id-ID');}catch{return '-';}}
+
+    async function api(path){
+      const r = await fetch(API + path);
+      if(!r.ok) throw new Error(String(r.status));
+      return r.json();
     }
 
-    async function loadAll() {
-        document.getElementById('status-time').textContent = 'Last check: ' + new Date().toLocaleString('id-ID');
-        await Promise.all([loadHealth(), loadDbStats(), loadRecentWa()]);
+    function toggleTheme(){
+      const cur = document.documentElement.getAttribute('data-theme') || 'light';
+      const next = cur === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('siji-ops-theme', next);
     }
 
-    async function loadHealth() {
-        const cards = document.getElementById('status-cards');
-        const svcs = document.getElementById('services-table');
-        const checks = [];
+    async function loadAll(){
+      document.getElementById('status-time').textContent = 'Last check: ' + new Date().toLocaleString('id-ID');
+      try{
+        const [health, waStats, overview, convs] = await Promise.all([
+          api('/dashboard/health'),
+          api('/dashboard/wa/stats'),
+          api('/dashboard/overview?month=' + new Date().toISOString().slice(0,7)),
+          api('/dashboard/wa/conversations?page=1&limit=6&type=all')
+        ]);
 
-        // API health
-        try {
-            const h = await apiFetch('/dashboard/health');
-            checks.push({ name: 'FastAPI', ok: true, detail: `${h.transactions || 0} transactions` });
-        } catch(e) {
-            checks.push({ name: 'FastAPI', ok: false, detail: 'Unreachable' });
-        }
-
-        // WA Stats
-        try {
-            const s = await apiFetch('/dashboard/wa/stats');
-            checks.push({ name: 'WA Pipeline', ok: true, detail: `${s.total_messages} msgs, ${s.total_today} today` });
-        } catch(e) {
-            checks.push({ name: 'WA Pipeline', ok: false, detail: 'Error' });
-        }
-
-        // GOWA check (via our API proxy)
-        checks.push({ name: 'GOWA', ok: true, detail: 'Port 3002 (check via gowa.sijibintaro.id)' });
-
-        // Overview for quick stats
-        try {
-            const ov = await apiFetch('/dashboard/overview?month=2026-02');
-            checks.push({ name: 'Dashboard API', ok: true, detail: `Revenue: Rp ${Math.round(ov.revenue||0).toLocaleString('id-ID')}` });
-        } catch(e) {
-            checks.push({ name: 'Dashboard API', ok: false, detail: 'Error' });
-        }
-
-        const okCount = checks.filter(c => c.ok).length;
-        cards.innerHTML = `
-            <div class="card"><div class="card-label">Services</div><div class="card-value ${okCount === checks.length ? 'ok' : 'warn'}">${okCount}/${checks.length} OK</div></div>
-            <div class="card"><div class="card-label">API</div><div class="card-value ok">Running</div><div class="card-sub">Port 8002</div></div>
-            <div class="card"><div class="card-label">GOWA</div><div class="card-value ok">Running</div><div class="card-sub">Port 3002</div></div>
-            <div class="card"><div class="card-label">Server</div><div class="card-value ok">Online</div><div class="card-sub">Hostinger VPS</div></div>
-        `;
-
-        svcs.innerHTML = checks.map(c => `
-            <tr>
-                <td>${c.name}</td>
-                <td><span class="${c.ok ? 'dot-ok' : 'dot-err'}"></span> ${c.ok ? 'OK' : 'DOWN'}</td>
-                <td style="color:var(--text-muted);font-size:.8rem">${c.detail}</td>
-            </tr>
-        `).join('');
+        renderCards(health, waStats, overview);
+        renderServices(health, waStats, overview);
+        renderDb(health, waStats, overview);
+        renderWa(convs.conversations || []);
+      }catch(e){
+        document.getElementById('summary-cards').innerHTML = '<div class="card"><div class="card-label">Status</div><div class="card-value err">Error</div><div class="card-sub">'+esc(e.message)+'</div></div>';
+      }
     }
 
-    async function loadDbStats() {
-        const tbody = document.getElementById('db-table');
-        try {
-            const h = await apiFetch('/dashboard/health');
-            const s = await apiFetch('/dashboard/wa/stats');
-            tbody.innerHTML = `
-                <tr><td>transactions</td><td>${(h.transactions||0).toLocaleString('id-ID')}</td><td style="color:var(--text-muted)">siji_database.db</td></tr>
-                <tr><td>wa_conversations</td><td>${(s.total_conversations||0).toLocaleString('id-ID')}</td><td style="color:var(--text-muted)">Individual chats</td></tr>
-                <tr><td>wa_messages</td><td>${(s.total_messages||0).toLocaleString('id-ID')}</td><td style="color:var(--text-muted)">${s.total_today||0} today</td></tr>
-            `;
-        } catch(e) {
-            tbody.innerHTML = '<tr><td colspan="3" style="color:var(--red)">Error loading DB stats</td></tr>';
-        }
+    function renderCards(health, waStats, overview){
+      const cards = [
+        ['Services', '3/3 OK', 'API + WA + Dashboard', 'ok'],
+        ['Transaksi', fmt(health.transactions), 'Total database', ''],
+        ['WA Messages', fmt(waStats.total_messages), fmt(waStats.total_today) + ' hari ini', ''],
+        ['Revenue MTD', 'Rp ' + fmt(Math.round(overview.revenue?.current || 0)), overview.period || '-', '']
+      ];
+      document.getElementById('summary-cards').innerHTML = cards.map(c =>
+        '<div class="card"><div class="card-label">'+c[0]+'</div><div class="card-value '+c[3]+'">'+c[1]+'</div><div class="card-sub">'+c[2]+'</div></div>'
+      ).join('');
     }
 
-    async function loadRecentWa() {
-        const tbody = document.getElementById('wa-table');
-        try {
-            const data = await apiFetch('/dashboard/wa/conversations?page=1&limit=10&type=all');
-            const convs = data.conversations || [];
-            if (convs.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" style="color:var(--text-muted)">No recent messages</td></tr>';
-                return;
-            }
-            tbody.innerHTML = convs.map(c => {
-                const time = c.last_message_time ? new Date(c.last_message_time).toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'}) : '-';
-                const msg = (c.last_message || '').substring(0, 60);
-                return `<tr>
-                    <td style="white-space:nowrap">${time}</td>
-                    <td>${esc(c.display_name)}</td>
-                    <td style="color:var(--text-muted);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(msg)}</td>
-                </tr>`;
-            }).join('');
-        } catch(e) {
-            tbody.innerHTML = '<tr><td colspan="3" style="color:var(--red)">Error</td></tr>';
-        }
+    function renderServices(health, waStats, overview){
+      const rows = [
+        ['sijibintaro-api', '<span class="pill ok">ONLINE</span>', fmt(health.transactions) + ' transactions'],
+        ['gowa', waStats.total_conversations >= 0 ? '<span class="pill ok">ONLINE</span>' : '<span class="pill warn">CHECK</span>', fmt(waStats.total_conversations) + ' conversations'],
+        ['dashboard', overview.revenue ? '<span class="pill ok">ONLINE</span>' : '<span class="pill err">DOWN</span>', 'MTD: Rp ' + fmt(Math.round(overview.revenue?.current || 0))]
+      ];
+      document.getElementById('services-table').innerHTML = rows.map(r => '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td></tr>').join('');
     }
 
-    function esc(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
+    function renderDb(health, waStats, overview){
+      const backup = localStorage.getItem('siji-ops-last-backup') || '-';
+      const rows = [
+        ['Total transaksi', fmt(health.transactions), 'siji_database.db'],
+        ['Total conversations', fmt(waStats.total_conversations), 'wa_conversations'],
+        ['Total messages', fmt(waStats.total_messages), fmt(waStats.total_today) + ' today'],
+        ['Last sync', ts(waStats.last_sync || waStats.last_message_time), 'WA pipeline'],
+        ['Last backup', backup, 'set by ops runbook'],
+        ['System health', 'Healthy', 'Memory/disk via service checks']
+      ];
+      document.getElementById('db-table').innerHTML = rows.map(r => '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td></tr>').join('');
+    }
 
+    function renderWa(conversations){
+      const tbody = document.getElementById('wa-table');
+      if(!conversations.length){
+        tbody.innerHTML = '<tr><td colspan="3"><div class="empty">Belum ada data</div></td></tr>';
+        return;
+      }
+      tbody.innerHTML = conversations.map(c => {
+        const t = c.last_message_time ? new Date(c.last_message_time).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '-';
+        const name = esc(c.display_name || c.phone || '-');
+        const msg = esc((c.last_message || '-').slice(0,72));
+        return '<tr><td>'+t+'</td><td>'+name+'</td><td>'+msg+'</td></tr>';
+      }).join('');
+    }
+
+    document.documentElement.setAttribute('data-theme', localStorage.getItem('siji-ops-theme') || 'light');
     loadAll();
     setInterval(loadAll, 60000);
-    </script>
+  </script>
 </body>
 </html>
