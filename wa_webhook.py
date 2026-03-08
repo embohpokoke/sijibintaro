@@ -182,6 +182,32 @@ ORDER_STATUS_KEYWORDS = [
     "sudah dikirim", "sudah diantar", "sudah di antar",
 ]
 
+# Reply untuk pesan yang tidak jelas itemnya ("bisa cuci ini?", kirim foto)
+ASK_ITEM_REPLY = (
+    "Halo Kak! 😊 Boleh disebutkan barang apa yang mau dicuci/dilaundry?\n"
+    "Nanti kami langsung cek layanan dan harganya ya!"
+)
+
+ASK_ITEM_KEYWORDS = [
+    "cuci ini", "laundry ini", "ini bisa", "bisa dicuci", "bisa dilaundry",
+    "ini laundry", "ini cuci", "bisa cuci gak", "bisa laundry gak",
+    "cuci apa ini", "ini apa bisa", "terima ini", "bisa terima ini",
+]
+
+
+def is_vague_item_query(message: str) -> bool:
+    """Deteksi pertanyaan item tidak jelas — customer tidak sebut nama barang."""
+    msg_lower = message.lower().strip()
+    # Cocok dengan keyword vague
+    if any(kw in msg_lower for kw in ASK_ITEM_KEYWORDS):
+        return True
+    # Pesan sangat pendek dengan "ini" + kata tanya (max 6 kata)
+    words = msg_lower.split()
+    if len(words) <= 6 and "ini" in words and any(q in msg_lower for q in ["bisa", "boleh", "cuci", "laundry"]):
+        return True
+    return False
+
+
 ORDER_STATUS_REPLY = (
     "Halo Kak! 👋 Untuk cek status laundry, tim kami akan segera konfirmasi ya.\n"
     "Mohon ditunggu sebentar 🙏"
@@ -1545,7 +1571,7 @@ async def gowa_webhook(request: Request):
                     and not is_group
                     and GOWA_AUTOREPLY_ENABLED
                     and body_text.strip()
-                    and msg_type == "text"
+                    and msg_type in ("text", "image", "video", "document", "sticker")
                     and not _is_duplicate(msg_id_wa)
                     and not _staff_is_handling(chat_jid)):
 
@@ -1572,6 +1598,16 @@ async def gowa_webhook(request: Request):
                     if is_job_application(body_text):
                         reply_text = AUTO_REPLY_JOB
                         reply_layer = "job"
+
+                    # Layer 0: Image/media — customer kirim foto + tanya bisa cuci?
+                    if not reply_text and msg_type in ("image", "video", "sticker"):
+                        reply_text = ASK_ITEM_REPLY
+                        reply_layer = "ask_item:media"
+
+                    # Layer 0.5: Pesan teks tapi item tidak disebutkan ("bisa cuci ini?")
+                    if not reply_text and is_vague_item_query(body_text):
+                        reply_text = ASK_ITEM_REPLY
+                        reply_layer = "ask_item:vague"
 
                     # Layer 2: Complaint check DULU (sebelum catalog/keyword)
                     # "sepatu rusak setelah dicuci" → escalate, bukan catalog sepatu
