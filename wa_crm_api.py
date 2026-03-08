@@ -76,10 +76,7 @@ async def get_conversations(
                 FROM transactions
                 WHERE customer_phone IS NOT NULL AND customer_phone != ''
                 GROUP BY customer_phone
-            ) t ON c.phone = REPLACE(REPLACE(REPLACE(t.customer_phone, '+', ''), '-', ''), ' ', '')
-                OR c.phone = (CASE WHEN t.customer_phone LIKE '0%'
-                              THEN '62' || SUBSTR(REPLACE(REPLACE(REPLACE(t.customer_phone, '+', ''), '-', ''), ' ', ''), 2)
-                              ELSE REPLACE(REPLACE(REPLACE(t.customer_phone, '+', ''), '-', ''), ' ', '') END)
+            ) t ON c.phone = t.customer_phone
             {where}
             ORDER BY c.last_message_time DESC
             LIMIT ? OFFSET ?
