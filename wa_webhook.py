@@ -183,6 +183,38 @@ def is_complaint(message: str) -> bool:
     return any(kw in msg_lower for kw in COMPLAINT_KEYWORDS)
 
 
+def get_time_greeting() -> str:
+    """Return sapaan berdasarkan jam WIB (UTC+7)"""
+    from datetime import datetime, timezone, timedelta
+    wib = datetime.now(timezone(timedelta(hours=7)))
+    hour = wib.hour
+    if 5 <= hour < 12:
+        return "Selamat pagi"
+    elif 12 <= hour < 15:
+        return "Selamat siang"
+    elif 15 <= hour < 19:
+        return "Selamat sore"
+    else:
+        return "Selamat malam"
+
+
+def build_greeting(cust_name: str, segment: str) -> str:
+    """
+    Return greeting line untuk customer dikenal.
+    VIP: nama lengkap + emoji khusus.
+    Reguler/Baru: sapaan standar.
+    """
+    sapa = get_time_greeting()
+    if not cust_name:
+        return ""
+    # Ambil nama pendek (kata pertama atau dua kata)
+    parts = cust_name.strip().split()
+    short_name = " ".join(parts[:2]) if len(parts) >= 2 else parts[0]
+    if segment == "VIP":
+        return f"{sapa} {short_name}! 😊✨"
+    return f"{sapa} {short_name}! 😊"
+
+
 # Landing page karir
 KARIR_URL = "https://sijibintaro.id/karir"
 
@@ -1534,6 +1566,14 @@ async def gowa_webhook(request: Request):
                             reply_layer = "default:low_score"
                         else:
                             print(f"[AUTOREPLY] Default cooldown active (low score): {sender}")
+
+                    # Inject greeting personal untuk customer dikenal
+                    # Layer LLM (rag_llm) sudah handle greeting sendiri via system prompt
+                    # Layer lain (keyword, catalog, default) → prepend greeting
+                    if reply_text and reply_layer and not reply_layer.startswith("rag_llm"):
+                        greeting = build_greeting(cust_name, cust_ctx.get("segment", "Baru"))
+                        if greeting and cust_ctx.get("found"):
+                            reply_text = f"{greeting}\n{reply_text}"
 
                     # SEND — kirim reply kalau ada (layer 1/2/4/5)
                     if reply_text:
