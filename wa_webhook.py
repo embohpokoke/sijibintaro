@@ -95,8 +95,8 @@ GOWA_TEST_NUMBERS = [
 ]
 
 ESCALATION_NUMBERS = [
-    # "628118606999",   # Ocha SIJI — aktifkan setelah testing selesai
-    "62811319003",    # Erik (owner) — testing only
+    "628118606999",   # Ocha SIJI — escalation complaint
+    "62811319003",    # Erik (owner) — acknowledge complaint
 ]
 
 # Dedup cache: cegah GOWA webhook retry menyebabkan double/triple reply
@@ -1579,9 +1579,10 @@ async def gowa_webhook(request: Request):
                         _notif_name = from_name or sender
                         _notif_body = body_text[:300]
                         notif_msg = (
-                            "\u26a0\ufe0f *KOMPLAIN dari " + _notif_name + "*:\n\n"
-                            "_" + _notif_body + "_\n\n"
-                            "Nomor: wa.me/" + sender
+                            "\u26a0\ufe0f *KOMPLAIN MASUK*\n\n"
+                            "Dari: *" + _notif_name + "* (wa.me/" + sender + ")\n\n"
+                            "Pesan: _" + _notif_body + "_\n\n"
+                            "\u2139\ufe0f Mohon ditangani: cek order & follow up ke customer."
                         )
                         for _esc_num in ESCALATION_NUMBERS:
                             await send_gowa_message(_esc_num, notif_msg)
