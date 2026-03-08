@@ -320,7 +320,8 @@ _QUESTION_WORDS = [
 
 def check_service_catalog(message: str) -> str | None:
     """Deteksi pertanyaan layanan spesifik → return template reply atau None.
-    Lebih fleksibel: cek service keyword + kata tanya, tanpa strict pattern order."""
+    Pakai word-boundary agar 'tas' tidak match 'batas', 'jas' tidak salah ke 'tas', dst."""
+    import re as _re
     msg_lower = message.lower()
 
     # Cek ada kata tanya/service dulu — kalau tidak ada, skip
@@ -328,9 +329,10 @@ def check_service_catalog(message: str) -> str | None:
     if not has_question:
         return None
 
-    # Cek ada keyword layanan spesifik
+    # Cek keyword layanan dengan word-boundary (\b) — hindari partial match
     for keyword, entry in SERVICE_CATALOG.items():
-        if keyword in msg_lower:
+        pattern = r'\b' + _re.escape(keyword) + r'\b'
+        if _re.search(pattern, msg_lower):
             svc_name, price = entry
             return (
                 f"Bisa Kak! SIJI menerima laundry *{svc_name}* 🙌\n\n"
