@@ -343,6 +343,13 @@ KEYWORD_REPLIES = {
         "@siji.bintaro\n\n"
         "Atau tanya langsung aja ya Kak! 😊"
     ),
+    "antar_jemput": (
+        "Halo Kak! 🛵 SIJI Bintaro ada layanan *antar jemput FREE* "
+        "untuk area dalam radius *3 km dari outlet* kami.\n\n"
+        "Di luar 3 km bisa diatur dulu ya Kak, konfirmasi ke kami dulu 😊\n\n"
+        "📍 Outlet: Jl. Raya Emerald Boulevard, BLOK CE/A1 No.5 (Ruko PHD)\n"
+        "📞 Order: wa.me/6281288783088"
+    ),
 }
 
 # Keywords that trigger each reply
@@ -357,6 +364,10 @@ KEYWORD_MAP = {
               "berapa biaya", "harga cuci", "harga laundry", "harga kiloan",
               "harga bedcover", "harga sepatu", "harga tas", "daftar harga"],
     "promo": ["promo", "diskon", "discount", "voucher", "promo apa"],
+    "antar_jemput": ["antar jemput", "antar-jemput", "pickup", "jemput laundry",
+                     "ambil laundry", "diantar", "dijemput", "layanan antar",
+                     "bisa antar", "bisa jemput", "ada jemput", "ada antar",
+                     "free antar", "gratis antar"],
 }
 
 
