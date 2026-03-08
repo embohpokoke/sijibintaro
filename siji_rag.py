@@ -65,11 +65,12 @@ def query_collection(collection_id: str, embedding: list, n_results: int = 3) ->
 
 def find_context(query: str, threshold: float = 0.75) -> dict:
     """
-    Main RAG function: embed query, search siji_memory + siji_qa_history
-    Returns dict with sop_context, qa_context, qa_answer, best_score
+    Main RAG function: embed query, search ONLY siji_qa_history (percakapan real karyawan).
+    siji_memory (SOP internal) TIDAK dipakai — konten internal, bukan untuk customer.
+    Returns dict with qa_context, qa_answer, best_score
     """
     result = {
-        "sop_context": None,
+        "sop_context": None,   # always None — SOP internal, tidak dipakai
         "qa_context": None,
         "qa_answer": None,
         "best_score": 0.0
@@ -79,21 +80,9 @@ def find_context(query: str, threshold: float = 0.75) -> dict:
     if not embedding:
         return result
 
-    # --- Search SOP knowledge (siji_memory) ---
-    sop_id = _get_collection_id(COLLECTION_SOP)
-    if sop_id:
-        sop_results = query_collection(sop_id, embedding, n_results=2)
-        docs = sop_results.get("documents", [[]])[0]
-        dists = sop_results.get("distances", [[]])[0]
-        if docs and dists:
-            score = 1 - dists[0]  # cosine distance → similarity
-            if score > result["best_score"]:
-                result["best_score"] = score
-            if score >= threshold:
-                result["sop_context"] = docs[0][:600]
-            print(f"[RAG] SOP score: {score:.3f} | {docs[0][:60]}")
-
-    # --- Search Q&A history (siji_qa_history) ---
+    # --- Search Q&A history only (siji_qa_history) ---
+    # SOP knowledge (siji_memory) di-skip: berisi prosedur internal SIJI,
+    # tidak boleh disampaikan ke customer.
     qa_id = _get_collection_id(COLLECTION_QA)
     if qa_id:
         qa_results = query_collection(qa_id, embedding, n_results=2)
@@ -102,8 +91,7 @@ def find_context(query: str, threshold: float = 0.75) -> dict:
         metas = qa_results.get("metadatas", [[]])[0]
         if docs and dists:
             score = 1 - dists[0]
-            if score > result["best_score"]:
-                result["best_score"] = score
+            result["best_score"] = score
             if score >= threshold:
                 result["qa_context"] = docs[0][:300]
                 answer = metas[0].get("answer", "") if metas else ""
