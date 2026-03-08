@@ -180,6 +180,9 @@ ORDER_STATUS_KEYWORDS = [
     "selesai belum", "jadi belum", "beres belum", "sudah bisa",
     "cek order", "cek pesanan", "status order", "status laundry",
     "sudah dikirim", "sudah diantar", "sudah di antar",
+    "besok selesai", "selesaikah", "bisa besok", "besok bisa",
+    "besok jadi", "besok sudah", "kapan siap", "siap besok",
+    "bisa diambil besok", "besok bisa diambil",
 ]
 
 # Reply untuk pesan yang tidak jelas itemnya ("bisa cuci ini?", kirim foto)
@@ -321,6 +324,7 @@ SERVICE_CATALOG = {
     # Bedding
     "stroller":  ("baby stroller", "Rp250.000/unit (6 hari)"),
     "bedcover":  ("bedcover", "Rp70.000/lembar (3 hari), Express 24 jam Rp115.000"),
+    "bed cover": ("bedcover", "Rp70.000/lembar (3 hari), Express 24 jam Rp115.000"),
     "sprei":     ("sprei 1 set", "Rp35.000/set (3 hari), Express 24 jam Rp55.000"),
     "bantal":    ("bantal/guling", "Rp40.000 (kecil), Rp60.000 (besar/guling)"),
     "guling":    ("bantal/guling", "Rp40.000 (kecil), Rp60.000 (besar/guling)"),
