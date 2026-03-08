@@ -97,7 +97,6 @@ def _is_duplicate(msg_id: str) -> bool:
     if not msg_id:
         return False
     now = _time.time()
-    # Bersihkan entri lama
     expired = [k for k, v in _PROCESSED_MSG_IDS.items() if now - v > _DEDUP_TTL]
     for k in expired:
         del _PROCESSED_MSG_IDS[k]
@@ -105,6 +104,20 @@ def _is_duplicate(msg_id: str) -> bool:
         return True
     _PROCESSED_MSG_IDS[msg_id] = now
     return False
+
+# Staff-handled tracker: kalau karyawan sudah balas ke JID ini, bot diam dulu
+# {chat_jid: timestamp_last_staff_reply}
+_STAFF_LAST_REPLY: dict = {}
+STAFF_COOLDOWN_SEC = 1800  # 30 menit — bot diam setelah karyawan reply
+
+def _mark_staff_replied(jid: str):
+    """Catat bahwa karyawan baru saja reply ke JID ini"""
+    _STAFF_LAST_REPLY[jid] = _time.time()
+
+def _staff_is_handling(jid: str) -> bool:
+    """Return True jika karyawan reply ke JID ini dalam 30 menit terakhir"""
+    last = _STAFF_LAST_REPLY.get(jid, 0)
+    return (_time.time() - last) < STAFF_COOLDOWN_SEC
 
 # Keywords indikasi komplain pelanggan → trigger eskalasi
 COMPLAINT_KEYWORDS = [
@@ -1327,17 +1340,22 @@ async def gowa_webhook(request: Request):
 
             print(f"[GOWA] {direction} {sender} → {body_text[:60]}")
 
+            # Tandai: karyawan sedang handle conversation ini
+            if is_from_me and body_text.strip():
+                _mark_staff_replied(chat_jid)
+
             # === GOWA AUTOREPLY PIPELINE ===
             if (not is_from_me
                     and not is_group
                     and GOWA_AUTOREPLY_ENABLED
                     and body_text.strip()
                     and msg_type == "text"
-                    and not _is_duplicate(msg_id_wa)):
+                    and not _is_duplicate(msg_id_wa)
+                    and not _staff_is_handling(chat_jid)):
 
                 # Test mode: hanya proses nomor test, skip semua lainnya
                 if GOWA_TEST_MODE and sender not in GOWA_TEST_NUMBERS:
-                    print(f"[AUTOREPLY] TEST MODE — skip non-test number: {sender}")
+                    print(f"[AUTOREPLY] TEST MODE — skip: {sender}")
                 # Skip admin & staff numbers
                 elif sender in SKIP_AUTOREPLY_NUMBERS:
                     print(f"[AUTOREPLY] Skip staff/admin: {sender}")
