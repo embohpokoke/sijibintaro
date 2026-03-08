@@ -1589,6 +1589,13 @@ async def gowa_webhook(request: Request):
                         reply_layer = "escalated:complaint"
                         print(f"[AUTOREPLY] COMPLAINT escalated to {ESCALATION_NUMBERS}: {sender}")
 
+                    # Layer 2.6: Order status — cek SEBELUM catalog
+                    # "cuci setrika kemarin sudah selesai?" → status reply, bukan catalog
+                    # LLM tidak bisa akses DB order → akan halusinasi "sudah selesai" dll
+                    if not reply_text and not reply_layer and is_order_status_query(body_text):
+                        reply_text = ORDER_STATUS_REPLY
+                        reply_layer = "order_status"
+
                     # Layer 2.5: Service catalog — bisa cuci X? harga X?
                     if not reply_text:
                         svc_reply = check_service_catalog(body_text)
@@ -1602,12 +1609,6 @@ async def gowa_webhook(request: Request):
                         if cat and cat in KEYWORD_REPLIES:
                             reply_text = KEYWORD_REPLIES[cat]
                             reply_layer = f"keyword:{cat}"
-
-                    # Layer 3.5: Order status query — intercept sebelum LLM
-                    # LLM tidak bisa akses DB order → akan halusinasi "sudah selesai" dll
-                    if not reply_text and not reply_layer and is_order_status_query(body_text):
-                        reply_text = ORDER_STATUS_REPLY
-                        reply_layer = "order_status"
 
                     # Layer 4: RAG + LLM (qwen2.5:1.5b + karyawan Q&A history)
                     _rag_score = 0.0
