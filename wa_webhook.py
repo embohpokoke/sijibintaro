@@ -195,19 +195,45 @@ AUTO_REPLY_JOB = (
 # === KATALOG LAYANAN (Layer 2.5) ===
 # Deteksi "bisa cuci X?" → jawab langsung dari katalog, tanpa LLM
 # Harga dari DB transaction_details (2026-03-08)
+# Harga resmi dari Smartlink export (2026-03-08)
+# Sumber: file_export_layanan5013_SIJI_Bintaro_OTL16103734719761.xlsx
 SERVICE_CATALOG = {
-    "karpet":    ("karpet", "Rp75.000/m²"),
-    "stroller":  ("baby stroller", "Rp250.000/unit"),
-    "bedcover":  ("bedcover", "Rp70.000/lembar"),
-    "sprei":     ("sprei 1 set", "Rp35.000/set"),
-    "sepatu":    ("sepatu", "Rp90.000/pasang (reguler), Rp150.000/pasang (kulit)"),
-    "tas":       ("tas", "Rp140.000/unit (reguler), Rp250.000/pcs (brand USA)"),
-    "blazer":    ("blazer/jaket", "Rp65.000/pcs"),
-    "jaket":     ("blazer/jaket", "Rp65.000/pcs"),
-    "jas":       ("jas (dry clean)", "Rp80.000/pcs"),
-    "kulit":     ("pakaian/jaket kulit", "Rp150.000/pcs"),
-    "helm":      (None, None),  # tidak ada di katalog
-    "boneka":    (None, None),  # tidak ada di katalog
+    # Kiloan
+    "kiloan":    ("cuci kering setrika reguler", "Rp16.000/kg (min 3kg, 3 hari)"),
+    "setrika":   ("setrika kiloan reguler", "Rp12.000/kg (min 3kg, 3 hari)"),
+    # Household
+    "karpet":    ("karpet", "Rp35.000/m² (10 hari)"),
+    "gordyn":    ("gordyn", "Rp16.000/m² (tebal/blackout), Rp10.000/m² (tipis/vetrase)"),
+    "gorden":    ("gordyn", "Rp16.000/m² (tebal/blackout), Rp10.000/m² (tipis/vetrase)"),
+    "sofa":      ("sarung sofa", "Rp30.000/m²"),
+    # Bedding
+    "stroller":  ("baby stroller", "Rp250.000/unit (6 hari)"),
+    "bedcover":  ("bedcover", "Rp70.000/lembar (3 hari), Express 24 jam Rp115.000"),
+    "sprei":     ("sprei 1 set", "Rp35.000/set (3 hari), Express 24 jam Rp55.000"),
+    "bantal":    ("bantal/guling", "Rp40.000 (kecil), Rp60.000 (besar/guling)"),
+    "guling":    ("bantal/guling", "Rp40.000 (kecil), Rp60.000 (besar/guling)"),
+    "kasur":     ("kasur/matras", "Rp95.000/unit (matras tipis), Rp400.000 (kasur lipat)"),
+    "matras":    ("kasur/matras", "Rp95.000/unit (matras tipis), Rp400.000 (kasur lipat)"),
+    "boneka":    ("boneka", "Rp40.000 (kecil), Rp100.000 (besar)"),
+    # Sepatu
+    "sepatu":    ("sepatu", "Rp90.000/pasang (reguler, 3 hari), Rp150.000 (kulit/boot, 4 hari)"),
+    "boot":      ("sepatu boot", "Rp150.000/pcs (4 hari)"),
+    "helm":      ("helm", "Rp80.000/pcs (3 hari)"),
+    # Tas
+    "tas":       ("tas", "Rp140.000 (reguler), Rp250.000 (USA brand), Rp500.000 (EU brand/LV/Gucci)"),
+    "dompet":    ("dompet", "Rp100.000 (reguler), Rp200.000 (USA brand), Rp350.000 (EU brand)"),
+    "ransel":    ("tas gunung/ransel", "Rp200.000/pcs (5 hari)"),
+    # Dry clean / Pakaian
+    "blazer":    ("blazer/jaket", "Rp65.000/pcs (3 hari)"),
+    "jaket":     ("blazer/jaket", "Rp65.000/pcs biasa, Rp150.000 (kulit, 12 hari)"),
+    "jas":       ("dry clean blazer/jas", "Rp80.000/pcs (4 hari)"),
+    "kulit":     ("pakaian/jaket kulit", "Rp150.000/pcs (12 hari)"),
+    "dress":     ("dress/kebaya/brokat", "Rp100.000/pcs (4 hari)"),
+    "kebaya":    ("dress/kebaya/brokat", "Rp100.000/pcs (4 hari)"),
+    "topi":      ("cuci topi", "Rp65.000/pcs (4 hari)"),
+    # Lainnya
+    "koper":     ("koper", "Rp190.000/unit (4 hari)"),
+    "sleeping":  ("sleeping bag", "Rp90.000/pcs (5 hari)"),
 }
 
 # Pattern "bisa cuci/laundry X?" atau "terima X?" atau "ada layanan X?"

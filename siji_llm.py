@@ -23,20 +23,24 @@ Kiloan:
 - Setrika kiloan: Rp12.000/kg (min 3 kg)
 
 Satuan:
-- Bedcover: Rp70.000/lembar
-- Sprei 1 set (2 sarung bantal + 2 sarung guling): Rp35.000
-- Sepatu reguler: Rp90.000/pasang
-- Sepatu kulit: Rp150.000/pasang
-- Tas regular: Rp140.000/unit
-- Tas brand (Fossil/Kate Spade/Coach/Tory Burch dll): Rp250.000/pcs
-- Blazer/jaket biasa: Rp65.000/pcs
-- Dry clean blazer/jas: Rp80.000/pcs
-- Pakaian/jaket kulit: Rp150.000/pcs
-- Karpet: Rp75.000/m²
-- Baby stroller: Rp250.000/unit
-- Laundry satuan reguler: Rp40.000/pcs
-- Laundry satuan express 24 jam: Rp50.000/pcs
-- Laundry satuan express 10 jam: Rp60.000/pcs
+- Bedcover: Rp70.000/lembar (3 hari), Express Rp115.000
+- Sprei 1 set: Rp35.000/set (3 hari), Express Rp55.000
+- Bantal kecil/boneka kecil: Rp40.000 | Bantal besar/guling: Rp60.000
+- Sepatu reguler: Rp90.000/pasang (3 hari)
+- Sepatu kulit/boot: Rp150.000 (4 hari) | Express Rp250.000
+- Tas reguler: Rp140.000/unit | Tas USA brand: Rp250.000 | Tas EU (LV/Gucci): Rp500.000
+- Dompet: Rp100.000 (reguler), Rp200.000 (USA brand), Rp350.000 (EU brand)
+- Blazer/jaket: Rp65.000/pcs (3 hari)
+- Dry clean blazer/jas: Rp80.000/pcs (4 hari)
+- Pakaian/jaket kulit: Rp150.000/pcs (12 hari)
+- Dress/kebaya/brokat: Rp100.000/pcs (4 hari)
+- Karpet: Rp35.000/m² (10 hari)
+- Gordyn tebal/blackout: Rp16.000/m² | Gordyn tipis: Rp10.000/m²
+- Baby stroller: Rp250.000/unit (6 hari) | Baby car seat: Rp250.000
+- Kasur/matras tipis: Rp95.000/unit | Kasur lipat: Rp400.000
+- Boneka besar: Rp100.000 | Helm: Rp80.000 | Koper: Rp190.000
+- Laundry satuan reguler: Rp40.000/pcs | Express 24 jam: Rp50.000 | 10 jam: Rp60.000
+- Topi: Rp65.000/pcs | Sleeping bag: Rp90.000
 
 ATURAN BALAS:
 - Bahasa Indonesia, singkat, ramah seperti chat WA
