@@ -762,6 +762,7 @@
                     <button class="tab-btn active" role="tab" aria-selected="true" data-tab="cust-overview">Overview</button>
                     <button class="tab-btn" role="tab" aria-selected="false" data-tab="cust-search">Search</button>
                     <button class="tab-btn" role="tab" aria-selected="false" data-tab="cust-areas">Area Analysis</button>
+                    <button class="tab-btn" role="tab" aria-selected="false" data-tab="cust-profiles">Profiles</button>
                 </div>
 
                 <div class="tab-content active" id="cust-overview">
@@ -811,6 +812,40 @@
                             <table><thead><tr><th>Nama</th><th>Phone</th><th>Area</th><th>Orders</th><th>Total Spent</th><th>Segment</th></tr></thead>
                             <tbody id="cs-results"><tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:2rem">Ketik nama atau telepon untuk mencari customer</td></tr></tbody></table>
                         </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="cust-profiles">
+                    <div class="cards" id="prof-segment-cards">
+                        <div class="card"><div class="card-label">VIP (≥20 tx)</div><div class="card-value" style="color:var(--gold)" id="prof-vip">-</div></div>
+                        <div class="card"><div class="card-label">Reguler (5-19 tx)</div><div class="card-value" id="prof-reguler">-</div></div>
+                        <div class="card"><div class="card-label">Baru (&lt;5 tx)</div><div class="card-value" id="prof-baru">-</div></div>
+                        <div class="card"><div class="card-label">Ter-link WA</div><div class="card-value" style="color:var(--success)" id="prof-wa-linked">-</div></div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-header" style="flex-wrap:wrap;gap:.5rem">
+                            <div class="panel-title">Unified Customer Profiles</div>
+                            <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+                                <input type="text" id="prof-search" placeholder="Cari nama/HP..." style="padding:.35rem .6rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:.82rem;width:180px">
+                                <select id="prof-segment-filter" style="padding:.35rem .5rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:.82rem">
+                                    <option value="all">Semua Segment</option>
+                                    <option value="VIP">VIP</option>
+                                    <option value="Reguler">Reguler</option>
+                                    <option value="Baru">Baru</option>
+                                </select>
+                                <label style="font-size:.8rem;display:flex;align-items:center;gap:.3rem;cursor:pointer">
+                                    <input type="checkbox" id="prof-wa-only"> Ada WA
+                                </label>
+                                <button onclick="loadProfiles(1)" style="padding:.35rem .8rem;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.82rem">Filter</button>
+                            </div>
+                        </div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Nama</th><th>Phone</th><th>Segment</th><th>Transaksi</th><th>Total Belanja</th><th>Terakhir</th><th>WA</th></tr></thead>
+                                <tbody id="prof-table"><tr><td colspan="7" class="loading"><div class="spinner"></div></td></tr></tbody>
+                            </table>
+                        </div>
+                        <div id="prof-pagination" style="display:flex;justify-content:center;gap:.5rem;margin-top:1rem;flex-wrap:wrap"></div>
                     </div>
                 </div>
 
@@ -1437,6 +1472,66 @@
         } catch(e) { console.error('Customers error:', e); }
     }
 
+    // ─── Unified Customer Profiles ──────────────────────────────────────
+    var _profPage = 1, _profTotal = 0;
+    async function loadProfiles(page) {
+        _profPage = page || 1;
+        var q = ($('prof-search') && $('prof-search').value.trim()) || '';
+        var seg = $('prof-segment-filter') ? $('prof-segment-filter').value : 'all';
+        var waOnly = $('prof-wa-only') && $('prof-wa-only').checked;
+        var tbody = $('prof-table');
+        tbody.innerHTML = '<tr><td colspan="7" class="loading"><div class="spinner"></div></td></tr>';
+        try {
+            var url = '/api/dashboard/wa/customers/profiles?page='+_profPage+'&limit=50';
+            if (q) url += '&search='+encodeURIComponent(q);
+            if (seg !== 'all') url += '&segment='+encodeURIComponent(seg);
+            if (waOnly) url += '&has_wa=true';
+            var data = await fetch(url).then(function(r){return r.json()});
+            // Update summary cards
+            if (data.segment_summary) {
+                $('prof-vip').textContent = (data.segment_summary.VIP||0).toLocaleString('id-ID');
+                $('prof-reguler').textContent = (data.segment_summary.Reguler||0).toLocaleString('id-ID');
+                $('prof-baru').textContent = (data.segment_summary.Baru||0).toLocaleString('id-ID');
+                $('prof-wa-linked').textContent = (data.wa_linked||0).toLocaleString('id-ID');
+            }
+            _profTotal = data.total || 0;
+            function segBadge(seg) {
+                var cls = seg==='VIP'?'badge-gold':seg==='Reguler'?'badge-blue':'';
+                return cls ? '<span class="badge '+cls+'">'+seg+'</span>' : '<span style="color:var(--text-muted);font-size:.78rem">'+seg+'</span>';
+            }
+            if (!data.customers || data.customers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">Tidak ada data</td></tr>';
+            } else {
+                tbody.innerHTML = data.customers.map(function(c){
+                    var waIcon = c.ada_wa
+                        ? '<a href="'+c.wa_link+'" target="_blank" style="color:var(--success);font-size:.9rem" title="Chat WA">💬</a>'
+                        : '<span style="color:var(--text-muted);font-size:.8rem">-</span>';
+                    return '<tr class="clickable" onclick="showCustomerDetail(''+escHtml(c.phone)+'')">'
+                        + '<td class="customer-name-cell" title="'+escHtml(c.nama||'-')+'">'+escHtml(c.nama||'-')+'</td>'
+                        + '<td style="font-size:.75rem;color:var(--text-muted)">'+(c.phone||'-')+'</td>'
+                        + '<td>'+segBadge(c.segment)+'</td>'
+                        + '<td style="text-align:center">'+(c.total_transaksi||0)+'</td>'
+                        + '<td style="color:var(--text-metric);font-weight:600">'+rp(c.total_belanja||0)+'</td>'
+                        + '<td style="font-size:.78rem">'+fmtDate(c.last_transaksi)+'</td>'
+                        + '<td style="text-align:center">'+waIcon+'</td>'
+                        + '</tr>';
+                }).join('');
+            }
+            // Pagination
+            var pages = data.pages || 1;
+            var pag = $('prof-pagination');
+            if (pages <= 1) { pag.innerHTML=''; return; }
+            var btns = '';
+            if (_profPage > 1) btns += '<button onclick="loadProfiles('+(_profPage-1)+')" style="padding:.3rem .7rem;border:1px solid var(--border);border-radius:5px;background:var(--surface);color:var(--text);cursor:pointer;font-size:.8rem">← Prev</button>';
+            btns += '<span style="padding:.3rem .5rem;font-size:.8rem;color:var(--text-muted)">'+_profPage+'/'+pages+'</span>';
+            if (_profPage < pages) btns += '<button onclick="loadProfiles('+(_profPage+1)+')" style="padding:.3rem .7rem;border:1px solid var(--border);border-radius:5px;background:var(--surface);color:var(--text);cursor:pointer;font-size:.8rem">Next →</button>';
+            pag.innerHTML = btns;
+        } catch(e) { console.error('Profiles error:',e); tbody.innerHTML = '<tr><td colspan="7" style="color:var(--danger)">Error: '+e.message+'</td></tr>'; }
+    }
+    if ($('prof-search')) {
+        $('prof-search').addEventListener('keydown', function(e){ if(e.key==='Enter') loadProfiles(1); });
+    }
+
     // ─── Customer Tabs ───────────────────────────────────────────────
     document.querySelectorAll('#cust-tabs .tab-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
@@ -1446,6 +1541,7 @@
             $(btn.dataset.tab).classList.add('active');
             if (btn.dataset.tab === 'cust-search') loadAreaDropdown();
             if (btn.dataset.tab === 'cust-areas') loadAreaAnalysis();
+            if (btn.dataset.tab === 'cust-profiles') loadProfiles(1);
         });
     });
 
@@ -1484,11 +1580,22 @@
         openModal('customer-modal');
         try {
             var data = await api('/customers/detail?phone='+encodeURIComponent(phone));
+            var waProfile = null;
+            try { waProfile = await fetch('/api/dashboard/wa/customers/profile/'+encodeURIComponent(phone)).then(function(r){return r.json()}); } catch(e){}
             var s = data.summary;
             $('cm-title').textContent = s.customer_name || 'Customer';
             var segCls = s.segment==='VIP'?'badge-gold':s.segment==='High-Value'?'badge-orange':s.segment==='Regular'?'badge-blue':'';
             var riskCls = s.churn_risk==='High'?'badge-red':s.churn_risk==='Medium'?'badge-orange':s.churn_risk==='Low'?'badge-blue':'';
             var html = '<div class="detail-grid"><div class="detail-item"><div class="dl">Phone</div><div class="dv">'+s.customer_phone+'</div></div><div class="detail-item"><div class="dl">Area</div><div class="dv">'+(s.normalized_area||'-')+'</div></div><div class="detail-item"><div class="dl">Segment</div><div class="dv"><span class="badge '+segCls+'">'+s.segment+'</span></div></div><div class="detail-item"><div class="dl">Churn Risk</div><div class="dv">'+(riskCls?'<span class="badge '+riskCls+'">'+s.churn_risk+'</span>':'<span style="color:var(--success)">None</span>')+'</div></div><div class="detail-item"><div class="dl">Total Orders</div><div class="dv" style="font-weight:700">'+s.total_orders+'</div></div><div class="detail-item"><div class="dl">Total Spent</div><div class="dv" style="color:var(--text-metric);font-weight:700">'+rp(s.total_spent)+'</div></div><div class="detail-item"><div class="dl">Avg Order</div><div class="dv">'+rp(s.avg_order)+'</div></div><div class="detail-item"><div class="dl">Last Order</div><div class="dv">'+fmtDate(s.last_order)+' <span style="color:var(--text-muted);font-size:.72rem">('+s.days_since+'d ago)</span></div></div>'+(s.unpaid&&s.unpaid.count>0?'<div class="detail-item"><div class="dl">Unpaid</div><div class="dv" style="color:var(--danger)">'+s.unpaid.count+' order ('+rp(s.unpaid.amount)+')</div></div>':'')+'<div class="detail-item"><div class="dl">First Order</div><div class="dv">'+fmtDate(s.first_order)+'</div></div></div>';
+            if (waProfile && waProfile.found) {
+                html += '<div style="margin-bottom:1rem;padding:.75rem;background:var(--surface-alt,var(--surface));border-radius:8px;border:1px solid var(--border)">';
+                html += '<div style="font-size:.78rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:.5rem;letter-spacing:.04em">WhatsApp</div>';
+                html += '<div style="display:flex;gap:1.5rem;flex-wrap:wrap;font-size:.82rem">';
+                html += '<span>📱 '+escHtml(waProfile.nama_wa||waProfile.nama||'-')+'</span>';
+                html += '<span>💬 '+waProfile.total_pesan_wa+' pesan</span>';
+                html += '<a href="'+waProfile.wa_link+'" target="_blank" style="color:var(--success);font-weight:600">Buka WA →</a>';
+                html += '</div></div>';
+            }
             if (data.top_services.length) {
                 html += '<div style="margin-bottom:1rem"><div style="font-size:.78rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:.4rem">Layanan Favorit</div>';
                 html += data.top_services.map(function(sv){ return '<div style="display:flex;justify-content:space-between;padding:.3rem 0;font-size:.82rem;border-bottom:1px solid var(--border-subtle)"><span>'+sv.service+'</span><span style="color:var(--text-metric)">'+sv.orders+'x &middot; '+rpShort(sv.revenue)+'</span></div>'; }).join('');
