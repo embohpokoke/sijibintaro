@@ -1369,8 +1369,9 @@ async def gowa_webhook(request: Request):
                     if not reply_text and not reply_layer:
                         reply_text = AUTO_REPLY_DEFAULT
                         reply_layer = "default"
-                    else:
-                        # Kirim autoreply via GOWA
+
+                    # SEND — kirim reply kalau ada (layer 1/2/4/5)
+                    if reply_text:
                         await send_gowa_message(sender, reply_text)
                         print(f"[AUTOREPLY] {reply_layer} → {sender}: {reply_text[:60]}")
 
