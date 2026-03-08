@@ -63,7 +63,7 @@ GOWA_DEVICE_ID = "73834210-3694-43bf-a14d-c75d487b18cb"
 
 # Numbers that should NEVER receive autoreply (admin + staff)
 SKIP_AUTOREPLY_NUMBERS = [
-    "62811319003",    # Erik (Full Admin)
+    # "62811319003",  # Erik — sementara dikeluarkan untuk TESTING MODE
     "628118606999",   # Ocha SIJI (Full Admin)
     "6282124046283",  # Filean (Manager)
     "62811309991",    # Ocha Livinin (Manager)
@@ -71,6 +71,14 @@ SKIP_AUTOREPLY_NUMBERS = [
     "6281227760808",  # Rizky (Karyawan)
     "6285892726416",  # Denisa (Karyawan)
     "6285715247073",  # Unaesih (Karyawan)
+]
+
+# === TEST MODE ===
+# Aktif: hanya TEST_NUMBERS yang dapat autoreply, customer lain dilewati
+# Nonaktifkan (GOWA_TEST_MODE = False) saat siap production
+GOWA_TEST_MODE = True
+GOWA_TEST_NUMBERS = [
+    "62811319003",    # Erik — testing sebagai pelanggan
 ]
 
 ESCALATION_NUMBERS = [
@@ -1306,8 +1314,11 @@ async def gowa_webhook(request: Request):
                     and body_text.strip()
                     and msg_type == "text"):
 
+                # Test mode: hanya proses nomor test, skip semua lainnya
+                if GOWA_TEST_MODE and sender not in GOWA_TEST_NUMBERS:
+                    print(f"[AUTOREPLY] TEST MODE — skip non-test number: {sender}")
                 # Skip admin & staff numbers
-                if sender in SKIP_AUTOREPLY_NUMBERS:
+                elif sender in SKIP_AUTOREPLY_NUMBERS:
                     print(f"[AUTOREPLY] Skip staff/admin: {sender}")
                 else:
                     reply_text = None
