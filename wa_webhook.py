@@ -306,11 +306,478 @@ AUTO_REPLY_JOB = (
 ).format(karir_url=KARIR_URL)
 
 # === KATALOG LAYANAN (Layer 2.5) ===
+# Pakai ChromaDB similarity search dari collection siji_services (61 item dari DB)
+# Lebih robust: handle variasi bahasa, typo, bahasa Inggris, sinonim
+COLLECTION_SERVICES = "siji_services"
+SERVICES_COLLECTION_ID = None  # di-cache saat pertama kali dipanggil
+SERVICE_SIMILARITY_THRESHOLD = 0.70  # min score untuk dianggap match
+
+# === KATALOG LAYANAN (Layer 2.5) ===
 # Deteksi "bisa cuci X?" → jawab langsung dari katalog, tanpa LLM
-# Harga dari DB transaction_details (2026-03-08)
-# Harga resmi dari Smartlink export (2026-03-08)
-# Sumber: file_export_layanan5013_SIJI_Bintaro_OTL16103734719761.xlsx
-SERVICE_CATALOG = {
+# SERVICE_CATALOG hardcode di bawah masih ada sebagai reference,
+# tapi check_service_catalog() sekarang pakai ChromaDB similarity.
+# Update layanan cukup di service_catalog DB + re-populate siji_services collection.
+SERVICE_CATALOG = {  # DEPRECATED — gunakan siji_services ChromaDB
+    # Kiloan
+    "kiloan":    ("cuci kering setrika reguler", "Rp16.000/kg (min 3kg, 3 hari)"),
+    "setrika":   ("setrika kiloan reguler", "Rp12.000/kg (min 3kg, 3 hari)"),
+    # Household
+    "karpet":    ("karpet", "Rp35.000/m² (10 hari)"),
+    "carpet":    ("karpet", "Rp35.000/m² (10 hari)"),
+    "permadani": ("karpet", "Rp35.000/m² (10 hari)"),
+    "gordyn":    ("gordyn", "Rp16.000/m² (tebal/blackout), Rp10.000/m² (tipis/vetrase)"),
+    "gorden":    ("gordyn", "Rp16.000/m² (tebal/blackout), Rp10.000/m² (tipis/vetrase)"),
+    "sofa":      ("sarung sofa", "Rp30.000/m²"),
+    # Bedding
+    "stroller":  ("baby stroller", "Rp250.000/unit (6 hari)"),
+    "bedcover":  ("bedcover", "Rp70.000/lembar (3 hari), Express 24 jam Rp115.000"),
+    "bed cover": ("bedcover", "Rp70.000/lembar (3 hari), Express 24 jam Rp115.000"),
+    "sprei":     ("sprei 1 set", "Rp35.000/set (3 hari), Express 24 jam Rp55.000"),
+    "bantal":    ("bantal/guling", "Rp40.000 (kecil), Rp60.000 (besar/guling)"),
+    "guling":    ("bantal/guling", "Rp40.000 (kecil), Rp60.000 (besar/guling)"),
+    "kasur":     ("kasur/matras", "Rp95.000/unit (matras tipis), Rp400.000 (kasur lipat)"),
+    "matras":    ("kasur/matras", "Rp95.000/unit (matras tipis), Rp400.000 (kasur lipat)"),
+    "boneka":    ("boneka", "Rp40.000 (kecil), Rp100.000 (besar)"),
+    # Sepatu
+    "sepatu":    ("sepatu", "Rp90.000/pasang (reguler, 3 hari), Rp150.000 (kulit/boot, 4 hari)"),
+    "shoes":     ("sepatu", "Rp90.000/pasang (reguler, 3 hari), Rp150.000 (kulit/boot, 4 hari)"),
+    "shoe":      ("sepatu", "Rp90.000/pasang (reguler, 3 hari), Rp150.000 (kulit/boot, 4 hari)"),
+    "sneakers":  ("sepatu", "Rp90.000/pasang (reguler, 3 hari), Rp150.000 (kulit/boot, 4 hari)"),
+    "boot":      ("sepatu boot", "Rp150.000/pcs (4 hari)"),
+    "helm":      ("helm", "Rp80.000/pcs (3 hari)"),
+    # Tas
+    "tas":       ("tas", "Rp140.000 (reguler), Rp250.000 (USA brand), Rp500.000 (EU brand/LV/Gucci)"),
+    "bag":       ("tas", "Rp140.000 (reguler), Rp250.000 (USA brand), Rp500.000 (EU brand/LV/Gucci)"),
+    "handbag":   ("tas", "Rp140.000 (reguler), Rp250.000 (USA brand), Rp500.000 (EU brand/LV/Gucci)"),
+    "dompet":    ("dompet", "Rp100.000 (reguler), Rp200.000 (USA brand), Rp350.000 (EU brand)"),
+    "ransel":    ("tas gunung/ransel", "Rp200.000/pcs (5 hari)"),
+    # Dry clean / Pakaian
+    "blazer":    ("blazer/jaket", "Rp65.000/pcs (3 hari)"),
+    "jaket":     ("blazer/jaket", "Rp65.000/pcs biasa, Rp150.000 (kulit, 12 hari)"),
+    "jas":       ("dry clean blazer/jas", "Rp80.000/pcs (4 hari)"),
+    "kulit":     ("pakaian/jaket kulit", "Rp150.000/pcs (12 hari)"),
+    "dress":     ("dress/kebaya/brokat", "Rp100.000/pcs (4 hari)"),
+    "kebaya":    ("dress/kebaya/brokat", "Rp100.000/pcs (4 hari)"),
+    "topi":      ("cuci topi", "Rp65.000/pcs (4 hari)"),
+    # Lainnya
+    "koper":     ("koper", "Rp190.000/unit (4 hari)"),
+    "sleeping":  ("sleeping bag", "Rp90.000/pcs (5 hari)"),
+}
+
+# Kata tanya / pertanyaan yang menandakan customer butuh info layanan
+_QUESTION_WORDS = [
+    "berapa", "harga", "tarif", "biaya", "treatment", "treatmentnya",
+    "bisa", "boleh", "ada", "terima", "menerima", "laundry", "cuci",
+    "layanan", "jenis", "apa saja", "gimana", "bagaimana", "cara",
+    "spa", "service", "servis",
+]
+
+
+def _get_services_collection_id() -> str | None:
+    """Cache collection ID siji_services."""
+    global SERVICES_COLLECTION_ID
+    if SERVICES_COLLECTION_ID:
+        return SERVICES_COLLECTION_ID
+    try:
+        import httpx as _httpx
+        CHROMA_BASE = "http://localhost:32769/api/v2/tenants/default_tenant/databases/default_database"
+        r = _httpx.get(f"{CHROMA_BASE}/collections", timeout=5)
+        for c in r.json():
+            if c["name"] == COLLECTION_SERVICES:
+                SERVICES_COLLECTION_ID = c["id"]
+                return SERVICES_COLLECTION_ID
+    except Exception as e:
+        print(f"[CATALOG] ChromaDB error: {e}")
+    return None
+
+
+def check_service_catalog(message: str) -> str | None:
+    """
+    Deteksi pertanyaan layanan via ChromaDB similarity (siji_services).
+    Lebih robust dari keyword hardcode: handle variasi bahasa, Inggris, typo.
+    """
+    msg_lower = message.lower().strip()
+
+    # Harus ada kata tanya/konteks laundry
+    has_question = any(q in msg_lower for q in _QUESTION_WORDS)
+    if not has_question:
+        return None
+
+    try:
+        import httpx as _httpx
+        CHROMA_BASE = "http://localhost:32769/api/v2/tenants/default_tenant/databases/default_database"
+
+        # Embed query
+        emb_r = _httpx.post(
+            "http://localhost:11434/api/embeddings",
+            json={"model": "nomic-embed-text", "prompt": message},
+            timeout=10
+        )
+        embedding = emb_r.json().get("embedding")
+        if not embedding:
+            return None
+
+        # Search siji_services
+        cid = _get_services_collection_id()
+        if not cid:
+            return None
+
+        qr = _httpx.post(
+            f"{CHROMA_BASE}/collections/{cid}/query",
+            json={"query_embeddings": [embedding], "n_results": 1,
+                  "include": ["documents", "distances", "metadatas"]},
+            timeout=10
+        )
+        result = qr.json()
+        dists = result.get("distances", [[]])[0]
+        metas = result.get("metadatas", [[]])[0]
+
+        if not dists or not metas:
+            return None
+
+        score = 1 - dists[0]  # cosine distance → similarity
+        print(f"[CATALOG] similarity={score:.3f} | {metas[0].get('nama_layanan','?')[:40]}")
+
+        if score < SERVICE_SIMILARITY_THRESHOLD:
+            return None
+
+        meta = metas[0]
+        nama = meta.get("nama_layanan", "layanan ini")
+        price_str = meta.get("price_str", "")
+
+        return (
+            f"Bisa Kak! SIJI menerima *{nama.title()}* 🙌\n\n"
+            f"💰 Harga: {price_str}\n\n"
+            f"Mau dijemput kurir kami, atau langsung antar ke toko ya Kak? 😊"
+        )
+
+    except Exception as e:
+        print(f"[CATALOG] Error: {e}")
+        return None
+
+
+# Keyword auto-replies
+
+"""
+SIJI Bintaro
+Handles inbound messages from WA1 (0812-8878-3088)
+Logs all customer communications to database.
+"""
+
+from fastapi import APIRouter, Request, HTTPException
+from datetime import datetime, timedelta
+import os
+import json
+import re
+import sqlite3
+import asyncio
+import httpx
+
+# Customer context lookup (Phase 3)
+try:
+    from customer_context import get_customer_context, format_customer_greeting
+    CUSTOMER_CONTEXT_ENABLED = True
+    print("[AUTOREPLY] Customer context enabled (customer_context loaded)")
+except ImportError as _ce:
+    CUSTOMER_CONTEXT_ENABLED = False
+    def get_customer_context(phone): return {"found": False, "nama": "", "segment": "Baru"}
+    def format_customer_greeting(ctx, fallback=""): return fallback or "Kak"
+
+# RAG + LLM modules (Phase 2)
+try:
+    from siji_rag import find_context
+    from siji_llm import generate_reply_async, warmup_model
+    RAG_ENABLED = True
+    print("[AUTOREPLY] RAG + LLM enabled (siji_rag + siji_llm loaded)")
+    # Warm up qwen2.5:1.5b model in background at import time
+    import threading
+    threading.Thread(target=warmup_model, daemon=True).start()
+except ImportError as _e:
+    RAG_ENABLED = False
+    print(f"[AUTOREPLY] RAG disabled: {_e}")
+
+router = APIRouter(prefix="/api/wa", tags=["WhatsApp"])
+
+# Fonnte config
+FONNTE_TOKEN = os.getenv("FONNTE_TOKEN", "")
+FONNTE_DEVICE = "6281288783088"
+AUTOREPLY_ENABLED = False  # Disabled by Erik 23 Feb 2026
+WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "")
+FONNTE_API_URL = "https://api.fonnte.com/send"
+TELEGRAM_BOT_TOKEN = "8510158455:AAHT5gd5xKtrCtzl3kAXuMVUsyCYTAyacjc"
+TELEGRAM_ADMIN_CHAT_ID = "5309429603"
+TELEGRAM_API_URL = "https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/sendMessage"
+
+
+# === CONDITIONAL ROUTING CONFIG ===
+ALLOWED_NUMBERS = [
+    "62811319003",    # Erik
+    "628118606999",   # Ocha SIJI
+    "62811309991",    # Ocha Property
+    "6282124046283",  # Filean
+    "6281288783088",  # Kasir SIJI
+    "6281227760808",  # Rizky (Kurir)
+    "6285892726416",  # Denisa (Produksi & Setrika)
+    "6285715247073",  # Unaesih (Kasir & Produksi)
+]
+
+ADMIN_NUMBERS = [
+    "62811319003",   # Erik
+    "628118606999",  # Ocha SIJI
+]
+# === GOWA AUTOREPLY CONFIG ===
+GOWA_AUTOREPLY_ENABLED = True   # Diaktifkan 2026-03-08
+GOWA_BASE = "http://127.0.0.1:3002"
+GOWA_AUTH = ("siji", "SijiBintaro2026!")
+GOWA_DEVICE_ID = "73834210-3694-43bf-a14d-c75d487b18cb"
+
+# Numbers that should NEVER receive autoreply (admin + staff)
+SKIP_AUTOREPLY_NUMBERS = [
+    # "62811319003",  # Erik — sementara dikeluarkan untuk TESTING MODE
+    "628118606999",   # Ocha SIJI (Full Admin)
+    "6282124046283",  # Filean (Manager)
+    "62811309991",    # Ocha Livinin (Manager)
+    "6281288783088",  # GOWA/Ops (System - nomor SIJI sendiri)
+    "6281227760808",  # Rizky (Karyawan)
+    "6285892726416",  # Denisa (Karyawan)
+    "6285715247073",  # Unaesih (Karyawan)
+    # Vendor / Supplier
+    "6281314155208",  # Laris Jaya Pasmod (supplier)
+    "6282186554606",  # Tukang Karpet 2 (vendor)
+]
+
+# === TEST MODE ===
+# Aktif: hanya TEST_NUMBERS yang dapat autoreply, customer lain dilewati
+# Nonaktifkan (GOWA_TEST_MODE = False) saat siap production
+GOWA_TEST_MODE = True
+GOWA_TEST_NUMBERS = [
+    "62811319003",    # Erik — testing sebagai pelanggan
+]
+
+ESCALATION_NUMBERS = [
+    "628118606999",   # Ocha SIJI — escalation complaint
+    "62811319003",    # Erik (owner) — acknowledge complaint
+]
+
+# Dedup cache: cegah GOWA webhook retry menyebabkan double/triple reply
+# {msg_id_wa: timestamp} — entri dihapus setelah 5 menit
+import time as _time
+_PROCESSED_MSG_IDS: dict = {}
+_DEDUP_TTL = 300  # 5 menit
+
+def _is_duplicate(msg_id: str) -> bool:
+    """Return True jika msg_id sudah diproses dalam 5 menit terakhir"""
+    if not msg_id:
+        return False
+    now = _time.time()
+    expired = [k for k, v in _PROCESSED_MSG_IDS.items() if now - v > _DEDUP_TTL]
+    for k in expired:
+        del _PROCESSED_MSG_IDS[k]
+    if msg_id in _PROCESSED_MSG_IDS:
+        return True
+    _PROCESSED_MSG_IDS[msg_id] = now
+    return False
+
+# Staff-handled tracker: kalau karyawan sudah balas ke JID ini, bot diam dulu
+# {chat_jid: timestamp_last_staff_reply}
+_STAFF_LAST_REPLY: dict = {}
+STAFF_COOLDOWN_SEC = 1800  # 30 menit — bot diam setelah karyawan reply
+
+# Default reply cooldown: jangan kirim default reply berulang ke nomor yg sama
+_DEFAULT_REPLY_SENT: dict = {}  # {sender: timestamp}
+DEFAULT_REPLY_COOLDOWN = 600  # 10 menit
+
+def _can_send_default(sender: str) -> bool:
+    """Return True jika belum kirim default reply ke sender dalam 10 menit"""
+    now = _time.time()
+    last = _DEFAULT_REPLY_SENT.get(sender, 0)
+    if now - last < DEFAULT_REPLY_COOLDOWN:
+        return False
+    _DEFAULT_REPLY_SENT[sender] = now
+    return True
+
+def _mark_staff_replied(jid: str):
+    """Catat bahwa karyawan baru saja reply ke JID ini"""
+    _STAFF_LAST_REPLY[jid] = _time.time()
+
+def _staff_is_handling(jid: str) -> bool:
+    """Return True jika karyawan reply ke JID ini dalam 30 menit terakhir"""
+    last = _STAFF_LAST_REPLY.get(jid, 0)
+    return (_time.time() - last) < STAFF_COOLDOWN_SEC
+
+# Keywords indikasi komplain pelanggan → trigger eskalasi
+COMPLAINT_KEYWORDS = [
+    # Ekspresi kekecewaan
+    "komplain", "kecewa", "kecewa", "tidak puas", "ga puas", "gak puas",
+    "nggak puas", "ngga puas",
+    # Masalah hasil laundry
+    "rusak", "sobek", "hilang", "luntur", "bau", "kotor", "belum bersih",
+    "masih kotor", "masih bau", "tidak bersih", "gak bersih",
+    # Masalah waktu / layanan
+    "lama", "lambat", "telat", "terlambat", "belum selesai", "belum jadi",
+    "belum datang", "belum diantar", "belum dijemput", "kapan selesai",
+    "kapan jadi", "kapan diantar",
+    # Masalah harga / tagihan
+    "kemahalan", "terlalu mahal", "salah tagih", "tagihan salah",
+    "harga beda", "harga tidak sesuai",
+    # Ekspresi keras
+    "kecewa banget", "sangat kecewa", "tidak profesional", "gak profesional",
+    "buruk", "jelek", "mengecewakan", "bohong", "tipu", "menipu",
+    "mau refund", "kembalikan uang", "cancel", "batalkan",
+]
+
+# Reply default untuk pesan non-keyword, non-komplain
+AUTO_REPLY_DEFAULT = (
+    "Halo Kak! 👋 Pesan kamu sudah kami terima.\n"
+    "Tim kami akan segera membalas ya 🙏"
+)
+
+# Keywords status order — intercept sebelum LLM (LLM tidak bisa akses DB order)
+ORDER_STATUS_KEYWORDS = [
+    "sudah selesai", "sudah jadi", "sudah beres", "udah selesai", "udah jadi",
+    "laundry saya", "cucian saya", "order saya", "pesanan saya",
+    "kapan selesai", "kapan jadi", "kapan bisa diambil", "kapan bisa dijemput",
+    "selesai belum", "jadi belum", "beres belum", "sudah bisa",
+    "cek order", "cek pesanan", "status order", "status laundry",
+    "sudah dikirim", "sudah diantar", "sudah di antar",
+    "besok selesai", "selesaikah", "bisa besok", "besok bisa",
+    "besok jadi", "besok sudah", "kapan siap", "siap besok",
+    "bisa diambil besok", "besok bisa diambil",
+]
+
+# Reply untuk pesan yang tidak jelas itemnya ("bisa cuci ini?", kirim foto)
+ASK_ITEM_REPLY = (
+    "Halo Kak! 😊 Boleh disebutkan barang apa yang mau dicuci/dilaundry?\n"
+    "Nanti kami langsung cek layanan dan harganya ya!"
+)
+
+ASK_ITEM_KEYWORDS = [
+    "cuci ini", "laundry ini", "ini bisa", "bisa dicuci", "bisa dilaundry",
+    "ini laundry", "ini cuci", "bisa cuci gak", "bisa laundry gak",
+    "cuci apa ini", "ini apa bisa", "terima ini", "bisa terima ini",
+]
+
+
+def is_vague_item_query(message: str) -> bool:
+    """Deteksi pertanyaan item tidak jelas — customer tidak sebut nama barang."""
+    msg_lower = message.lower().strip()
+    # Cocok dengan keyword vague
+    if any(kw in msg_lower for kw in ASK_ITEM_KEYWORDS):
+        return True
+    # Pesan sangat pendek dengan "ini" + kata tanya (max 6 kata)
+    words = msg_lower.split()
+    if len(words) <= 6 and "ini" in words and any(q in msg_lower for q in ["bisa", "boleh", "cuci", "laundry"]):
+        return True
+    return False
+
+
+ORDER_STATUS_REPLY = (
+    "Halo Kak! 👋 Untuk cek status laundry, tim kami akan segera konfirmasi ya.\n"
+    "Mohon ditunggu sebentar 🙏"
+)
+
+
+def is_order_status_query(message: str) -> bool:
+    """Deteksi pertanyaan status order — jangan sampai LLM yang jawab (bisa halusinasi)"""
+    msg_lower = message.lower()
+    return any(kw in msg_lower for kw in ORDER_STATUS_KEYWORDS)
+
+
+def is_complaint(message: str) -> bool:
+    """Detect complaint indicators in customer message"""
+    msg_lower = message.lower().strip()
+    return any(kw in msg_lower for kw in COMPLAINT_KEYWORDS)
+
+
+def get_time_greeting() -> str:
+    """Return sapaan berdasarkan jam WIB (UTC+7)"""
+    from datetime import datetime, timezone, timedelta
+    wib = datetime.now(timezone(timedelta(hours=7)))
+    hour = wib.hour
+    if 5 <= hour < 12:
+        return "Selamat pagi"
+    elif 12 <= hour < 15:
+        return "Selamat siang"
+    elif 15 <= hour < 19:
+        return "Selamat sore"
+    else:
+        return "Selamat malam"
+
+
+def _extract_salutation(name: str) -> str:
+    """Ekstrak salutation Pak/Bu dari nama, atau Kak sebagai default."""
+    if not name:
+        return "Kak"
+    n = name.strip()
+    nl = n.lower()
+    # Nama sudah ada prefix Pak/Bu/Ibu/Bapak
+    for prefix in ["ibu ", "bu "]:
+        if nl.startswith(prefix):
+            rest = n[len(prefix):].strip().split()
+            short = rest[0] if rest else ""
+            return f"Bu {short}" if short else "Bu"
+    for prefix in ["bapak ", "pak "]:
+        if nl.startswith(prefix):
+            rest = n[len(prefix):].strip().split()
+            short = rest[0] if rest else ""
+            return f"Pak {short}" if short else "Pak"
+    # Nama polos — pakai Kak (gender neutral)
+    parts = n.split()
+    short = parts[0] if parts else n
+    return f"Kak {short}"
+
+
+def build_greeting(cust_name: str, segment: str) -> str:
+    """
+    Return greeting line untuk customer dikenal.
+    VIP: nama lengkap + emoji khusus.
+    Reguler/Baru: sapaan standar.
+    Sapaan: Pak/Bu jika ada prefix di nama, Kak jika tidak.
+    """
+    sapa = get_time_greeting()
+    if not cust_name:
+        return ""
+    salut = _extract_salutation(cust_name)
+    if segment == "VIP":
+        return f"{sapa} {salut}! 😊✨"
+    return f"{sapa} {salut}! 😊"
+
+
+# Landing page karir
+KARIR_URL = "https://sijibintaro.id/karir"
+
+# Job application keywords
+JOB_KEYWORDS = ["lamar", "kerja", "lowongan", "pelamar", "apply", "hiring", "rekrut", "karyawan baru"]
+
+# Auto-reply untuk nomor tidak dikenal
+AUTO_REPLY_UNKNOWN = (
+    "Halo! Terima kasih sudah menghubungi SIJI.Bintaro 👋\n\n"
+    "Untuk layanan laundry dan pertanyaan umum, silakan chat ke nomor customer service kami.\n\n"
+    "Sedang mencari info lowongan kerja? Cek di sini:\n"
+    "👉 {karir_url}\n\n"
+    "Tim kami akan segera menghubungi Anda. Terima kasih! 🙏"
+).format(karir_url=KARIR_URL)
+
+AUTO_REPLY_JOB = (
+    "Halo! Terima kasih sudah tertarik bergabung dengan SIJI.Bintaro 🙌\n\n"
+    "Silakan lengkapi form lamaran di sini:\n"
+    "👉 {karir_url}\n\n"
+    "Tim kami akan menghubungi Anda jika ada posisi yang sesuai. Terima kasih! 💪"
+).format(karir_url=KARIR_URL)
+
+# === KATALOG LAYANAN (Layer 2.5) ===
+# Pakai ChromaDB similarity search dari collection siji_services (61 item dari DB)
+# Lebih robust: handle variasi bahasa, typo, bahasa Inggris, sinonim
+COLLECTION_SERVICES = "siji_services"
+SERVICES_COLLECTION_ID = None  # di-cache saat pertama kali dipanggil
+SERVICE_SIMILARITY_THRESHOLD = 0.70  # min score untuk dianggap match
+
+# === KATALOG LAYANAN (Layer 2.5) ===
+# Deteksi "bisa cuci X?" → jawab langsung dari katalog, tanpa LLM
+# SERVICE_CATALOG hardcode di bawah masih ada sebagai reference,
+# tapi check_service_catalog() sekarang pakai ChromaDB similarity.
+# Update layanan cukup di service_catalog DB + re-populate siji_services collection.
+SERVICE_CATALOG = {  # DEPRECATED — gunakan siji_services ChromaDB
     # Kiloan
     "kiloan":    ("cuci kering setrika reguler", "Rp16.000/kg (min 3kg, 3 hari)"),
     "setrika":   ("setrika kiloan reguler", "Rp12.000/kg (min 3kg, 3 hari)"),
