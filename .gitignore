@@ -6,3 +6,9 @@ uploads/
 *.log
 .env
 *.bak
+
+# Backup files
+*.backup
+*.backup-*
+*.bak
+*.sqlite.backup
