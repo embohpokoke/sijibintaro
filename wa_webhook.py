@@ -198,21 +198,43 @@ def get_time_greeting() -> str:
         return "Selamat malam"
 
 
+def _extract_salutation(name: str) -> str:
+    """Ekstrak salutation Pak/Bu dari nama, atau Kak sebagai default."""
+    if not name:
+        return "Kak"
+    n = name.strip()
+    nl = n.lower()
+    # Nama sudah ada prefix Pak/Bu/Ibu/Bapak
+    for prefix in ["ibu ", "bu "]:
+        if nl.startswith(prefix):
+            rest = n[len(prefix):].strip().split()
+            short = rest[0] if rest else ""
+            return f"Bu {short}" if short else "Bu"
+    for prefix in ["bapak ", "pak "]:
+        if nl.startswith(prefix):
+            rest = n[len(prefix):].strip().split()
+            short = rest[0] if rest else ""
+            return f"Pak {short}" if short else "Pak"
+    # Nama polos — pakai Kak (gender neutral)
+    parts = n.split()
+    short = parts[0] if parts else n
+    return f"Kak {short}"
+
+
 def build_greeting(cust_name: str, segment: str) -> str:
     """
     Return greeting line untuk customer dikenal.
     VIP: nama lengkap + emoji khusus.
     Reguler/Baru: sapaan standar.
+    Sapaan: Pak/Bu jika ada prefix di nama, Kak jika tidak.
     """
     sapa = get_time_greeting()
     if not cust_name:
         return ""
-    # Ambil nama pendek (kata pertama atau dua kata)
-    parts = cust_name.strip().split()
-    short_name = " ".join(parts[:2]) if len(parts) >= 2 else parts[0]
+    salut = _extract_salutation(cust_name)
     if segment == "VIP":
-        return f"{sapa} {short_name}! 😊✨"
-    return f"{sapa} {short_name}! 😊"
+        return f"{sapa} {salut}! 😊✨"
+    return f"{sapa} {salut}! 😊"
 
 
 # Landing page karir
@@ -313,7 +335,7 @@ def check_service_catalog(message: str) -> str | None:
             return (
                 f"Bisa Kak! SIJI menerima laundry *{svc_name}* 🙌\n\n"
                 f"💰 Harga: {price}\n\n"
-                f"Mau kami jemput, atau langsung antar ke toko ya Kak? 🛵"
+                f"Mau dijemput kurir kami, atau langsung antar ke toko ya Kak? 😊"
             )
     return None
 
@@ -355,10 +377,11 @@ KEYWORD_REPLIES = {
         "Atau tanya langsung aja ya Kak! 😊"
     ),
     "antar_jemput": (
-        "Halo Kak! 🛵 SIJI Bintaro ada layanan *antar jemput FREE* "
+        "Halo Kak! SIJI Bintaro ada layanan *antar jemput FREE* "
         "untuk area dalam radius *3 km dari outlet* kami.\n\n"
         "Wilayah Emerald, BSD sekitar, Bintaro Jaya — *FREE* ya Kak! 🎉\n"
-        "Di luar 3 km? Bisa dikonfirmasi dulu, nanti kami bantu atur 😊\n\n"
+        "Nanti kurir kami yang akan pick up & kirim ke Kak ya 😊\n"
+        "Di luar 3 km? Bisa dikonfirmasi dulu, kami bantu atur.\n\n"
         "📍 Outlet: Jl. Raya Emerald Boulevard, BLOK CE/A1 No.5 (Ruko PHD)\n"
         "📞 Chat kami: wa.me/6281288783088"
     ),
