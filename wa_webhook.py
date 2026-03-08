@@ -857,36 +857,6 @@ SERVICE_CATALOG = {  # DEPRECATED — gunakan siji_services ChromaDB
 }
 
 # Kata tanya / pertanyaan yang menandakan customer butuh info layanan
-_QUESTION_WORDS = [
-    "berapa", "harga", "tarif", "biaya", "treatment", "treatmentnya",
-    "bisa", "boleh", "ada", "terima", "menerima", "laundry", "cuci",
-    "layanan", "jenis", "apa saja", "gimana", "bagaimana", "cara",
-    "spa", "service", "servis",
-]
-
-def check_service_catalog(message: str) -> str | None:
-    """Deteksi pertanyaan layanan spesifik → return template reply atau None.
-    Pakai word-boundary agar 'tas' tidak match 'batas', 'jas' tidak salah ke 'tas', dst."""
-    import re as _re
-    msg_lower = message.lower()
-
-    # Cek ada kata tanya/service dulu — kalau tidak ada, skip
-    has_question = any(q in msg_lower for q in _QUESTION_WORDS)
-    if not has_question:
-        return None
-
-    # Cek keyword layanan dengan word-boundary (\b) — hindari partial match
-    for keyword, entry in SERVICE_CATALOG.items():
-        pattern = r'\b' + _re.escape(keyword) + r'\b'
-        if _re.search(pattern, msg_lower):
-            svc_name, price = entry
-            return (
-                f"Bisa Kak! SIJI menerima laundry *{svc_name}* 🙌\n\n"
-                f"💰 Harga: {price}\n\n"
-                f"Mau dijemput kurir kami, atau langsung antar ke toko ya Kak? 😊"
-            )
-    return None
-
 # Keyword auto-replies
 KEYWORD_REPLIES = {
     "harga": (
