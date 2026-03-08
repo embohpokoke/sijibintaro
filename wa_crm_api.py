@@ -505,3 +505,151 @@ Gunakan bullet points, ringkas dan actionable."""
         }
     finally:
         conn.close()
+
+
+# ─── Unified Customer Profiles (v_customer_profiles) ─────────────────────────
+
+@router.get("/customers/profiles")
+async def get_customer_profiles(
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=200),
+    segment: str = Query("all", regex="^(all|VIP|Reguler|Baru)$"),
+    search: str = Query(""),
+    has_wa: bool = Query(False),
+    sort_by: str = Query("total_transaksi", regex="^(total_transaksi|total_belanja|last_transaksi|nama_transaksi)$"),
+):
+    """
+    Unified customer list dari transaksi + WA.
+    Source: v_customer_profiles (transactions LEFT JOIN wa_conversations).
+    """
+    conn = get_db()
+    try:
+        offset = (page - 1) * limit
+        conditions = []
+        params = []
+
+        if segment != "all":
+            conditions.append("segment = ?")
+            params.append(segment)
+        if search:
+            conditions.append("(nama_transaksi LIKE ? OR nama_wa LIKE ? OR phone LIKE ?)")
+            params += [f"%{search}%", f"%{search}%", f"%{search}%"]
+        if has_wa:
+            conditions.append("ada_wa = 1")
+
+        where = "WHERE " + " AND ".join(conditions) if conditions else ""
+
+        total = conn.execute(f"SELECT COUNT(*) FROM v_customer_profiles {where}", params).fetchone()[0]
+
+        rows = conn.execute(f"""
+            SELECT phone, nama_wa, nama_transaksi, alamat,
+                   total_transaksi, total_belanja, avg_belanja,
+                   first_transaksi, last_transaksi,
+                   total_pesan_wa, last_pesan_wa, segment, ada_wa
+            FROM v_customer_profiles {where}
+            ORDER BY {sort_by} DESC
+            LIMIT ? OFFSET ?
+        """, params + [limit, offset]).fetchall()
+
+        customers = []
+        for r in rows:
+            customers.append({
+                "phone": r["phone"],
+                "nama": r["nama_wa"] or r["nama_transaksi"],
+                "nama_transaksi": r["nama_transaksi"],
+                "nama_wa": r["nama_wa"],
+                "alamat": r["alamat"],
+                "segment": r["segment"],
+                "total_transaksi": r["total_transaksi"],
+                "total_belanja": r["total_belanja"],
+                "avg_belanja": r["avg_belanja"],
+                "first_transaksi": r["first_transaksi"],
+                "last_transaksi": r["last_transaksi"],
+                "total_pesan_wa": r["total_pesan_wa"],
+                "last_pesan_wa": (r["last_pesan_wa"] or "")[:80],
+                "ada_wa": bool(r["ada_wa"]),
+                "wa_link": f"https://wa.me/{r['phone']}" if r["phone"] else None,
+            })
+
+        segment_summary = {}
+        for seg in ["VIP", "Reguler", "Baru"]:
+            n = conn.execute("SELECT COUNT(*) FROM v_customer_profiles WHERE segment = ?", (seg,)).fetchone()[0]
+            segment_summary[seg] = n
+
+        return {
+            "customers": customers,
+            "total": total,
+            "page": page,
+            "pages": -(-total // limit),
+            "segment_summary": segment_summary,
+            "wa_linked": conn.execute("SELECT COUNT(*) FROM v_customer_profiles WHERE ada_wa = 1").fetchone()[0],
+        }
+    finally:
+        conn.close()
+
+
+@router.get("/customers/profile/{phone}")
+async def get_customer_profile(phone: str):
+    """
+    Detail profil satu customer: transaksi + WA + histori layanan.
+    """
+    conn = get_db()
+    try:
+        row = conn.execute("""
+            SELECT phone, nama_wa, nama_transaksi, alamat,
+                   total_transaksi, total_belanja, avg_belanja,
+                   first_transaksi, last_transaksi,
+                   total_pesan_wa, last_pesan_wa, segment, ada_wa
+            FROM v_customer_profiles WHERE phone = ?
+        """, (phone,)).fetchone()
+
+        if not row:
+            return {"found": False, "phone": phone}
+
+        # Layanan yang pernah digunakan
+        services = conn.execute("""
+            SELECT td.nama_layanan, COUNT(*) as freq,
+                   ROUND(AVG(td.total_item), 0) as avg_harga
+            FROM transaction_details td
+            JOIN transactions t ON t.no_nota = td.no_nota
+            WHERE t.customer_phone = ?
+            GROUP BY td.nama_layanan
+            ORDER BY freq DESC LIMIT 10
+        """, (phone,)).fetchall()
+
+        # 5 transaksi terakhir
+        recent_tx = conn.execute("""
+            SELECT no_nota, date_of_transaction, total_tagihan,
+                   nama_layanan, progress_status, pembayaran
+            FROM transactions WHERE customer_phone = ?
+            ORDER BY date_of_transaction DESC LIMIT 5
+        """, (phone,)).fetchall()
+
+        return {
+            "found": True,
+            "phone": row["phone"],
+            "nama": row["nama_wa"] or row["nama_transaksi"],
+            "nama_transaksi": row["nama_transaksi"],
+            "nama_wa": row["nama_wa"],
+            "alamat": row["alamat"],
+            "segment": row["segment"],
+            "total_transaksi": row["total_transaksi"],
+            "total_belanja": row["total_belanja"],
+            "avg_belanja": row["avg_belanja"],
+            "first_transaksi": row["first_transaksi"],
+            "last_transaksi": row["last_transaksi"],
+            "total_pesan_wa": row["total_pesan_wa"],
+            "ada_wa": bool(row["ada_wa"]),
+            "wa_link": f"https://wa.me/{phone}",
+            "favorite_services": [{"nama": s["nama_layanan"], "freq": s["freq"], "avg_harga": s["avg_harga"]} for s in services],
+            "recent_transactions": [{
+                "no_nota": t["no_nota"],
+                "tanggal": t["date_of_transaction"],
+                "total": t["total_tagihan"],
+                "layanan": t["nama_layanan"],
+                "status": t["progress_status"],
+                "pembayaran": t["pembayaran"],
+            } for t in recent_tx],
+        }
+    finally:
+        conn.close()
