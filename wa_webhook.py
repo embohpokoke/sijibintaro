@@ -363,7 +363,7 @@ KEYWORD_REPLIES = {
         "Jam operasional SIJI.Bintaro ⏰\n\n"
         "Senin - Sabtu: 08.00 - 20.00\n"
         "Minggu: 08.00 - 16.00\n\n"
-        "Bisa jemput & antar juga lho! 🛵"
+        "Tersedia layanan antar jemput oleh kurir kami! 😊"
     ),
     "lokasi": (
         "📍 SIJI.Bintaro\n"
