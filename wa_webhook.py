@@ -59,7 +59,10 @@ SKIP_AUTOREPLY_NUMBERS = [
     "6285715247073",  # Unaesih (Karyawan)
 ]
 
-ESCALATION_NUMBER = "628118606999"  # Ocha SIJI — terima notif eskalasi
+ESCALATION_NUMBERS = [
+    "628118606999",   # Ocha SIJI
+    "62811319003",    # Erik (owner)
+]
 
 
 # Landing page karir
@@ -1277,9 +1280,10 @@ async def gowa_webhook(request: Request):
                             "_" + _notif_body + "_\n\n"
                             "Nomor: wa.me/" + sender
                         )
-                        await send_gowa_message(ESCALATION_NUMBER, notif_msg)
+                        for _esc_num in ESCALATION_NUMBERS:
+                            await send_gowa_message(_esc_num, notif_msg)
                         reply_layer = "escalated"
-                        print(f"[AUTOREPLY] Escalated to Ocha: {sender}")
+                        print(f"[AUTOREPLY] Escalated to {ESCALATION_NUMBERS}: {sender}")
                     else:
                         # Kirim autoreply via GOWA
                         await send_gowa_message(sender, reply_text)
