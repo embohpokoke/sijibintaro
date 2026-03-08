@@ -1403,27 +1403,37 @@ async def gowa_webhook(request: Request):
                         print(f"[AUTOREPLY] COMPLAINT escalated to {ESCALATION_NUMBERS}: {sender}")
 
                     # Layer 4: RAG + LLM (qwen2.5:1.5b + karyawan Q&A history)
+                    _rag_score = 0.0
                     if not reply_text and not reply_layer and RAG_ENABLED:
                         try:
                             loop = asyncio.get_event_loop()
                             context = await loop.run_in_executor(None, find_context, body_text)
                             context["customer_name"] = from_name or ""
-                            if context["best_score"] >= 0.62:  # threshold diturunkan 0.72→0.62
+                            _rag_score = context["best_score"]
+                            if _rag_score >= 0.62:
                                 llm_reply = await generate_reply_async(body_text, context)
                                 if llm_reply:
                                     reply_text = llm_reply
-                                    reply_layer = f"rag_llm:{context['best_score']:.2f}"
-                                    print(f"[AUTOREPLY] RAG+LLM score={context['best_score']:.2f} → {sender}")
+                                    reply_layer = f"rag_llm:{_rag_score:.2f}"
+                                    print(f"[AUTOREPLY] RAG+LLM score={_rag_score:.2f} → {sender}")
                         except Exception as _rag_err:
                             print(f"[AUTOREPLY] RAG error: {_rag_err}")
 
-                    # Layer 5: Default fallback (dengan cooldown 10 menit)
+                    # Layer 5: Default fallback
+                    # - Kalau RAG score tinggi tapi LLM gagal: kirim default TANPA cooldown (retry ok)
+                    # - Kalau RAG score rendah (pertanyaan tidak relevan): cooldown 10 menit
                     if not reply_text and not reply_layer:
-                        if _can_send_default(sender):
+                        if _rag_score >= 0.62:
+                            # LLM timeout/gagal — kirim default, tidak set cooldown supaya bisa retry
                             reply_text = AUTO_REPLY_DEFAULT
-                            reply_layer = "default"
+                            reply_layer = "default:llm_fail"
+                            print(f"[AUTOREPLY] LLM fail fallback (score={_rag_score:.2f}), no cooldown: {sender}")
+                        elif _can_send_default(sender):
+                            # Pertanyaan tidak relevan — kirim default dengan cooldown
+                            reply_text = AUTO_REPLY_DEFAULT
+                            reply_layer = "default:low_score"
                         else:
-                            print(f"[AUTOREPLY] Default reply cooldown active: {sender}")
+                            print(f"[AUTOREPLY] Default cooldown active (low score): {sender}")
 
                     # SEND — kirim reply kalau ada (layer 1/2/4/5)
                     if reply_text:
