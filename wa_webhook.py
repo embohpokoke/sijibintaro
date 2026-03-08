@@ -164,17 +164,23 @@ KEYWORD_REPLIES = {
 }
 
 # Keywords that trigger each reply
+# Urutan penting: lebih spesifik dulu (jam/lokasi sebelum harga)
 KEYWORD_MAP = {
-    "harga": ["harga", "price", "berapa", "tarif", "biaya"],
-    "jam": ["jam", "buka", "tutup", "operasional", "waktu"],
-    "lokasi": ["lokasi", "alamat", "dimana", "di mana", "maps", "map"],
-    "promo": ["promo", "diskon", "discount", "voucher"],
+    "jam": ["jam buka", "jam tutup", "buka jam", "tutup jam", "jam operasional",
+            "jam kerja", "buka pukul", " buka ", "masih buka", "sudah tutup",
+            "hari ini buka", "buka hari", "jam berapa buka"],
+    "lokasi": ["lokasi", "alamat", "dimana", "di mana", "maps", "map",
+               "google maps", "tempat", "di bintaro"],
+    "harga": ["harga", "price", "tarif", "biaya", "berapa harga", "berapa tarif",
+              "berapa biaya", "harga cuci", "harga laundry", "harga kiloan",
+              "harga bedcover", "harga sepatu", "harga tas", "daftar harga"],
+    "promo": ["promo", "diskon", "discount", "voucher", "promo apa"],
 }
 
 
 def match_keyword(message: str) -> str | None:
-    """Match message to keyword category"""
-    msg_lower = message.lower().strip()
+    """Match message to keyword category — checks in order, returns first match"""
+    msg_lower = " " + message.lower().strip() + " "  # pad for word-boundary check
     for category, keywords in KEYWORD_MAP.items():
         for kw in keywords:
             if kw in msg_lower:
