@@ -86,6 +86,26 @@ ESCALATION_NUMBERS = [
     "62811319003",    # Erik (owner) — testing only
 ]
 
+# Dedup cache: cegah GOWA webhook retry menyebabkan double/triple reply
+# {msg_id_wa: timestamp} — entri dihapus setelah 5 menit
+import time as _time
+_PROCESSED_MSG_IDS: dict = {}
+_DEDUP_TTL = 300  # 5 menit
+
+def _is_duplicate(msg_id: str) -> bool:
+    """Return True jika msg_id sudah diproses dalam 5 menit terakhir"""
+    if not msg_id:
+        return False
+    now = _time.time()
+    # Bersihkan entri lama
+    expired = [k for k, v in _PROCESSED_MSG_IDS.items() if now - v > _DEDUP_TTL]
+    for k in expired:
+        del _PROCESSED_MSG_IDS[k]
+    if msg_id in _PROCESSED_MSG_IDS:
+        return True
+    _PROCESSED_MSG_IDS[msg_id] = now
+    return False
+
 # Keywords indikasi komplain pelanggan → trigger eskalasi
 COMPLAINT_KEYWORDS = [
     # Ekspresi kekecewaan
@@ -1312,7 +1332,8 @@ async def gowa_webhook(request: Request):
                     and not is_group
                     and GOWA_AUTOREPLY_ENABLED
                     and body_text.strip()
-                    and msg_type == "text"):
+                    and msg_type == "text"
+                    and not _is_duplicate(msg_id_wa)):
 
                 # Test mode: hanya proses nomor test, skip semua lainnya
                 if GOWA_TEST_MODE and sender not in GOWA_TEST_NUMBERS:
