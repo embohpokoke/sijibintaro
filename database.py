@@ -7,6 +7,7 @@ Based on: Livininbintaro CRM db.py pattern
 
 import psycopg2
 import psycopg2.pool
+from datetime import datetime, date
 
 # Configuration
 DATABASE_URL = "postgresql://livin:L1v1n!B1nt4r0_2026@localhost:5432/livininbintaro"
@@ -40,7 +41,16 @@ class PostgreSQLiteCursor:
             return row
         # Get column names from cursor description
         columns = [desc[0] for desc in self._cursor.description]
-        return DictRow(zip(columns, row))
+        # Convert datetime/date to strings for SQLite compatibility
+        converted = []
+        for val in row:
+            if isinstance(val, datetime):
+                converted.append(val.strftime('%Y-%m-%d %H:%M:%S'))
+            elif isinstance(val, date):
+                converted.append(val.strftime('%Y-%m-%d'))
+            else:
+                converted.append(val)
+        return DictRow(zip(columns, converted))
     
     def fetchone(self):
         row = self._cursor.fetchone()
