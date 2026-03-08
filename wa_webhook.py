@@ -172,6 +172,28 @@ AUTO_REPLY_DEFAULT = (
     "Tim kami akan segera membalas ya 🙏"
 )
 
+# Keywords status order — intercept sebelum LLM (LLM tidak bisa akses DB order)
+ORDER_STATUS_KEYWORDS = [
+    "sudah selesai", "sudah jadi", "sudah beres", "udah selesai", "udah jadi",
+    "laundry saya", "cucian saya", "order saya", "pesanan saya",
+    "kapan selesai", "kapan jadi", "kapan bisa diambil", "kapan bisa dijemput",
+    "selesai belum", "jadi belum", "beres belum", "sudah bisa",
+    "cek order", "cek pesanan", "status order", "status laundry",
+    "sudah dikirim", "sudah diantar", "sudah di antar",
+]
+
+ORDER_STATUS_REPLY = (
+    "Halo Kak! 👋 Untuk cek status laundry, tim kami akan segera konfirmasi ya.\n"
+    "Mohon ditunggu sebentar 🙏"
+)
+
+
+def is_order_status_query(message: str) -> bool:
+    """Deteksi pertanyaan status order — jangan sampai LLM yang jawab (bisa halusinasi)"""
+    msg_lower = message.lower()
+    return any(kw in msg_lower for kw in ORDER_STATUS_KEYWORDS)
+
+
 def is_complaint(message: str) -> bool:
     """Detect complaint indicators in customer message"""
     msg_lower = message.lower().strip()
@@ -1551,21 +1573,8 @@ async def gowa_webhook(request: Request):
                         reply_text = AUTO_REPLY_JOB
                         reply_layer = "job"
 
-                    # Layer 2.5: Service catalog lookup (bisa cuci X? → langsung dari katalog)
-                    if not reply_text:
-                        svc_reply = check_service_catalog(body_text)
-                        if svc_reply:
-                            reply_text = svc_reply
-                            reply_layer = "catalog"
-
-                    # Layer 2: Keyword match (harga, jam, lokasi, promo)
-                    if not reply_text:
-                        cat = match_keyword(body_text)
-                        if cat and cat in KEYWORD_REPLIES:
-                            reply_text = KEYWORD_REPLIES[cat]
-                            reply_layer = f"keyword:{cat}"
-
-                    # Layer 3: Complaint check → escalate
+                    # Layer 2: Complaint check DULU (sebelum catalog/keyword)
+                    # "sepatu rusak setelah dicuci" → escalate, bukan catalog sepatu
                     if not reply_text and is_complaint(body_text):
                         _notif_name = from_name or sender
                         _notif_body = body_text[:300]
@@ -1578,6 +1587,26 @@ async def gowa_webhook(request: Request):
                             await send_gowa_message(_esc_num, notif_msg)
                         reply_layer = "escalated:complaint"
                         print(f"[AUTOREPLY] COMPLAINT escalated to {ESCALATION_NUMBERS}: {sender}")
+
+                    # Layer 2.5: Service catalog — bisa cuci X? harga X?
+                    if not reply_text:
+                        svc_reply = check_service_catalog(body_text)
+                        if svc_reply:
+                            reply_text = svc_reply
+                            reply_layer = "catalog"
+
+                    # Layer 3: Keyword match (harga, jam, lokasi, promo)
+                    if not reply_text:
+                        cat = match_keyword(body_text)
+                        if cat and cat in KEYWORD_REPLIES:
+                            reply_text = KEYWORD_REPLIES[cat]
+                            reply_layer = f"keyword:{cat}"
+
+                    # Layer 3.5: Order status query — intercept sebelum LLM
+                    # LLM tidak bisa akses DB order → akan halusinasi "sudah selesai" dll
+                    if not reply_text and not reply_layer and is_order_status_query(body_text):
+                        reply_text = ORDER_STATUS_REPLY
+                        reply_layer = "order_status"
 
                     # Layer 4: RAG + LLM (qwen2.5:1.5b + karyawan Q&A history)
                     _rag_score = 0.0
