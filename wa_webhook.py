@@ -1344,6 +1344,7 @@ async def gowa_webhook(request: Request):
                         try:
                             loop = asyncio.get_event_loop()
                             context = await loop.run_in_executor(None, find_context, body_text)
+                            context["customer_name"] = from_name or ""
                             if context["best_score"] >= 0.72:
                                 llm_reply = await generate_reply_async(body_text, context)
                                 if llm_reply:

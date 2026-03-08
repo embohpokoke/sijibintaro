@@ -1,7 +1,7 @@
 """
 siji_llm.py — LLM reply generator untuk SIJI Bintaro
 Model: qwen2.5:1.5b via Ollama (local, zero cost)
-Tone: Ocha/Filean karyawan kasir style
+Tone: karyawan SIJI (Unaesih, Rizky, Denisa) — dari data percakapan real
 """
 import httpx
 from typing import Optional
@@ -9,52 +9,43 @@ from typing import Optional
 OLLAMA_BASE = "http://localhost:11434"
 LLM_MODEL   = "qwen2.5:1.5b"
 
-SIJI_SYSTEM_PROMPT = """Kamu adalah kasir SIJI Bintaro, laundry premium di Bintaro Jaya Sektor 9.
+SIJI_SYSTEM_PROMPT = """Kamu staf laundry SIJI Bintaro yang sedang balas WA pelanggan.
 
-IDENTITAS:
-- Nama toko: SIJI Bintaro (dulu Soki Laundry)
-- Lokasi: Jl. Raya Emerald Boulevard, BLOK CE/A1 No.5 (Ruko PHD, Sebelah Marchand), Bintaro Jaya
+INFO TOKO:
+- SIJI Bintaro, Jl. Raya Emerald Boulevard BLOK CE/A1 No.5, Bintaro Jaya
 - Jam: Senin-Sabtu 08.00-20.00, Minggu 08.00-16.00
 - Layanan: cuci kiloan, bedcover, sepatu, tas, dry clean, setrika, jemput-antar
-- Harga kiloan: Rp 16.000/kg (cuci kering setrika), Rp 12.000/kg (cuci kering lipat/setrika saja), min 3kg
-- Bedcover: Rp 70.000/lembar | Sepatu: Rp 90.000/pasang | Sprei 1 set: Rp 35.000
+- Harga kiloan: Rp16.000/kg (cuci kering setrika), Rp12.000/kg (cuci lipat/setrika saja), min 3kg
+- Bedcover Rp70.000 | Sepatu Rp90.000/pasang | Sprei 1 set Rp35.000
 
-GAYA BICARA (tiru gaya kasir Ocha/Filean):
-- Ramah, ringkas, pakai "Kak" atau nama kalau tahu (contoh: "Baik Bu Ratih")
-- Semi-formal, sesekali pakai emoji tapi tidak berlebihan
-- Maksimal 3-4 kalimat per reply
-- Kalau tidak tahu → "Tim kami segera membalas ya Kak 🙏"
-- Jangan buat info yang tidak kamu ketahui pasti
-
-JANGAN lakukan:
-- Jangan balas dalam bahasa Inggris atau Mandarin
-- Jangan tulis lebih dari 4 kalimat
-- Jangan hardcode harga yang tidak ada di atas"""
+ATURAN BALAS:
+- Bahasa Indonesia, singkat, ramah seperti chat WA
+- Sapa pakai nama pelanggan kalau ada, atau "Kak"
+- Maksimal 2-3 kalimat
+- Kalau tidak tahu → "Mohon ditunggu ya Kak, kami segera cek 🙏"
+- Jangan buat informasi yang tidak ada di atas
+- Jangan balas dalam bahasa lain"""
 
 
 def build_prompt_messages(customer_message: str, context: dict) -> list:
-    """Build chat messages with RAG context injected"""
     system = SIJI_SYSTEM_PROMPT
 
-    # Inject QA example jika ada (contoh balasan karyawan sebelumnya)
-    if context.get("qa_context") and context.get("qa_answer"):
-        system += f"\n\nCONTOH BALASAN KARYAWAN:\nPelanggan: {context['qa_context']}\nKasir: {context['qa_answer']}"
-
-    # Inject SOP knowledge jika ada
+    # Inject SOP context kalau relevan
     if context.get("sop_context"):
-        system += f"\n\nKNOWLEDGE BASE:\n{context['sop_context']}"
+        system += f"\n\nINFO TAMBAHAN:\n{context['sop_context'][:300]}"
+
+    # Nama pelanggan masuk ke user message agar model pakai nama yang benar
+    cust_name = context.get("customer_name", "").strip()
+    user_msg = f"Pelanggan ({cust_name or 'Kak'}): {customer_message}" if cust_name else customer_message
 
     return [
         {"role": "system", "content": system},
-        {"role": "user", "content": customer_message}
+        {"role": "user", "content": user_msg}
     ]
 
 
 def generate_reply(customer_message: str, context: dict) -> Optional[str]:
-    """
-    Generate natural reply using qwen2.5:1.5b with RAG context.
-    Returns reply string or None if failed.
-    """
+    """Generate reply via qwen2.5:1.5b. Returns string or None."""
     try:
         messages = build_prompt_messages(customer_message, context)
         resp = httpx.post(
@@ -63,16 +54,11 @@ def generate_reply(customer_message: str, context: dict) -> Optional[str]:
                 "model": LLM_MODEL,
                 "messages": messages,
                 "stream": False,
-                "options": {
-                    "temperature": 0.7,
-                    "num_predict": 100,
-                    "stop": ["\n\n\n"]
-                }
+                "options": {"temperature": 0.7, "num_predict": 100, "stop": ["\n\n"]}
             },
             timeout=60
         )
-        result = resp.json()
-        reply = result.get("message", {}).get("content", "").strip()
+        reply = resp.json().get("message", {}).get("content", "").strip()
         if reply:
             print(f"[LLM] Generated: {reply[:80]}")
             return reply
@@ -85,17 +71,16 @@ def generate_reply(customer_message: str, context: dict) -> Optional[str]:
 def warmup_model():
     """Pre-load model into memory (call once at startup)"""
     try:
-        resp = httpx.post(f"{OLLAMA_BASE}/api/generate",
-                          json={"model": LLM_MODEL, "prompt": "halo", "stream": False,
-                                "options": {"num_predict": 1}},
-                          timeout=60)
-        print(f"[LLM] Warmup done: {resp.status_code}")
+        httpx.post(f"{OLLAMA_BASE}/api/generate",
+                   json={"model": LLM_MODEL, "prompt": "halo", "stream": False,
+                         "options": {"num_predict": 1}},
+                   timeout=60)
+        print("[LLM] Warmup OK")
     except Exception as e:
-        print(f"[LLM] Warmup failed (ok): {e}")
+        print(f"[LLM] Warmup failed: {e}")
 
 
 async def generate_reply_async(customer_message: str, context: dict) -> Optional[str]:
-    """Async wrapper for generate_reply (runs in thread executor)"""
     import asyncio
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, generate_reply, customer_message, context)
