@@ -402,6 +402,13 @@ _BRAND_MAP = {
     "tory burch": (35, "BAG SPA USA BRAND", "Rp250.000/pcs (7 hari)"),
     "aigner": (35, "BAG SPA USA BRAND", "Rp250.000/pcs (7 hari)"),
     "furla": (35, "BAG SPA USA BRAND", "Rp250.000/pcs (7 hari)"),
+    # Direct match untuk item common — embedding kadang lemah karena angka/noise
+    "karpet": (18, "KARPET", "Rp35.000/m² (10 hari)"),
+    "carpet": (18, "KARPET", "Rp35.000/m² (10 hari)"),
+    "kasur lipat": (56, "Kasur Lipat", "Rp400.000/pcs (10 hari)"),
+    "sleeping bag": (59, "Sleeping Bag", "Rp90.000/pcs (5 hari)"),
+    "car seat": (52, "BABY CAR SEATER", "Rp250.000/unit (6 hari)"),
+    "baby bed": (53, "Baby Bed/Kasur Bayi", "Rp250.000/pcs (7 hari)"),
     # EU brands → BAG SPA EROPA
     "louis vuitton": (36, "BAG SPA BRAND EROPA", "Rp500.000/pcs (7 hari)"),
     " lv ": (36, "BAG SPA BRAND EROPA", "Rp500.000/pcs (7 hari)"),
