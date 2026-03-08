@@ -2093,6 +2093,11 @@ async def gowa_webhook(request: Request):
                         )
                         for _esc_num in ESCALATION_NUMBERS:
                             await send_gowa_message(_esc_num, notif_msg)
+                        # Reply ke customer: acknowledgment — jangan jatuh ke catalog
+                        reply_text = (
+                            "Halo Kak! \U0001f64f Pesan kamu sudah kami terima dan segera ditangani tim kami.\n\n"
+                            "Mohon tunggu sebentar ya, kami akan segera menghubungi kamu kembali."
+                        )
                         reply_layer = "escalated:complaint"
                         print(f"[AUTOREPLY] COMPLAINT escalated to {ESCALATION_NUMBERS}: {sender}")
 
