@@ -1592,7 +1592,7 @@ async def gowa_webhook(request: Request):
                             context["customer_segment"] = cust_ctx.get("segment", "Baru")
                             context["customer_tx_count"] = cust_ctx.get("total_transaksi", 0)
                             _rag_score = context["best_score"]
-                            if _rag_score >= 0.62:
+                            if _rag_score >= 0.75:
                                 llm_reply = await generate_reply_async(body_text, context)
                                 if llm_reply:
                                     reply_text = llm_reply
@@ -1605,7 +1605,7 @@ async def gowa_webhook(request: Request):
                     # - Kalau RAG score tinggi tapi LLM gagal: kirim default TANPA cooldown (retry ok)
                     # - Kalau RAG score rendah (pertanyaan tidak relevan): cooldown 10 menit
                     if not reply_text and not reply_layer:
-                        if _rag_score >= 0.62:
+                        if _rag_score >= 0.75:
                             # LLM timeout/gagal — kirim default, tidak set cooldown supaya bisa retry
                             reply_text = AUTO_REPLY_DEFAULT
                             reply_layer = "default:llm_fail"

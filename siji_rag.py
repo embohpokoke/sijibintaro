@@ -63,7 +63,7 @@ def query_collection(collection_id: str, embedding: list, n_results: int = 3) ->
         return {}
 
 
-def find_context(query: str, threshold: float = 0.72) -> dict:
+def find_context(query: str, threshold: float = 0.75) -> dict:
     """
     Main RAG function: embed query, search siji_memory + siji_qa_history
     Returns dict with sop_context, qa_context, qa_answer, best_score
