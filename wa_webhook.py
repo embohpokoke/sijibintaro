@@ -310,7 +310,7 @@ AUTO_REPLY_JOB = (
 # Lebih robust: handle variasi bahasa, typo, bahasa Inggris, sinonim
 COLLECTION_SERVICES = "siji_services"
 SERVICES_COLLECTION_ID = None  # di-cache saat pertama kali dipanggil
-SERVICE_SIMILARITY_THRESHOLD = 0.70  # min score untuk dianggap match
+SERVICE_SIMILARITY_THRESHOLD = 0.68  # min score untuk dianggap match
 
 # === KATALOG LAYANAN (Layer 2.5) ===
 # Deteksi "bisa cuci X?" → jawab langsung dari katalog, tanpa LLM
@@ -807,7 +807,7 @@ AUTO_REPLY_JOB = (
 # Lebih robust: handle variasi bahasa, typo, bahasa Inggris, sinonim
 COLLECTION_SERVICES = "siji_services"
 SERVICES_COLLECTION_ID = None  # di-cache saat pertama kali dipanggil
-SERVICE_SIMILARITY_THRESHOLD = 0.70  # min score untuk dianggap match
+SERVICE_SIMILARITY_THRESHOLD = 0.68  # min score untuk dianggap match
 
 # === KATALOG LAYANAN (Layer 2.5) ===
 # Deteksi "bisa cuci X?" → jawab langsung dari katalog, tanpa LLM
