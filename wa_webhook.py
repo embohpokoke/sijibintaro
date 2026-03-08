@@ -10,7 +10,21 @@ import os
 import json
 import re
 import sqlite3
+import asyncio
 import httpx
+
+# RAG + LLM modules (Phase 2)
+try:
+    from siji_rag import find_context
+    from siji_llm import generate_reply_async, warmup_model
+    RAG_ENABLED = True
+    print("[AUTOREPLY] RAG + LLM enabled (siji_rag + siji_llm loaded)")
+    # Warm up qwen2.5:1.5b model in background at import time
+    import threading
+    threading.Thread(target=warmup_model, daemon=True).start()
+except ImportError as _e:
+    RAG_ENABLED = False
+    print(f"[AUTOREPLY] RAG disabled: {_e}")
 
 router = APIRouter(prefix="/api/wa", tags=["WhatsApp"])
 
@@ -1311,26 +1325,38 @@ async def gowa_webhook(request: Request):
                             reply_text = KEYWORD_REPLIES[cat]
                             reply_layer = f"keyword:{cat}"
 
-                    # Layer 3: Complaint check atau default reply
-                    # (RAG + LLM akan diintegrasikan di Phase 2/3)
-                    if not reply_text:
-                        if is_complaint(body_text):
-                            # Komplain → eskalasi ke Ocha + Erik
-                            _notif_name = from_name or sender
-                            _notif_body = body_text[:300]
-                            notif_msg = (
-                                "\u26a0\ufe0f *KOMPLAIN dari " + _notif_name + "*:\n\n"
-                                "_" + _notif_body + "_\n\n"
-                                "Nomor: wa.me/" + sender
-                            )
-                            for _esc_num in ESCALATION_NUMBERS:
-                                await send_gowa_message(_esc_num, notif_msg)
-                            reply_layer = "escalated:complaint"
-                            print(f"[AUTOREPLY] COMPLAINT escalated to {ESCALATION_NUMBERS}: {sender}")
-                        else:
-                            # Bukan komplain → reply generic, tidak eskalasi
-                            reply_text = AUTO_REPLY_DEFAULT
-                            reply_layer = "default"
+                    # Layer 3: Complaint check → escalate
+                    if not reply_text and is_complaint(body_text):
+                        _notif_name = from_name or sender
+                        _notif_body = body_text[:300]
+                        notif_msg = (
+                            "\u26a0\ufe0f *KOMPLAIN dari " + _notif_name + "*:\n\n"
+                            "_" + _notif_body + "_\n\n"
+                            "Nomor: wa.me/" + sender
+                        )
+                        for _esc_num in ESCALATION_NUMBERS:
+                            await send_gowa_message(_esc_num, notif_msg)
+                        reply_layer = "escalated:complaint"
+                        print(f"[AUTOREPLY] COMPLAINT escalated to {ESCALATION_NUMBERS}: {sender}")
+
+                    # Layer 4: RAG + LLM (qwen2.5:1.5b + karyawan Q&A history)
+                    if not reply_text and not reply_layer and RAG_ENABLED:
+                        try:
+                            loop = asyncio.get_event_loop()
+                            context = await loop.run_in_executor(None, find_context, body_text)
+                            if context["best_score"] >= 0.72:
+                                llm_reply = await generate_reply_async(body_text, context)
+                                if llm_reply:
+                                    reply_text = llm_reply
+                                    reply_layer = f"rag_llm:{context['best_score']:.2f}"
+                                    print(f"[AUTOREPLY] RAG+LLM score={context['best_score']:.2f} → {sender}")
+                        except Exception as _rag_err:
+                            print(f"[AUTOREPLY] RAG error: {_rag_err}")
+
+                    # Layer 5: Default fallback
+                    if not reply_text and not reply_layer:
+                        reply_text = AUTO_REPLY_DEFAULT
+                        reply_layer = "default"
                     else:
                         # Kirim autoreply via GOWA
                         await send_gowa_message(sender, reply_text)
