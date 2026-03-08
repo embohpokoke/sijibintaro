@@ -81,6 +81,9 @@ SKIP_AUTOREPLY_NUMBERS = [
     "6281227760808",  # Rizky (Karyawan)
     "6285892726416",  # Denisa (Karyawan)
     "6285715247073",  # Unaesih (Karyawan)
+    # Vendor / Supplier
+    "6281314155208",  # Laris Jaya Pasmod (supplier)
+    "6282186554606",  # Tukang Karpet 2 (vendor)
 ]
 
 # === TEST MODE ===
