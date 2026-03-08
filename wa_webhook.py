@@ -110,6 +110,19 @@ def _is_duplicate(msg_id: str) -> bool:
 _STAFF_LAST_REPLY: dict = {}
 STAFF_COOLDOWN_SEC = 1800  # 30 menit — bot diam setelah karyawan reply
 
+# Default reply cooldown: jangan kirim default reply berulang ke nomor yg sama
+_DEFAULT_REPLY_SENT: dict = {}  # {sender: timestamp}
+DEFAULT_REPLY_COOLDOWN = 600  # 10 menit
+
+def _can_send_default(sender: str) -> bool:
+    """Return True jika belum kirim default reply ke sender dalam 10 menit"""
+    now = _time.time()
+    last = _DEFAULT_REPLY_SENT.get(sender, 0)
+    if now - last < DEFAULT_REPLY_COOLDOWN:
+        return False
+    _DEFAULT_REPLY_SENT[sender] = now
+    return True
+
 def _mark_staff_replied(jid: str):
     """Catat bahwa karyawan baru saja reply ke JID ini"""
     _STAFF_LAST_REPLY[jid] = _time.time()
@@ -1395,7 +1408,7 @@ async def gowa_webhook(request: Request):
                             loop = asyncio.get_event_loop()
                             context = await loop.run_in_executor(None, find_context, body_text)
                             context["customer_name"] = from_name or ""
-                            if context["best_score"] >= 0.72:
+                            if context["best_score"] >= 0.62:  # threshold diturunkan 0.72→0.62
                                 llm_reply = await generate_reply_async(body_text, context)
                                 if llm_reply:
                                     reply_text = llm_reply
@@ -1404,10 +1417,13 @@ async def gowa_webhook(request: Request):
                         except Exception as _rag_err:
                             print(f"[AUTOREPLY] RAG error: {_rag_err}")
 
-                    # Layer 5: Default fallback
+                    # Layer 5: Default fallback (dengan cooldown 10 menit)
                     if not reply_text and not reply_layer:
-                        reply_text = AUTO_REPLY_DEFAULT
-                        reply_layer = "default"
+                        if _can_send_default(sender):
+                            reply_text = AUTO_REPLY_DEFAULT
+                            reply_layer = "default"
+                        else:
+                            print(f"[AUTOREPLY] Default reply cooldown active: {sender}")
 
                     # SEND — kirim reply kalau ada (layer 1/2/4/5)
                     if reply_text:
