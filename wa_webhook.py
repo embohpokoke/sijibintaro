@@ -41,6 +41,26 @@ ADMIN_NUMBERS = [
     "62811319003",   # Erik
     "628118606999",  # Ocha SIJI
 ]
+# === GOWA AUTOREPLY CONFIG ===
+GOWA_AUTOREPLY_ENABLED = True   # Diaktifkan 2026-03-08
+GOWA_BASE = "http://127.0.0.1:3002"
+GOWA_AUTH = ("siji", "SijiBintaro2026!")
+GOWA_DEVICE_ID = "73834210-3694-43bf-a14d-c75d487b18cb"
+
+# Numbers that should NEVER receive autoreply (admin + staff)
+SKIP_AUTOREPLY_NUMBERS = [
+    "62811319003",    # Erik (Full Admin)
+    "628118606999",   # Ocha SIJI (Full Admin)
+    "6282124046283",  # Filean (Manager)
+    "62811309991",    # Ocha Livinin (Manager)
+    "6281288783088",  # GOWA/Ops (System - nomor SIJI sendiri)
+    "6281227760808",  # Rizky (Karyawan)
+    "6285892726416",  # Denisa (Karyawan)
+    "6285715247073",  # Unaesih (Karyawan)
+]
+
+ESCALATION_NUMBER = "628118606999"  # Ocha SIJI — terima notif eskalasi
+
 
 # Landing page karir
 KARIR_URL = "https://sijibintaro.id/karir"
@@ -84,14 +104,14 @@ KEYWORD_REPLIES = {
     ),
     "jam": (
         "Jam operasional SIJI.Bintaro ⏰\n\n"
-        "Senin - Sabtu: 07.00 - 21.00\n"
-        "Minggu: 08.00 - 20.00\n\n"
+        "Senin - Sabtu: 08.00 - 20.00\n"
+        "Minggu: 08.00 - 16.00\n\n"
         "Bisa jemput & antar juga lho! 🛵"
     ),
     "lokasi": (
         "📍 SIJI.Bintaro\n"
-        "Jl. Bintaro Utama 3A No. 3B\n"
-        "Bintaro Jaya, Tangerang Selatan\n\n"
+        "Jl. Raya Emerald Boulevard, BLOK CE/A1 No.5\n"
+        "(Ruko PHD, Sebelah Marchand), Bintaro Jaya\n\n"
         "Google Maps: https://maps.app.goo.gl/sijibintaro\n"
         "Ditunggu ya Kak! 😊"
     ),
@@ -340,6 +360,25 @@ async def notify_telegram(sender: str, message: str, category: str = "", routing
         print(f"[Telegram notify error] {e}")
 
 
+
+async def send_gowa_message(phone: str, message: str) -> dict:
+    """Send WA message via GOWA API (self-hosted, port 3002)"""
+    url = f"{GOWA_BASE}/send/message"
+    payload = {"phone": phone, "message": message}
+    headers = {"X-Device-Id": GOWA_DEVICE_ID}
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                url, json=payload, headers=headers,
+                auth=GOWA_AUTH, timeout=10
+            )
+            result = resp.json()
+            print(f"[GOWA Send] → {phone}: {message[:50]} | resp: {result}")
+            return result
+    except Exception as e:
+        print(f"[GOWA Send Error] {phone}: {e}")
+        return {"error": str(e)}
+
 async def send_fonnte_message(target: str, message: str, url: str = None) -> dict:
     """Send message via Fonnte API"""
     if not FONNTE_TOKEN:
@@ -409,10 +448,19 @@ def init_wa_tables(conn):
         )
     """)
     
-    # Indexes
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_wa_conv_sender ON wa_conversations(sender)")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_wa_conv_date ON wa_conversations(created_at)")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_wa_cust_hp ON wa_customers(no_hp)")
+    # Indexes — wrap individually to handle schema mismatch gracefully
+    try:
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_wa_conv_sender ON wa_conversations(sender)")
+    except Exception:
+        pass  # Column may not exist in new-schema DB
+    try:
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_wa_conv_date ON wa_conversations(created_at)")
+    except Exception:
+        pass
+    try:
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_wa_cust_hp ON wa_customers(no_hp)")
+    except Exception:
+        pass
     
     conn.commit()
 
@@ -1114,12 +1162,13 @@ async def gowa_webhook(request: Request):
     payload = data.get("payload", {})
     device_id = data.get("device_id", "")
 
-    # --- Log to Fonnte-era siji.db (existing pipeline) ---
-    wa_conn = _sqlite3.connect("/opt/siji-dashboard/siji_database.db")
+    # --- Log to Fonnte-era siji.db (existing pipeline, old schema) ---
+    SIJI_DB_PATH = "/root/sijibintaro.id/api/siji.db"
+    wa_conn = _sqlite3.connect(SIJI_DB_PATH)
     wa_conn.row_factory = _sqlite3.Row
     init_wa_tables(wa_conn)
 
-    # --- Also log to siji_database.db (new GOWA pipeline) ---
+    # --- Also log to siji_database.db (new GOWA pipeline, new schema) ---
     tx_conn = _sqlite3.connect(TX_DB_PATH)
 
     try:
@@ -1189,6 +1238,53 @@ async def gowa_webhook(request: Request):
             wa_conn.commit()
 
             print(f"[GOWA] {direction} {sender} → {body_text[:60]}")
+
+            # === GOWA AUTOREPLY PIPELINE ===
+            if (not is_from_me
+                    and not is_group
+                    and GOWA_AUTOREPLY_ENABLED
+                    and body_text.strip()
+                    and msg_type == "text"):
+
+                # Skip admin & staff numbers
+                if sender in SKIP_AUTOREPLY_NUMBERS:
+                    print(f"[AUTOREPLY] Skip staff/admin: {sender}")
+                else:
+                    reply_text = None
+                    reply_layer = None
+
+                    # Layer 1: Job application keywords
+                    if is_job_application(body_text):
+                        reply_text = AUTO_REPLY_JOB
+                        reply_layer = "job"
+
+                    # Layer 2: Keyword match (harga, jam, lokasi, promo)
+                    if not reply_text:
+                        cat = match_keyword(body_text)
+                        if cat and cat in KEYWORD_REPLIES:
+                            reply_text = KEYWORD_REPLIES[cat]
+                            reply_layer = f"keyword:{cat}"
+
+                    # Layer 3: Default greeting untuk pesan pertama / tidak dikenal
+                    # (RAG + LLM akan diintegrasikan di Phase 2/3)
+                    # Untuk sekarang: jika tidak ada keyword match, escalate ke Ocha
+                    if not reply_text:
+                        # Notif Ocha tentang pesan yang butuh reply manual
+                        _notif_name = from_name or sender
+                        _notif_body = body_text[:300]
+                        notif_msg = (
+                            "\U0001F4AC *Pesan baru dari " + _notif_name + "*:\n\n"
+                            "_" + _notif_body + "_\n\n"
+                            "Nomor: wa.me/" + sender
+                        )
+                        await send_gowa_message(ESCALATION_NUMBER, notif_msg)
+                        reply_layer = "escalated"
+                        print(f"[AUTOREPLY] Escalated to Ocha: {sender}")
+                    else:
+                        # Kirim autoreply via GOWA
+                        await send_gowa_message(sender, reply_text)
+                        print(f"[AUTOREPLY] {reply_layer} → {sender}: {reply_text[:60]}")
+
             return {"status": "ok", "message_id": fonnte_msg_id, "direction": direction}
 
         elif event == "message.ack":
