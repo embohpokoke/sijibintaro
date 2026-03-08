@@ -192,6 +192,49 @@ AUTO_REPLY_JOB = (
     "Tim kami akan menghubungi Anda jika ada posisi yang sesuai. Terima kasih! 💪"
 ).format(karir_url=KARIR_URL)
 
+# === KATALOG LAYANAN (Layer 2.5) ===
+# Deteksi "bisa cuci X?" → jawab langsung dari katalog, tanpa LLM
+# Harga dari DB transaction_details (2026-03-08)
+SERVICE_CATALOG = {
+    "karpet":    ("karpet", "Rp75.000/m²"),
+    "stroller":  ("baby stroller", "Rp250.000/unit"),
+    "bedcover":  ("bedcover", "Rp70.000/lembar"),
+    "sprei":     ("sprei 1 set", "Rp35.000/set"),
+    "sepatu":    ("sepatu", "Rp90.000/pasang (reguler), Rp150.000/pasang (kulit)"),
+    "tas":       ("tas", "Rp140.000/unit (reguler), Rp250.000/pcs (brand USA)"),
+    "blazer":    ("blazer/jaket", "Rp65.000/pcs"),
+    "jaket":     ("blazer/jaket", "Rp65.000/pcs"),
+    "jas":       ("jas (dry clean)", "Rp80.000/pcs"),
+    "kulit":     ("pakaian/jaket kulit", "Rp150.000/pcs"),
+    "helm":      (None, None),  # tidak ada di katalog
+    "boneka":    (None, None),  # tidak ada di katalog
+}
+
+# Pattern "bisa cuci/laundry X?" atau "terima X?" atau "ada layanan X?"
+_SERVICE_PATTERN = re.compile(
+    r'(bisa|boleh|ada|terima|menerima|laundry|cuci|layanan|harga|berapa).{0,20}'
+    r'(karpet|stroller|bedcover|sprei|sepatu|tas|blazer|jaket|jas|kulit|helm|boneka)',
+    re.IGNORECASE
+)
+
+def check_service_catalog(message: str) -> str | None:
+    """Deteksi pertanyaan layanan spesifik → return template reply atau None"""
+    m = _SERVICE_PATTERN.search(message.lower())
+    if not m:
+        return None
+    keyword = m.group(2).lower()
+    entry = SERVICE_CATALOG.get(keyword)
+    if not entry:
+        return None
+    svc_name, price = entry
+    if svc_name is None:
+        return None
+    return (
+        f"Bisa Kak! SIJI menerima laundry *{svc_name}* 🙌\n\n"
+        f"💰 Harga: {price}\n\n"
+        f"Mau kami jemput, atau langsung antar ke toko ya Kak? 🛵"
+    )
+
 # Keyword auto-replies
 KEYWORD_REPLIES = {
     "harga": (
@@ -1387,6 +1430,13 @@ async def gowa_webhook(request: Request):
                         if cat and cat in KEYWORD_REPLIES:
                             reply_text = KEYWORD_REPLIES[cat]
                             reply_layer = f"keyword:{cat}"
+
+                    # Layer 2.5: Service catalog lookup (bisa cuci X? → langsung dari katalog)
+                    if not reply_text:
+                        svc_reply = check_service_catalog(body_text)
+                        if svc_reply:
+                            reply_text = svc_reply
+                            reply_layer = "catalog"
 
                     # Layer 3: Complaint check → escalate
                     if not reply_text and is_complaint(body_text):
