@@ -60,8 +60,8 @@ SKIP_AUTOREPLY_NUMBERS = [
 ]
 
 ESCALATION_NUMBERS = [
-    "628118606999",   # Ocha SIJI
-    "62811319003",    # Erik (owner)
+    # "628118606999",   # Ocha SIJI — aktifkan setelah testing selesai
+    "62811319003",    # Erik (owner) — testing only
 ]
 
 # Keywords indikasi komplain pelanggan → trigger eskalasi
