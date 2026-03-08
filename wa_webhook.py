@@ -64,6 +64,43 @@ ESCALATION_NUMBERS = [
     "62811319003",    # Erik (owner)
 ]
 
+# Keywords indikasi komplain pelanggan → trigger eskalasi
+COMPLAINT_KEYWORDS = [
+    # Ekspresi kekecewaan
+    "komplain", "kecewa", "kecewa", "tidak puas", "ga puas", "gak puas",
+    "nggak puas", "ngga puas",
+    # Masalah hasil laundry
+    "rusak", "sobek", "hilang", "luntur", "bau", "kotor", "belum bersih",
+    "masih kotor", "masih bau", "tidak bersih", "gak bersih",
+    # Masalah waktu / layanan
+    "lama", "lambat", "telat", "terlambat", "belum selesai", "belum jadi",
+    "belum datang", "belum diantar", "belum dijemput", "kapan selesai",
+    "kapan jadi", "kapan diantar",
+    # Masalah harga / tagihan
+    "kemahalan", "terlalu mahal", "salah tagih", "tagihan salah",
+    "harga beda", "harga tidak sesuai",
+    # Ekspresi keras
+    "kecewa banget", "sangat kecewa", "tidak profesional", "gak profesional",
+    "buruk", "jelek", "mengecewakan", "bohong", "tipu", "menipu",
+    "mau refund", "kembalikan uang", "cancel", "batalkan",
+]
+
+# Reply default untuk pesan non-keyword, non-komplain
+AUTO_REPLY_DEFAULT = (
+    "Halo Kak! 👋 Terima kasih sudah menghubungi SIJI.Bintaro.\n\n"
+    "Tim kami akan segera membalas pesanmu ya 🙏\n\n"
+    "Atau cek info lengkap:\n"
+    "• Harga → ketik *harga*\n"
+    "• Jam buka → ketik *jam*\n"
+    "• Lokasi → ketik *lokasi*"
+)
+
+
+def is_complaint(message: str) -> bool:
+    """Detect complaint indicators in customer message"""
+    msg_lower = message.lower().strip()
+    return any(kw in msg_lower for kw in COMPLAINT_KEYWORDS)
+
 
 # Landing page karir
 KARIR_URL = "https://sijibintaro.id/karir"
@@ -1268,22 +1305,26 @@ async def gowa_webhook(request: Request):
                             reply_text = KEYWORD_REPLIES[cat]
                             reply_layer = f"keyword:{cat}"
 
-                    # Layer 3: Default greeting untuk pesan pertama / tidak dikenal
+                    # Layer 3: Complaint check atau default reply
                     # (RAG + LLM akan diintegrasikan di Phase 2/3)
-                    # Untuk sekarang: jika tidak ada keyword match, escalate ke Ocha
                     if not reply_text:
-                        # Notif Ocha tentang pesan yang butuh reply manual
-                        _notif_name = from_name or sender
-                        _notif_body = body_text[:300]
-                        notif_msg = (
-                            "\U0001F4AC *Pesan baru dari " + _notif_name + "*:\n\n"
-                            "_" + _notif_body + "_\n\n"
-                            "Nomor: wa.me/" + sender
-                        )
-                        for _esc_num in ESCALATION_NUMBERS:
-                            await send_gowa_message(_esc_num, notif_msg)
-                        reply_layer = "escalated"
-                        print(f"[AUTOREPLY] Escalated to {ESCALATION_NUMBERS}: {sender}")
+                        if is_complaint(body_text):
+                            # Komplain → eskalasi ke Ocha + Erik
+                            _notif_name = from_name or sender
+                            _notif_body = body_text[:300]
+                            notif_msg = (
+                                "\u26a0\ufe0f *KOMPLAIN dari " + _notif_name + "*:\n\n"
+                                "_" + _notif_body + "_\n\n"
+                                "Nomor: wa.me/" + sender
+                            )
+                            for _esc_num in ESCALATION_NUMBERS:
+                                await send_gowa_message(_esc_num, notif_msg)
+                            reply_layer = "escalated:complaint"
+                            print(f"[AUTOREPLY] COMPLAINT escalated to {ESCALATION_NUMBERS}: {sender}")
+                        else:
+                            # Bukan komplain → reply generic, tidak eskalasi
+                            reply_text = AUTO_REPLY_DEFAULT
+                            reply_layer = "default"
                     else:
                         # Kirim autoreply via GOWA
                         await send_gowa_message(sender, reply_text)
