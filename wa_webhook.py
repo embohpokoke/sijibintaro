@@ -248,6 +248,8 @@ SERVICE_CATALOG = {
     "setrika":   ("setrika kiloan reguler", "Rp12.000/kg (min 3kg, 3 hari)"),
     # Household
     "karpet":    ("karpet", "Rp35.000/m² (10 hari)"),
+    "carpet":    ("karpet", "Rp35.000/m² (10 hari)"),
+    "permadani": ("karpet", "Rp35.000/m² (10 hari)"),
     "gordyn":    ("gordyn", "Rp16.000/m² (tebal/blackout), Rp10.000/m² (tipis/vetrase)"),
     "gorden":    ("gordyn", "Rp16.000/m² (tebal/blackout), Rp10.000/m² (tipis/vetrase)"),
     "sofa":      ("sarung sofa", "Rp30.000/m²"),
@@ -262,10 +264,15 @@ SERVICE_CATALOG = {
     "boneka":    ("boneka", "Rp40.000 (kecil), Rp100.000 (besar)"),
     # Sepatu
     "sepatu":    ("sepatu", "Rp90.000/pasang (reguler, 3 hari), Rp150.000 (kulit/boot, 4 hari)"),
+    "shoes":     ("sepatu", "Rp90.000/pasang (reguler, 3 hari), Rp150.000 (kulit/boot, 4 hari)"),
+    "shoe":      ("sepatu", "Rp90.000/pasang (reguler, 3 hari), Rp150.000 (kulit/boot, 4 hari)"),
+    "sneakers":  ("sepatu", "Rp90.000/pasang (reguler, 3 hari), Rp150.000 (kulit/boot, 4 hari)"),
     "boot":      ("sepatu boot", "Rp150.000/pcs (4 hari)"),
     "helm":      ("helm", "Rp80.000/pcs (3 hari)"),
     # Tas
     "tas":       ("tas", "Rp140.000 (reguler), Rp250.000 (USA brand), Rp500.000 (EU brand/LV/Gucci)"),
+    "bag":       ("tas", "Rp140.000 (reguler), Rp250.000 (USA brand), Rp500.000 (EU brand/LV/Gucci)"),
+    "handbag":   ("tas", "Rp140.000 (reguler), Rp250.000 (USA brand), Rp500.000 (EU brand/LV/Gucci)"),
     "dompet":    ("dompet", "Rp100.000 (reguler), Rp200.000 (USA brand), Rp350.000 (EU brand)"),
     "ransel":    ("tas gunung/ransel", "Rp200.000/pcs (5 hari)"),
     # Dry clean / Pakaian
@@ -281,30 +288,34 @@ SERVICE_CATALOG = {
     "sleeping":  ("sleeping bag", "Rp90.000/pcs (5 hari)"),
 }
 
-# Pattern "bisa cuci/laundry X?" atau "terima X?" atau "ada layanan X?"
-_SERVICE_PATTERN = re.compile(
-    r'(bisa|boleh|ada|terima|menerima|laundry|cuci|layanan|harga|berapa).{0,20}'
-    r'(karpet|stroller|bedcover|sprei|sepatu|tas|blazer|jaket|jas|kulit|helm|boneka)',
-    re.IGNORECASE
-)
+# Kata tanya / pertanyaan yang menandakan customer butuh info layanan
+_QUESTION_WORDS = [
+    "berapa", "harga", "tarif", "biaya", "treatment", "treatmentnya",
+    "bisa", "boleh", "ada", "terima", "menerima", "laundry", "cuci",
+    "layanan", "jenis", "apa saja", "gimana", "bagaimana", "cara",
+    "spa", "service", "servis",
+]
 
 def check_service_catalog(message: str) -> str | None:
-    """Deteksi pertanyaan layanan spesifik → return template reply atau None"""
-    m = _SERVICE_PATTERN.search(message.lower())
-    if not m:
+    """Deteksi pertanyaan layanan spesifik → return template reply atau None.
+    Lebih fleksibel: cek service keyword + kata tanya, tanpa strict pattern order."""
+    msg_lower = message.lower()
+
+    # Cek ada kata tanya/service dulu — kalau tidak ada, skip
+    has_question = any(q in msg_lower for q in _QUESTION_WORDS)
+    if not has_question:
         return None
-    keyword = m.group(2).lower()
-    entry = SERVICE_CATALOG.get(keyword)
-    if not entry:
-        return None
-    svc_name, price = entry
-    if svc_name is None:
-        return None
-    return (
-        f"Bisa Kak! SIJI menerima laundry *{svc_name}* 🙌\n\n"
-        f"💰 Harga: {price}\n\n"
-        f"Mau kami jemput, atau langsung antar ke toko ya Kak? 🛵"
-    )
+
+    # Cek ada keyword layanan spesifik
+    for keyword, entry in SERVICE_CATALOG.items():
+        if keyword in msg_lower:
+            svc_name, price = entry
+            return (
+                f"Bisa Kak! SIJI menerima laundry *{svc_name}* 🙌\n\n"
+                f"💰 Harga: {price}\n\n"
+                f"Mau kami jemput, atau langsung antar ke toko ya Kak? 🛵"
+            )
+    return None
 
 # Keyword auto-replies
 KEYWORD_REPLIES = {
