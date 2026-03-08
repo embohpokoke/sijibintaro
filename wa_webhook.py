@@ -310,7 +310,7 @@ AUTO_REPLY_JOB = (
 # Lebih robust: handle variasi bahasa, typo, bahasa Inggris, sinonim
 COLLECTION_SERVICES = "siji_services"
 SERVICES_COLLECTION_ID = None  # di-cache saat pertama kali dipanggil
-SERVICE_SIMILARITY_THRESHOLD = 0.68  # min score untuk dianggap match
+SERVICE_SIMILARITY_THRESHOLD = 0.70  # min score untuk dianggap match
 
 # === KATALOG LAYANAN (Layer 2.5) ===
 # Deteksi "bisa cuci X?" → jawab langsung dari katalog, tanpa LLM
@@ -373,6 +373,135 @@ _QUESTION_WORDS = [
 ]
 
 
+
+# English → Indonesian normalizer untuk catalog queries
+# nomic-embed-text lemah cross-lingual, jadi kita translate dulu sebelum embed
+_EN_ID_MAP = {
+    # Tas
+    "bag":          "tas",     "bags":        "tas",
+    "duffel":       "tas",     "duffel bag":  "tas ransel",
+    "duffle":       "tas ransel", "travel bag": "tas ransel",
+    "backpack":     "ransel",  "tote":        "tas",
+    "handbag":      "tas",     "purse":       "tas dompet",
+    "wallet":       "dompet",  "pouch":       "tas kecil",
+    "clutch":       "tas kecil",
+    # Sepatu
+    "shoes":        "sepatu",  "shoe":        "sepatu",
+    "sneakers":     "sepatu",  "sneaker":     "sepatu",
+    "boots":        "sepatu boot", "boot":    "sepatu boot",
+    "heels":        "sepatu",  "sandals":     "sandal",
+    # Pakaian
+    "jacket":       "jaket",   "blazer":      "blazer",
+    "dress":        "dress",   "kebaya":      "kebaya",
+    "leather":      "kulit",   "coat":        "jaket",
+    # Rumah tangga
+    "carpet":       "karpet",  "rug":         "karpet",
+    "curtain":      "gordyn",  "curtains":    "gordyn",
+    "mattress":     "kasur",   "pillow":      "bantal",
+    "bolster":      "guling",  "blanket":     "selimut",
+    "bedsheet":     "sprei",   "duvet":       "bedcover",
+    "comforter":    "bedcover","quilt":       "bedcover",
+    "bedcover":     "bedcover",
+    # Bayi & lainnya
+    "stroller":     "stroller","helmet":      "helm",
+    "suitcase":     "koper",   "luggage":     "koper",
+    "sleeping bag": "sleeping bag",
+    "sofa":         "sofa",    "stool":       "kursi sofa",
+}
+
+
+def _normalize_query_for_catalog(text: str) -> str:
+    """Translate common English product terms to Indonesian sebelum embed."""
+    result = text.lower()
+    # Multi-word dulu
+    for en, id_ in sorted(_EN_ID_MAP.items(), key=lambda x: -len(x[0])):
+        if en in result and en != id_:
+            result = result.replace(en, id_)
+    return result
+
+# English direct-match: bypass ChromaDB, langsung return catalog name
+# Key: English keyword (lowercase), Value: nama_layanan di service_catalog (exact/partial)
+_EN_DIRECT_CATALOG = {
+    "duffel bag":   "TAS REGULAR",
+    "duffel":       "TAS REGULAR",
+    "duffle":       "TAS REGULAR",
+    "travel bag":   "Tas Gunung/Ransel besar",
+    "backpack":     "Tas Gunung/Ransel besar",
+    "hiking bag":   "Tas Gunung/Ransel besar",
+    "carrier":      "Tas Gunung/Ransel besar",
+    "shoes spa":    "Treatment Sepatu (Hilangkan jamur,Noda)",
+    "shoe spa":     "Treatment Sepatu (Hilangkan jamur,Noda)",
+    "sneakers":     "SEPATU REGULER",
+    "sneaker":      "SEPATU REGULER",
+    "curtain":      "GORDYN TEBAL/BLACKOUT",
+    "curtains":     "GORDYN TEBAL/BLACKOUT",
+    "comforter":    "BEDCOVER",
+    "duvet":        "BEDCOVER",
+    "quilt":        "BEDCOVER",
+    "mattress":     "KASUR/MATRAS TIPIS",
+    "pillow":       "BANTAL/BONEKA KECIL",
+    "bolster":      "BANTAL BESAR/GULING",
+    "suitcase":     "KOPER",
+    "luggage":      "KOPER",
+    "helmet":       "HELM",
+    "stroller":     "BABY STROLLER",
+    "car seat":     "BABY CAR SEATER",
+    "baby seat":    "BABY CAR SEATER",
+    "sleeping bag": "Sleeping bag",
+    "wallet":       "Dompet regular",
+    "purse":        "TAS REGULAR",
+    "handbag":      "TAS REGULAR",
+    "tote bag":     "TAS REGULAR",
+}
+
+_EN_DIRECT_PRICE = {}  # cache: nama_layanan → price_str
+
+
+def _get_price_for_nama(nama: str) -> str:
+    """Lookup price_str dari service_catalog DB."""
+    if nama in _EN_DIRECT_PRICE:
+        return _EN_DIRECT_PRICE[nama]
+    try:
+        import sqlite3 as _sqlite3
+        TX_DB = "/opt/siji-dashboard/siji_database.db"
+        conn = _sqlite3.connect(TX_DB)
+        row = conn.execute(
+            "SELECT nama_layanan, harga, satuan, durasi_hari, durasi_jam FROM service_catalog "
+            "WHERE nama_layanan LIKE ? LIMIT 1", (f"%{nama}%",)
+        ).fetchone()
+        conn.close()
+        if row:
+            _, h, sat, dh, dj = row
+            p = f"Rp{h:,}".replace(",",".")
+            d = f"{dh} hari" if dh > 0 else f"{dj} jam" if dj > 0 else ""
+            ps = f"{p}/{sat.lower()}" + (f" ({d})" if d else "")
+            _EN_DIRECT_PRICE[nama] = ps
+            return ps
+    except Exception:
+        pass
+    return ""
+
+
+def _check_english_catalog(message: str):
+    """Layer khusus English product terms — bypass ChromaDB, langsung match."""
+    msg_lower = message.lower()
+    has_question = any(q in msg_lower for q in _QUESTION_WORDS)
+    if not has_question:
+        return None
+    # Cek multi-word dulu (terpanjang)
+    for en_kw in sorted(_EN_DIRECT_CATALOG.keys(), key=len, reverse=True):
+        if en_kw in msg_lower:
+            nama = _EN_DIRECT_CATALOG[en_kw]
+            price = _get_price_for_nama(nama)
+            print(f"[CATALOG] EN direct match: {en_kw!r} → {nama}")
+            return (
+                f"Bisa Kak! SIJI menerima *{nama.title()}* \U0001f64c\n\n"
+                f"\U0001f4b0 Harga: {price}\n\n"
+                f"Mau dijemput kurir kami, atau langsung antar ke toko ya Kak? \U0001f60a"
+            )
+    return None
+
+
 def _get_services_collection_id() -> str | None:
     """Cache collection ID siji_services."""
     global SERVICES_COLLECTION_ID
@@ -409,6 +538,34 @@ _BRAND_MAP = {
     "sleeping bag": (59, "Sleeping Bag", "Rp90.000/pcs (5 hari)"),
     "car seat": (52, "BABY CAR SEATER", "Rp250.000/unit (6 hari)"),
     "baby bed": (53, "Baby Bed/Kasur Bayi", "Rp250.000/pcs (7 hari)"),
+    # English product aliases
+    "duffel bag": (34, "TAS REGULAR", "Rp140.000/unit (4 hari)"),
+    "duffle bag": (34, "TAS REGULAR", "Rp140.000/unit (4 hari)"),
+    "duffel":     (34, "TAS REGULAR", "Rp140.000/unit (4 hari)"),
+    "tote bag":   (34, "TAS REGULAR", "Rp140.000/unit (4 hari)"),
+    "handbag":    (34, "TAS REGULAR", "Rp140.000/unit (4 hari)"),
+    "purse":      (34, "TAS REGULAR", "Rp140.000/unit (4 hari)"),
+    "backpack":   (40, "Tas Gunung/Ransel Besar", "Rp200.000/pcs (5 hari)"),
+    "travel bag": (40, "Tas Gunung/Ransel Besar", "Rp200.000/pcs (5 hari)"),
+    "sneakers":   (23, "SEPATU REGULER", "Rp90.000/pasang (3 hari)"),
+    "sneaker":    (23, "SEPATU REGULER", "Rp90.000/pasang (3 hari)"),
+    "shoes spa":  (29, "Treatment Sepatu", "Rp150.000/pasang (5 hari)"),
+    "shoe spa":   (29, "Treatment Sepatu", "Rp150.000/pasang (5 hari)"),
+    "curtain":    (20, "GORDYN TEBAL/BLACKOUT", "Rp16.000/m² (5 hari)"),
+    "curtains":   (20, "GORDYN TEBAL/BLACKOUT", "Rp16.000/m² (5 hari)"),
+    "comforter":  (11, "BEDCOVER", "Rp70.000/lembar (3 hari)"),
+    "duvet":      (11, "BEDCOVER", "Rp70.000/lembar (3 hari)"),
+    "blanket":    (11, "BEDCOVER", "Rp70.000/lembar (3 hari)"),
+    "mattress":   (55, "KASUR/MATRAS TIPIS", "Rp95.000/unit (5 hari)"),
+    "pillow":     (16, "BANTAL/BONEKA KECIL", "Rp40.000/pcs (4 hari)"),
+    "bolster":    (17, "BANTAL BESAR/GULING", "Rp60.000/pcs (4 hari)"),
+    "suitcase":   (54, "KOPER", "Rp190.000/unit (4 hari)"),
+    "luggage":    (54, "KOPER", "Rp190.000/unit (4 hari)"),
+    "helmet":     (50, "HELM", "Rp80.000/pcs (3 hari)"),
+    "stroller":   (51, "BABY STROLLER", "Rp250.000/unit (6 hari)"),
+    "wallet":     (39, "Dompet Regular", "Rp100.000/pcs (6 hari)"),
+    "jacket":     (44, "BLAZER/JAKET", "Rp65.000/pcs (3 hari)"),
+    "leather jacket": (45, "PAKAIAN/JAKET KULIT", "Rp150.000/pcs (12 hari)"),
     # EU brands → BAG SPA EROPA
     "louis vuitton": (36, "BAG SPA BRAND EROPA", "Rp500.000/pcs (7 hari)"),
     " lv ": (36, "BAG SPA BRAND EROPA", "Rp500.000/pcs (7 hari)"),
@@ -451,10 +608,15 @@ def check_service_catalog(message: str) -> str | None:
         import httpx as _httpx
         CHROMA_BASE = "http://localhost:32769/api/v2/tenants/default_tenant/databases/default_database"
 
+        # Normalize English terms → Indonesian sebelum embed
+        normalized = _normalize_query_for_catalog(message)
+        if normalized != message.lower():
+            print(f"[CATALOG] normalized: {message!r} → {normalized!r}")
+
         # Embed query
         emb_r = _httpx.post(
             "http://localhost:11434/api/embeddings",
-            json={"model": "nomic-embed-text", "prompt": message},
+            json={"model": "nomic-embed-text", "prompt": normalized},
             timeout=10
         )
         embedding = emb_r.json().get("embedding")
@@ -814,7 +976,7 @@ AUTO_REPLY_JOB = (
 # Lebih robust: handle variasi bahasa, typo, bahasa Inggris, sinonim
 COLLECTION_SERVICES = "siji_services"
 SERVICES_COLLECTION_ID = None  # di-cache saat pertama kali dipanggil
-SERVICE_SIMILARITY_THRESHOLD = 0.68  # min score untuk dianggap match
+SERVICE_SIMILARITY_THRESHOLD = 0.70  # min score untuk dianggap match
 
 # === KATALOG LAYANAN (Layer 2.5) ===
 # Deteksi "bisa cuci X?" → jawab langsung dari katalog, tanpa LLM
