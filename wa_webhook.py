@@ -1504,19 +1504,19 @@ async def gowa_webhook(request: Request):
                         reply_text = AUTO_REPLY_JOB
                         reply_layer = "job"
 
-                    # Layer 2: Keyword match (harga, jam, lokasi, promo)
-                    if not reply_text:
-                        cat = match_keyword(body_text)
-                        if cat and cat in KEYWORD_REPLIES:
-                            reply_text = KEYWORD_REPLIES[cat]
-                            reply_layer = f"keyword:{cat}"
-
                     # Layer 2.5: Service catalog lookup (bisa cuci X? → langsung dari katalog)
                     if not reply_text:
                         svc_reply = check_service_catalog(body_text)
                         if svc_reply:
                             reply_text = svc_reply
                             reply_layer = "catalog"
+
+                    # Layer 2: Keyword match (harga, jam, lokasi, promo)
+                    if not reply_text:
+                        cat = match_keyword(body_text)
+                        if cat and cat in KEYWORD_REPLIES:
+                            reply_text = KEYWORD_REPLIES[cat]
+                            reply_layer = f"keyword:{cat}"
 
                     # Layer 3: Complaint check → escalate
                     if not reply_text and is_complaint(body_text):
