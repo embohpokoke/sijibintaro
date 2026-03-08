@@ -13,6 +13,16 @@ import sqlite3
 import asyncio
 import httpx
 
+# Customer context lookup (Phase 3)
+try:
+    from customer_context import get_customer_context, format_customer_greeting
+    CUSTOMER_CONTEXT_ENABLED = True
+    print("[AUTOREPLY] Customer context enabled (customer_context loaded)")
+except ImportError as _ce:
+    CUSTOMER_CONTEXT_ENABLED = False
+    def get_customer_context(phone): return {"found": False, "nama": "", "segment": "Baru"}
+    def format_customer_greeting(ctx, fallback=""): return fallback or "Kak"
+
 # RAG + LLM modules (Phase 2)
 try:
     from siji_rag import find_context
@@ -1445,6 +1455,15 @@ async def gowa_webhook(request: Request):
                     reply_text = None
                     reply_layer = None
 
+                    # Customer context dari DB transaksi
+                    cust_ctx = get_customer_context(sender)
+                    # Nama: prioritas DB transaksi > from_name WA > "Kak"
+                    cust_name = format_customer_greeting(cust_ctx, from_name or "")
+                    if cust_ctx["found"]:
+                        print(f"[CustomerCtx] {sender} → {cust_ctx['nama']} | {cust_ctx['segment']} | {cust_ctx['total_transaksi']} tx")
+                    else:
+                        cust_name = from_name or ""
+
                     # Layer 1: Job application keywords
                     if is_job_application(body_text):
                         reply_text = AUTO_REPLY_JOB
@@ -1484,7 +1503,9 @@ async def gowa_webhook(request: Request):
                         try:
                             loop = asyncio.get_event_loop()
                             context = await loop.run_in_executor(None, find_context, body_text)
-                            context["customer_name"] = from_name or ""
+                            context["customer_name"] = cust_name
+                            context["customer_segment"] = cust_ctx.get("segment", "Baru")
+                            context["customer_tx_count"] = cust_ctx.get("total_transaksi", 0)
                             _rag_score = context["best_score"]
                             if _rag_score >= 0.62:
                                 llm_reply = await generate_reply_async(body_text, context)

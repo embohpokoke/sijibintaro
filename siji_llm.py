@@ -60,7 +60,18 @@ def build_prompt_messages(customer_message: str, context: dict) -> list:
 
     # Nama pelanggan masuk ke user message agar model pakai nama yang benar
     cust_name = context.get("customer_name", "").strip()
-    user_msg = f"Pelanggan ({cust_name or 'Kak'}): {customer_message}" if cust_name else customer_message
+    segment   = context.get("customer_segment", "Baru")
+    tx_count  = context.get("customer_tx_count", 0)
+
+    # Label untuk model: VIP/Reguler customer sapaan lebih hangat
+    if cust_name and segment == "VIP":
+        prefix = f"Pelanggan VIP ({cust_name}, {tx_count} transaksi)"
+    elif cust_name:
+        prefix = f"Pelanggan ({cust_name})"
+    else:
+        prefix = "Pelanggan"
+
+    user_msg = f"{prefix}: {customer_message}"
 
     return [
         {"role": "system", "content": system},
