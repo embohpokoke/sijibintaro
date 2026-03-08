@@ -391,10 +391,33 @@ def _get_services_collection_id() -> str | None:
     return None
 
 
+# Brand → service catalog mapping (nama brand tidak ter-embed dengan baik di nomic)
+_BRAND_MAP = {
+    # USA brands → BAG SPA USA BRAND
+    "coach": (35, "BAG SPA USA BRAND", "Rp250.000/pcs (7 hari)"),
+    "kate spade": (35, "BAG SPA USA BRAND", "Rp250.000/pcs (7 hari)"),
+    "fossil": (35, "BAG SPA USA BRAND", "Rp250.000/pcs (7 hari)"),
+    "tory burch": (35, "BAG SPA USA BRAND", "Rp250.000/pcs (7 hari)"),
+    "aigner": (35, "BAG SPA USA BRAND", "Rp250.000/pcs (7 hari)"),
+    "furla": (35, "BAG SPA USA BRAND", "Rp250.000/pcs (7 hari)"),
+    # EU brands → BAG SPA EROPA
+    "louis vuitton": (36, "BAG SPA BRAND EROPA", "Rp500.000/pcs (7 hari)"),
+    " lv ": (36, "BAG SPA BRAND EROPA", "Rp500.000/pcs (7 hari)"),
+    "gucci": (36, "BAG SPA BRAND EROPA", "Rp500.000/pcs (7 hari)"),
+    "prada": (36, "BAG SPA BRAND EROPA", "Rp500.000/pcs (7 hari)"),
+    "fendi": (36, "BAG SPA BRAND EROPA", "Rp500.000/pcs (7 hari)"),
+    "dior": (36, "BAG SPA BRAND EROPA", "Rp500.000/pcs (7 hari)"),
+    "balenciaga": (36, "BAG SPA BRAND EROPA", "Rp500.000/pcs (7 hari)"),
+    "celine": (36, "BAG SPA BRAND EROPA", "Rp500.000/pcs (7 hari)"),
+    "givenchy": (36, "BAG SPA BRAND EROPA", "Rp500.000/pcs (7 hari)"),
+}
+
+
 def check_service_catalog(message: str) -> str | None:
     """
-    Deteksi pertanyaan layanan via ChromaDB similarity (siji_services).
-    Lebih robust dari keyword hardcode: handle variasi bahasa, Inggris, typo.
+    Deteksi pertanyaan layanan:
+    1. Brand name keyword mapping (tas luxury)
+    2. ChromaDB similarity (siji_services, 61 layanan)
     """
     msg_lower = message.lower().strip()
 
@@ -402,6 +425,15 @@ def check_service_catalog(message: str) -> str | None:
     has_question = any(q in msg_lower for q in _QUESTION_WORDS)
     if not has_question:
         return None
+
+    # ── Pre-check: brand name mapping ────────────────────────────────────────
+    for brand, (_, nama, price_str) in _BRAND_MAP.items():
+        if brand in msg_lower:
+            return (
+                f"Bisa Kak! SIJI menerima *{nama}* \U0001f64c\n\n"
+                f"\U0001f4b0 Harga: {price_str}\n\n"
+                f"Mau dijemput kurir kami, atau langsung antar ke toko ya Kak? \U0001f60a"
+            )
 
     try:
         import httpx as _httpx
