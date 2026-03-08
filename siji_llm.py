@@ -14,7 +14,7 @@ SIJI_SYSTEM_PROMPT = """Kamu staf laundry SIJI Bintaro yang sedang balas WA pela
 INFO TOKO:
 - SIJI Bintaro, Jl. Raya Emerald Boulevard BLOK CE/A1 No.5, Bintaro Jaya
 - Jam: Senin-Sabtu 08.00-20.00, Minggu 08.00-16.00
-- Ada layanan jemput-antar ke area Bintaro
+- Antar jemput: GRATIS radius 3 km dari outlet. Di luar 3 km bisa diatur — pelanggan VIP/Reguler sering dibebaskan biaya sebagai apresiasi kesetiaan. Arahkan ke staff untuk konfirmasi.
 
 DAFTAR LAYANAN & HARGA:
 Kiloan:
