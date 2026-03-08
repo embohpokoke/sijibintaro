@@ -346,9 +346,9 @@ KEYWORD_REPLIES = {
     "antar_jemput": (
         "Halo Kak! 🛵 SIJI Bintaro ada layanan *antar jemput FREE* "
         "untuk area dalam radius *3 km dari outlet* kami.\n\n"
-        "Di luar 3 km bisa diatur dulu ya Kak, konfirmasi ke kami dulu 😊\n\n"
+        "Di luar 3 km? Bisa dikonfirmasi dulu ya Kak, nanti kami bantu atur 😊\n\n"
         "📍 Outlet: Jl. Raya Emerald Boulevard, BLOK CE/A1 No.5 (Ruko PHD)\n"
-        "📞 Order: wa.me/6281288783088"
+        "📞 Chat kami: wa.me/6281288783088"
     ),
 }
 
