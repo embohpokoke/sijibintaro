@@ -357,7 +357,8 @@ KEYWORD_REPLIES = {
     "antar_jemput": (
         "Halo Kak! 🛵 SIJI Bintaro ada layanan *antar jemput FREE* "
         "untuk area dalam radius *3 km dari outlet* kami.\n\n"
-        "Di luar 3 km? Bisa dikonfirmasi dulu ya Kak, nanti kami bantu atur 😊\n\n"
+        "Wilayah Emerald, BSD sekitar, Bintaro Jaya — *FREE* ya Kak! 🎉\n"
+        "Di luar 3 km? Bisa dikonfirmasi dulu, nanti kami bantu atur 😊\n\n"
         "📍 Outlet: Jl. Raya Emerald Boulevard, BLOK CE/A1 No.5 (Ruko PHD)\n"
         "📞 Chat kami: wa.me/6281288783088"
     ),
@@ -378,7 +379,11 @@ KEYWORD_MAP = {
     "antar_jemput": ["antar jemput", "antar-jemput", "pickup", "jemput laundry",
                      "ambil laundry", "diantar", "dijemput", "layanan antar",
                      "bisa antar", "bisa jemput", "ada jemput", "ada antar",
-                     "free antar", "gratis antar"],
+                     "free antar", "gratis antar", "gratis gak", "free gak",
+                     "wilayah emerald", "area emerald", "emerald gratis",
+                     "ke emerald", "jemput gratis", "antar gratis",
+                     "wilayah bintaro", "area bintaro", "ongkir", "biaya antar",
+                     "biaya jemput", "kena ongkos", "bayar ongkos"],
 }
 
 
