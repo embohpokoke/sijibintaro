@@ -1,19 +1,18 @@
 """
 siji_rag.py — RAG module untuk SIJI Bintaro autoreply
-Queries ChromaDB v2 (siji_memory + siji_qa_history) via HTTP
-Uses nomic-embed-text (dim 768) for embeddings via Ollama
+Dual-collection search: siji_qa_history (synthetic Q&A) + siji_conv_patterns (real conversations)
+Uses nomic-embed-text (dim 768) via Ollama
 """
 import httpx
-import hashlib
 from typing import Optional
 
 OLLAMA_BASE = "http://localhost:11434"
 CHROMA_BASE = "http://localhost:32769/api/v2/tenants/default_tenant/databases/default_database"
 
-COLLECTION_SOP = "siji_memory"
-COLLECTION_QA  = "siji_qa_history"
+COLLECTION_QA       = "siji_qa_history"      # 1,210 synthetic Q&A pairs
+COLLECTION_PATTERNS = "siji_conv_patterns"    # 1,304 real staff-customer pairs
 
-# Cache collection IDs to avoid repeated lookups
+# Cache collection IDs
 _collection_ids: dict = {}
 
 
@@ -38,15 +37,14 @@ def embed_text(text: str) -> Optional[list]:
             json={"model": "nomic-embed-text", "input": text},
             timeout=15
         )
-        result = resp.json()
-        return result.get("embeddings", [[]])[0]
+        return resp.json().get("embeddings", [[]])[0]
     except Exception as e:
         print(f"[RAG] embed error: {e}")
         return None
 
 
-def query_collection(collection_id: str, embedding: list, n_results: int = 3) -> dict:
-    """Query ChromaDB collection with embedding vector"""
+def query_collection(collection_id: str, embedding: list, n_results: int = 2) -> list:
+    """Query ChromaDB, return list of (score, doc, meta) sorted by score desc."""
     try:
         resp = httpx.post(
             f"{CHROMA_BASE}/collections/{collection_id}/query",
@@ -57,45 +55,80 @@ def query_collection(collection_id: str, embedding: list, n_results: int = 3) ->
             },
             timeout=10
         )
-        return resp.json()
+        r = resp.json()
+        docs   = r.get("documents", [[]])[0]
+        dists  = r.get("distances",  [[]])[0]
+        metas  = r.get("metadatas",  [[]])[0]
+        results = []
+        for doc, dist, meta in zip(docs, dists, metas):
+            results.append((1 - dist, doc, meta or {}))
+        return sorted(results, key=lambda x: -x[0])
     except Exception as e:
         print(f"[RAG] query error: {e}")
-        return {}
+        return []
 
 
 def find_context(query: str, threshold: float = 0.75) -> dict:
     """
-    Main RAG function: embed query, search ONLY siji_qa_history (percakapan real karyawan).
-    siji_memory (SOP internal) TIDAK dipakai — konten internal, bukan untuk customer.
-    Returns dict with qa_context, qa_answer, best_score
+    Dual-collection RAG:
+    1. siji_qa_history — synthetic Q&A (structured knowledge)
+    2. siji_conv_patterns — real staff-customer conversations (tone + edge cases)
+
+    Returns best match across both collections.
+    Threshold 0.75 untuk Q&A (lebih presisi), 0.78 untuk conv_patterns (lebih banyak noise).
     """
     result = {
-        "sop_context": None,   # always None — SOP internal, tidak dipakai
-        "qa_context": None,
-        "qa_answer": None,
-        "best_score": 0.0
+        "sop_context":  None,   # always None (SOP internal, tidak dipakai customer)
+        "qa_context":   None,
+        "qa_answer":    None,
+        "conv_context": None,   # NEW: from siji_conv_patterns
+        "best_score":   0.0,
+        "source":       None,   # "qa" | "conv" | None
     }
 
     embedding = embed_text(query)
     if not embedding:
         return result
 
-    # --- Search Q&A history only (siji_qa_history) ---
-    # SOP knowledge (siji_memory) di-skip: berisi prosedur internal SIJI,
-    # tidak boleh disampaikan ke customer.
+    best_score = 0.0
+    best_source = None
+    best_doc = None
+    best_meta = {}
+
+    # ── Search 1: siji_qa_history (synthetic, structured) ──
     qa_id = _get_collection_id(COLLECTION_QA)
     if qa_id:
-        qa_results = query_collection(qa_id, embedding, n_results=2)
-        docs = qa_results.get("documents", [[]])[0]
-        dists = qa_results.get("distances", [[]])[0]
-        metas = qa_results.get("metadatas", [[]])[0]
-        if docs and dists:
-            score = 1 - dists[0]
-            result["best_score"] = score
-            if score >= threshold:
-                result["qa_context"] = docs[0][:300]
-                answer = metas[0].get("answer", "") if metas else ""
-                result["qa_answer"] = answer[:400] if answer else None
-            print(f"[RAG] QA score: {score:.3f} | {docs[0][:60]}")
+        qa_hits = query_collection(qa_id, embedding, n_results=2)
+        if qa_hits:
+            score, doc, meta = qa_hits[0]
+            print(f"[RAG] QA score: {score:.3f} | {doc[:60]}")
+            if score > best_score:
+                best_score, best_source, best_doc, best_meta = score, "qa", doc, meta
+
+    # ── Search 2: siji_conv_patterns (real conversations) ──
+    conv_id = _get_collection_id(COLLECTION_PATTERNS)
+    if conv_id:
+        conv_hits = query_collection(conv_id, embedding, n_results=2)
+        if conv_hits:
+            score, doc, meta = conv_hits[0]
+            print(f"[RAG] CONV score: {score:.3f} | {doc[:60]}")
+            if score > best_score:
+                best_score, best_source, best_doc, best_meta = score, "conv", doc, meta
+
+    result["best_score"] = round(best_score, 4)
+    result["source"] = best_source
+
+    if best_score >= threshold and best_doc:
+        if best_source == "qa":
+            result["qa_context"] = best_doc[:300]
+            answer = best_meta.get("answer", "")
+            result["qa_answer"] = answer[:400] if answer else None
+        elif best_source == "conv":
+            # Extract staff reply from real conversation pattern
+            result["conv_context"] = best_doc[:400]
+            staff_reply = best_meta.get("staff", "")
+            # Use real staff reply as QA answer hint for LLM
+            result["qa_answer"] = staff_reply[:400] if staff_reply else None
+            result["qa_context"] = best_doc[:300]
 
     return result
