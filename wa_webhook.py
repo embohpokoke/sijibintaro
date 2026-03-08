@@ -168,14 +168,9 @@ COMPLAINT_KEYWORDS = [
 
 # Reply default untuk pesan non-keyword, non-komplain
 AUTO_REPLY_DEFAULT = (
-    "Halo Kak! 👋 Terima kasih sudah menghubungi SIJI.Bintaro.\n\n"
-    "Tim kami akan segera membalas pesanmu ya 🙏\n\n"
-    "Atau cek info lengkap:\n"
-    "• Harga → ketik *harga*\n"
-    "• Jam buka → ketik *jam*\n"
-    "• Lokasi → ketik *lokasi*"
+    "Halo Kak! 👋 Pesan kamu sudah kami terima.\n"
+    "Tim kami akan segera membalas ya 🙏"
 )
-
 
 def is_complaint(message: str) -> bool:
     """Detect complaint indicators in customer message"""
