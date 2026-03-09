@@ -113,14 +113,17 @@ async def submit_job_application(
             cursor.execute("""
                 INSERT INTO lamaran (nama, whatsapp, domisili, posisi, pengalaman, cv_path)
                 VALUES (?, ?, ?, ?, ?, ?)
+                RETURNING id
             """, (nama.strip(), whatsapp.strip(), domisili.strip() if domisili else None, 
                  posisi.strip(), pengalaman.strip() if pengalaman else None, cv_path))
+            result = cursor.fetchone()
+            new_id = result['id'] if result else None
             conn.commit()
             
         return Response(
             success=True,
             message="Lamaran berhasil dikirim! Tim kami akan menghubungi kamu via WhatsApp.",
-            data={"id": cursor.lastrowid}
+            data={"id": new_id}
         )
         
     except Exception as e:
@@ -160,13 +163,16 @@ async def submit_feedback(
             cursor.execute("""
                 INSERT INTO feedback (nama, whatsapp, rating, layanan, komentar, nomor_nota, foto_path)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
+                RETURNING id
             """, (nama, whatsapp, rating, layanan, komentar, nomor_nota, foto_path))
+            result = cursor.fetchone()
+            new_id = result['id'] if result else None
             conn.commit()
             
         return Response(
             success=True,
             message="Terima kasih atas feedback-nya! Sangat berharga buat kami 🙏",
-            data={"id": cursor.lastrowid}
+            data={"id": new_id}
         )
         
     except Exception as e:
@@ -471,14 +477,16 @@ async def create_karyawan(
                 INSERT INTO karyawan (lamaran_id, nama, whatsapp, posisi, tipe_kontrak, status_kerja,
                     tgl_bergabung, tgl_akhir_kontrak, no_ktp, alamat, gaji_pokok, catatan)
                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                RETURNING id
             """, (
                 data.lamaran_id, data.nama, data.whatsapp, data.posisi,
                 data.tipe_kontrak or "probation", data.status_kerja or "aktif",
                 data.tgl_bergabung, data.tgl_akhir_kontrak,
                 data.no_ktp, data.alamat, data.gaji_pokok, data.catatan
             ))
+            result = cursor.fetchone()
+            new_id = result['id'] if result else None
             conn.commit()
-            new_id = cursor.lastrowid
         with get_db_dict() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM karyawan WHERE id = ?", (new_id,))
@@ -587,7 +595,7 @@ async def get_presensi_rekap(
                     COUNT(p.id) as total_hari
                 FROM karyawan k
                 LEFT JOIN presensi p ON p.karyawan_id = k.id
-                    AND strftime('%Y-%m', p.tanggal) = ?
+                    AND TO_CHAR(p.tanggal, 'YYYY-MM') = ?
                 WHERE k.status_kerja = 'aktif'
                 GROUP BY k.id ORDER BY k.nama
             """, (bulan_target,))
