@@ -25,13 +25,14 @@ except ImportError as _ce:
 
 # RAG + LLM modules (Phase 2)
 try:
-    from siji_rag import find_context
+    from siji_rag import find_context, warmup_bm25
     from siji_llm import generate_reply_async, warmup_model
     RAG_ENABLED = True
     print("[AUTOREPLY] RAG + LLM enabled (siji_rag + siji_llm loaded)")
-    # Warm up qwen2.5:1.5b model in background at import time
+    # Warm up model + BM25 indexes in background
     import threading
     threading.Thread(target=warmup_model, daemon=True).start()
+    threading.Thread(target=warmup_bm25, daemon=True).start()
 except ImportError as _e:
     RAG_ENABLED = False
     print(f"[AUTOREPLY] RAG disabled: {_e}")
@@ -691,13 +692,14 @@ except ImportError as _ce:
 
 # RAG + LLM modules (Phase 2)
 try:
-    from siji_rag import find_context
+    from siji_rag import find_context, warmup_bm25
     from siji_llm import generate_reply_async, warmup_model
     RAG_ENABLED = True
     print("[AUTOREPLY] RAG + LLM enabled (siji_rag + siji_llm loaded)")
-    # Warm up qwen2.5:1.5b model in background at import time
+    # Warm up model + BM25 indexes in background
     import threading
     threading.Thread(target=warmup_model, daemon=True).start()
+    threading.Thread(target=warmup_bm25, daemon=True).start()
 except ImportError as _e:
     RAG_ENABLED = False
     print(f"[AUTOREPLY] RAG disabled: {_e}")
