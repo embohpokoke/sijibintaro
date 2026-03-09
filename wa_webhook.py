@@ -154,10 +154,11 @@ COMPLAINT_KEYWORDS = [
     # Masalah hasil laundry
     "rusak", "sobek", "hilang", "luntur", "bau", "kotor", "belum bersih",
     "masih kotor", "masih bau", "tidak bersih", "gak bersih",
-    # Masalah waktu / layanan
-    "lama", "lambat", "telat", "terlambat", "belum selesai", "belum jadi",
-    "belum datang", "belum diantar", "belum dijemput", "kapan selesai",
-    "kapan jadi", "kapan diantar",
+    # Masalah waktu / layanan (kata harus spesifik — jangan pakai "lama" saja)
+    "terlalu lama", "lama banget", "lama sekali", "nunggu lama", "nunggunya lama",
+    "lambat", "telat", "terlambat", "belum selesai", "belum jadi",
+    "belum datang", "belum diantar", "belum dijemput",
+    "kapan selesai", "kapan jadi", "kapan diantar",
     # Masalah harga / tagihan
     "kemahalan", "terlalu mahal", "salah tagih", "tagihan salah",
     "harga beda", "harga tidak sesuai",
@@ -537,6 +538,17 @@ _BRAND_MAP = {
     "carpet": (18, "KARPET", "Rp35.000/m² (10 hari)"),
     "kasur lipat": (56, "Kasur Lipat", "Rp400.000/pcs (10 hari)"),
     "sleeping bag": (59, "Sleeping Bag", "Rp90.000/pcs (5 hari)"),
+    # Pakaian khusus
+    "kebaya":     (47, "DRESS/KEBAYA/BROKAT/TILE", "Rp100.000/pcs (4 hari)"),
+    "brokat":     (47, "DRESS/KEBAYA/BROKAT/TILE", "Rp100.000/pcs (4 hari)"),
+    "tile":       (47, "DRESS/KEBAYA/BROKAT/TILE", "Rp100.000/pcs (4 hari)"),
+    "dress":      (47, "DRESS/KEBAYA/BROKAT/TILE", "Rp100.000/pcs (4 hari)"),
+    "gaun":       (47, "DRESS/KEBAYA/BROKAT/TILE", "Rp100.000/pcs (4 hari)"),
+    # Linen rumah tangga
+    "selimut":    (11, "BEDCOVER", "Rp70.000/lembar (3 hari)"),
+    "bedcover":   (11, "BEDCOVER", "Rp70.000/lembar (3 hari)"),
+    "bed cover":  (11, "BEDCOVER", "Rp70.000/lembar (3 hari)"),
+    "sprei":      (13, "SPREI 1 SET", "Rp35.000/set (3 hari)"),
     "car seat": (52, "BABY CAR SEATER", "Rp250.000/unit (6 hari)"),
     "baby bed": (53, "Baby Bed/Kasur Bayi", "Rp250.000/pcs (7 hari)"),
     # English product aliases
@@ -821,10 +833,11 @@ COMPLAINT_KEYWORDS = [
     # Masalah hasil laundry
     "rusak", "sobek", "hilang", "luntur", "bau", "kotor", "belum bersih",
     "masih kotor", "masih bau", "tidak bersih", "gak bersih",
-    # Masalah waktu / layanan
-    "lama", "lambat", "telat", "terlambat", "belum selesai", "belum jadi",
-    "belum datang", "belum diantar", "belum dijemput", "kapan selesai",
-    "kapan jadi", "kapan diantar",
+    # Masalah waktu / layanan (kata harus spesifik — jangan pakai "lama" saja)
+    "terlalu lama", "lama banget", "lama sekali", "nunggu lama", "nunggunya lama",
+    "lambat", "telat", "terlambat", "belum selesai", "belum jadi",
+    "belum datang", "belum diantar", "belum dijemput",
+    "kapan selesai", "kapan jadi", "kapan diantar",
     # Masalah harga / tagihan
     "kemahalan", "terlalu mahal", "salah tagih", "tagihan salah",
     "harga beda", "harga tidak sesuai",
