@@ -147,25 +147,46 @@ def _staff_is_handling(jid: str) -> bool:
     return (_time.time() - last) < STAFF_COOLDOWN_SEC
 
 # Keywords indikasi komplain pelanggan → trigger eskalasi
-COMPLAINT_KEYWORDS = [
-    # Ekspresi kekecewaan
-    "komplain", "kecewa", "kecewa", "tidak puas", "ga puas", "gak puas",
-    "nggak puas", "ngga puas",
-    # Masalah hasil laundry
-    "rusak", "sobek", "hilang", "luntur", "bau", "kotor", "belum bersih",
-    "masih kotor", "masih bau", "tidak bersih", "gak bersih",
-    # Masalah waktu / layanan (kata harus spesifik — jangan pakai "lama" saja)
-    "terlalu lama", "lama banget", "lama sekali", "nunggu lama", "nunggunya lama",
-    "lambat", "telat", "terlambat", "belum selesai", "belum jadi",
-    "belum datang", "belum diantar", "belum dijemput",
-    "kapan selesai", "kapan jadi", "kapan diantar",
-    # Masalah harga / tagihan
+# ── Tier 1: Strong complaint — selalu escalate, tidak perlu konteks ──────────
+COMPLAINT_STRONG = [
+    "komplain", "kecewa", "tidak puas", "ga puas", "gak puas",
+    "nggak puas", "ngga puas", "kecewa banget", "sangat kecewa",
+    "tidak profesional", "gak profesional", "mengecewakan",
+    "bohong", "tipu", "menipu",
+    "mau refund", "kembalikan uang",
     "kemahalan", "terlalu mahal", "salah tagih", "tagihan salah",
     "harga beda", "harga tidak sesuai",
-    # Ekspresi keras
-    "kecewa banget", "sangat kecewa", "tidak profesional", "gak profesional",
-    "buruk", "jelek", "mengecewakan", "bohong", "tipu", "menipu",
-    "mau refund", "kembalikan uang", "cancel", "batalkan",
+    "buruk banget", "jelek banget",
+    # Waktu — multi-word yang jelas ekspresi kecewa
+    "terlalu lama", "lama banget", "lama sekali", "nunggu lama", "nunggunya lama",
+    "belum selesai juga", "belum jadi juga", "belum datang juga",
+    # Masalah hasil — multi-word yang jelas
+    "masih kotor", "masih bau", "belum bersih", "tidak bersih", "gak bersih",
+]
+
+# ── Tier 2: Context-required — escalate HANYA jika ada kata konteks ──────────
+# Kata damage/masalah yang bisa juga muncul dalam pertanyaan biasa
+COMPLAINT_DAMAGE_KW = [
+    "rusak", "sobek", "hilang", "luntur", "bau", "kotor",
+    "kelunturan", "pudar", "cacat", "lecet", "robek",
+    "lambat", "telat", "terlambat",
+    "cancel", "batalkan",
+    "belum selesai", "belum jadi", "belum datang",
+    "belum diantar", "belum dijemput",
+]
+
+# Kata konteks yang menunjukkan barang SUDAH di-laundry / milik customer
+COMPLAINT_CONTEXT_KW = [
+    # Kepemilikan
+    "saya", "aku", "gue", "gw", "punya", "milik",
+    "bajuku", "sepatuku", "tasku", "karpetku",
+    # Post-service / setelah laundry
+    "setelah", "habis", "sudah dicuci", "sudah dilaundry",
+    "abis laundry", "dari siji", "dari laundry",
+    "hasilnya", "hasil cuci", "hasil laundry",
+    # Nada kecewa / pertanyaan masalah
+    "kok", "kenapa", "gimana ini", "bagaimana ini",
+    "ini gimana", "tolong", "mohon",
 ]
 
 # Reply default untuk pesan non-keyword, non-komplain
@@ -226,9 +247,27 @@ def is_order_status_query(message: str) -> bool:
 
 
 def is_complaint(message: str) -> bool:
-    """Detect complaint indicators in customer message"""
-    msg_lower = message.lower().strip()
-    return any(kw in msg_lower for kw in COMPLAINT_KEYWORDS)
+    """
+    Context-aware complaint detection — dua tier:
+    Tier 1: Strong keywords → escalate langsung (tidak butuh konteks)
+    Tier 2: Damage keywords → hanya escalate jika ada kata konteks kepemilikan/post-service
+
+    Contoh:
+      "baju saya rusak setelah dicuci" → Tier 2 + konteks "saya"/"setelah" → COMPLAINT ✅
+      "baju rusak gak kalau dicuci?" → Tier 2, tidak ada konteks → NOT complaint ✅
+      "saya kecewa" → Tier 1 → COMPLAINT ✅
+      "bau asap bisa ilang gak?" → Tier 2, tidak ada konteks → NOT complaint ✅
+    """
+    msg = message.lower().strip()
+
+    # Tier 1: langsung escalate tanpa cek konteks
+    if any(kw in msg for kw in COMPLAINT_STRONG):
+        return True
+
+    # Tier 2: damage keyword + konteks kepemilikan/post-service
+    has_damage  = any(kw in msg for kw in COMPLAINT_DAMAGE_KW)
+    has_context = any(cx in msg for cx in COMPLAINT_CONTEXT_KW)
+    return has_damage and has_context
 
 
 def get_time_greeting() -> str:
@@ -826,25 +865,46 @@ def _staff_is_handling(jid: str) -> bool:
     return (_time.time() - last) < STAFF_COOLDOWN_SEC
 
 # Keywords indikasi komplain pelanggan → trigger eskalasi
-COMPLAINT_KEYWORDS = [
-    # Ekspresi kekecewaan
-    "komplain", "kecewa", "kecewa", "tidak puas", "ga puas", "gak puas",
-    "nggak puas", "ngga puas",
-    # Masalah hasil laundry
-    "rusak", "sobek", "hilang", "luntur", "bau", "kotor", "belum bersih",
-    "masih kotor", "masih bau", "tidak bersih", "gak bersih",
-    # Masalah waktu / layanan (kata harus spesifik — jangan pakai "lama" saja)
-    "terlalu lama", "lama banget", "lama sekali", "nunggu lama", "nunggunya lama",
-    "lambat", "telat", "terlambat", "belum selesai", "belum jadi",
-    "belum datang", "belum diantar", "belum dijemput",
-    "kapan selesai", "kapan jadi", "kapan diantar",
-    # Masalah harga / tagihan
+# ── Tier 1: Strong complaint — selalu escalate, tidak perlu konteks ──────────
+COMPLAINT_STRONG = [
+    "komplain", "kecewa", "tidak puas", "ga puas", "gak puas",
+    "nggak puas", "ngga puas", "kecewa banget", "sangat kecewa",
+    "tidak profesional", "gak profesional", "mengecewakan",
+    "bohong", "tipu", "menipu",
+    "mau refund", "kembalikan uang",
     "kemahalan", "terlalu mahal", "salah tagih", "tagihan salah",
     "harga beda", "harga tidak sesuai",
-    # Ekspresi keras
-    "kecewa banget", "sangat kecewa", "tidak profesional", "gak profesional",
-    "buruk", "jelek", "mengecewakan", "bohong", "tipu", "menipu",
-    "mau refund", "kembalikan uang", "cancel", "batalkan",
+    "buruk banget", "jelek banget",
+    # Waktu — multi-word yang jelas ekspresi kecewa
+    "terlalu lama", "lama banget", "lama sekali", "nunggu lama", "nunggunya lama",
+    "belum selesai juga", "belum jadi juga", "belum datang juga",
+    # Masalah hasil — multi-word yang jelas
+    "masih kotor", "masih bau", "belum bersih", "tidak bersih", "gak bersih",
+]
+
+# ── Tier 2: Context-required — escalate HANYA jika ada kata konteks ──────────
+# Kata damage/masalah yang bisa juga muncul dalam pertanyaan biasa
+COMPLAINT_DAMAGE_KW = [
+    "rusak", "sobek", "hilang", "luntur", "bau", "kotor",
+    "kelunturan", "pudar", "cacat", "lecet", "robek",
+    "lambat", "telat", "terlambat",
+    "cancel", "batalkan",
+    "belum selesai", "belum jadi", "belum datang",
+    "belum diantar", "belum dijemput",
+]
+
+# Kata konteks yang menunjukkan barang SUDAH di-laundry / milik customer
+COMPLAINT_CONTEXT_KW = [
+    # Kepemilikan
+    "saya", "aku", "gue", "gw", "punya", "milik",
+    "bajuku", "sepatuku", "tasku", "karpetku",
+    # Post-service / setelah laundry
+    "setelah", "habis", "sudah dicuci", "sudah dilaundry",
+    "abis laundry", "dari siji", "dari laundry",
+    "hasilnya", "hasil cuci", "hasil laundry",
+    # Nada kecewa / pertanyaan masalah
+    "kok", "kenapa", "gimana ini", "bagaimana ini",
+    "ini gimana", "tolong", "mohon",
 ]
 
 # Reply default untuk pesan non-keyword, non-komplain
@@ -905,9 +965,27 @@ def is_order_status_query(message: str) -> bool:
 
 
 def is_complaint(message: str) -> bool:
-    """Detect complaint indicators in customer message"""
-    msg_lower = message.lower().strip()
-    return any(kw in msg_lower for kw in COMPLAINT_KEYWORDS)
+    """
+    Context-aware complaint detection — dua tier:
+    Tier 1: Strong keywords → escalate langsung (tidak butuh konteks)
+    Tier 2: Damage keywords → hanya escalate jika ada kata konteks kepemilikan/post-service
+
+    Contoh:
+      "baju saya rusak setelah dicuci" → Tier 2 + konteks "saya"/"setelah" → COMPLAINT ✅
+      "baju rusak gak kalau dicuci?" → Tier 2, tidak ada konteks → NOT complaint ✅
+      "saya kecewa" → Tier 1 → COMPLAINT ✅
+      "bau asap bisa ilang gak?" → Tier 2, tidak ada konteks → NOT complaint ✅
+    """
+    msg = message.lower().strip()
+
+    # Tier 1: langsung escalate tanpa cek konteks
+    if any(kw in msg for kw in COMPLAINT_STRONG):
+        return True
+
+    # Tier 2: damage keyword + konteks kepemilikan/post-service
+    has_damage  = any(kw in msg for kw in COMPLAINT_DAMAGE_KW)
+    has_context = any(cx in msg for cx in COMPLAINT_CONTEXT_KW)
+    return has_damage and has_context
 
 
 def get_time_greeting() -> str:
