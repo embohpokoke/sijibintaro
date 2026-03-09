@@ -75,10 +75,10 @@ GOWA_DEVICE_ID = "73834210-3694-43bf-a14d-c75d487b18cb"
 # Numbers that should NEVER receive autoreply (admin + staff)
 SKIP_AUTOREPLY_NUMBERS = [
     # "62811319003",  # Erik — sementara dikeluarkan untuk TESTING MODE
-    "628118606999",   # Ocha SIJI (Full Admin)
-    "6282124046283",  # Filean (Manager)
+    "628118606999",   # Ocha (Owner SIJI — hanya eskalasi)
+    "6282124046283",  # Filean (Owner/Manajer — hanya eskalasi)
     "62811309991",    # Ocha Livinin (Manager)
-    "6281288783088",  # GOWA/Ops (System - nomor SIJI sendiri)
+    "6281288783088",  # Karyawan SIJI / nomor outlet SIJI
     "6281227760808",  # Rizky (Karyawan)
     "6285892726416",  # Denisa (Karyawan)
     "6285715247073",  # Unaesih (Karyawan)
@@ -96,7 +96,7 @@ GOWA_TEST_NUMBERS = [
 ]
 
 ESCALATION_NUMBERS = [
-    "628118606999",   # Ocha SIJI — escalation complaint
+    "628118606999",   # Ocha (Owner) — terima notif eskalasi
     "62811319003",    # Erik (owner) — acknowledge complaint
 ]
 
@@ -742,10 +742,10 @@ GOWA_DEVICE_ID = "73834210-3694-43bf-a14d-c75d487b18cb"
 # Numbers that should NEVER receive autoreply (admin + staff)
 SKIP_AUTOREPLY_NUMBERS = [
     # "62811319003",  # Erik — sementara dikeluarkan untuk TESTING MODE
-    "628118606999",   # Ocha SIJI (Full Admin)
-    "6282124046283",  # Filean (Manager)
+    "628118606999",   # Ocha (Owner SIJI — hanya eskalasi)
+    "6282124046283",  # Filean (Owner/Manajer — hanya eskalasi)
     "62811309991",    # Ocha Livinin (Manager)
-    "6281288783088",  # GOWA/Ops (System - nomor SIJI sendiri)
+    "6281288783088",  # Karyawan SIJI / nomor outlet SIJI
     "6281227760808",  # Rizky (Karyawan)
     "6285892726416",  # Denisa (Karyawan)
     "6285715247073",  # Unaesih (Karyawan)
@@ -763,7 +763,7 @@ GOWA_TEST_NUMBERS = [
 ]
 
 ESCALATION_NUMBERS = [
-    "628118606999",   # Ocha SIJI — escalation complaint
+    "628118606999",   # Ocha (Owner) — terima notif eskalasi
     "62811319003",    # Erik (owner) — acknowledge complaint
 ]
 
