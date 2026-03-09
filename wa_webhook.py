@@ -2216,11 +2216,25 @@ async def gowa_webhook(request: Request):
                 _mark_staff_replied(chat_jid)
 
             # === GOWA AUTOREPLY PIPELINE ===
+            # Stale check: skip pesan lebih dari 3 menit lalu (mencegah replay saat restart)
+            _msg_stale = False
+            if timestamp:
+                try:
+                    import dateutil.parser as _dp
+                    _msg_time = _dp.parse(timestamp).timestamp()
+                    _age_sec = time.time() - _msg_time
+                    if _age_sec > 180:  # 3 menit
+                        _msg_stale = True
+                        print(f"[AUTOREPLY] STALE skip ({_age_sec:.0f}s old): {msg_id_wa[:12]} from {sender}")
+                except Exception:
+                    pass  # kalau parse gagal, lanjut normal
+
             if (not is_from_me
                     and not is_group
                     and GOWA_AUTOREPLY_ENABLED
                     and body_text.strip()
                     and msg_type in ("text", "image", "video", "document", "sticker")
+                    and not _msg_stale
                     and not _is_duplicate(msg_id_wa)
                     and not _staff_is_handling(chat_jid)):
 
