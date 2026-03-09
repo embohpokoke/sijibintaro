@@ -1073,7 +1073,7 @@ KEYWORD_REPLIES = {
     "antar_jemput": (
         "Halo Kak! SIJI Bintaro ada layanan *antar jemput FREE* "
         "untuk area dalam radius *3 km dari outlet* kami (via jalur jalan).\n\n"
-        "Wilayah sekitar Emerald & Bintaro Jaya — *FREE* ya Kak! 🎉\n"
+        "Emerald, Discovery, Kebayoran dan sekitarnya — *FREE* ya Kak! 🎉\n"
         "Nanti kurir kami yang akan pick up & antar ke Kak 😊\n"
         "Di luar area itu? Konfirmasi dulu ya, kami bantu cek.\n\n"
         "📍 Outlet: Jl. Raya Emerald Boulevard, BLOK CE/A1 No.5 (Ruko PHD)\n"
