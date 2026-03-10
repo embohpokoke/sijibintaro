@@ -1,6 +1,6 @@
 """
-WhatsApp Webhook for Fonnte - SIJI.Bintaro
-Handles inbound messages from WA1 (0812-8878-3088)
+WhatsApp Webhook GOWA - SIJI.Bintaro
+# Handles inbound WA messages via GOWA for SIJI.Bintaro
 Logs all customer communications to database.
 """
 
@@ -9,9 +9,9 @@ from datetime import datetime, timedelta
 import os
 import json
 import re
-import sqlite3
 import asyncio
 import httpx
+from database import get_db_connection, release_db_connection
 
 # Customer context lookup (Phase 3)
 try:
@@ -39,12 +39,10 @@ except ImportError as _e:
 
 router = APIRouter(prefix="/api/wa", tags=["WhatsApp"])
 
-# Fonnte config
-FONNTE_TOKEN = os.getenv("FONNTE_TOKEN", "")
-FONNTE_DEVICE = "6281288783088"
+# GOWA config
+GOWA_DEVICE_NUMBER = "6281288783088"
 AUTOREPLY_ENABLED = False  # Disabled by Erik 23 Feb 2026
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "")
-FONNTE_API_URL = "https://api.fonnte.com/send"
 TELEGRAM_BOT_TOKEN = "8510158455:AAHT5gd5xKtrCtzl3kAXuMVUsyCYTAyacjc"
 TELEGRAM_ADMIN_CHAT_ID = "5309429603"
 TELEGRAM_API_URL = "https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/sendMessage"
@@ -93,6 +91,7 @@ SKIP_AUTOREPLY_NUMBERS = [
 GOWA_TEST_MODE = True
 GOWA_TEST_NUMBERS = [
     "62811319003",    # Erik — testing sebagai pelanggan
+    "628113442442",   # Ocha (nomor lain) — testing
 ]
 
 ESCALATION_NUMBERS = [
@@ -498,14 +497,18 @@ _EN_DIRECT_CATALOG = {
 _EN_DIRECT_PRICE = {}  # cache: nama_layanan → price_str
 
 
+def _fmt_price(price_str: str) -> str:
+    """Tambah ⏰ sebelum durasi (X hari/jam) dalam string harga."""
+    import re as _re
+    return _re.sub(r'\((\d+[^)]*(?:hari|jam)[^)]*)\)', r'⏰ \1', price_str)
+
+
 def _get_price_for_nama(nama: str) -> str:
     """Lookup price_str dari service_catalog DB."""
     if nama in _EN_DIRECT_PRICE:
         return _EN_DIRECT_PRICE[nama]
     try:
-        import sqlite3 as _sqlite3
-        TX_DB = "/opt/siji-dashboard/siji_database.db"
-        conn = _sqlite3.connect(TX_DB)
+        
         row = conn.execute(
             "SELECT nama_layanan, harga, satuan, durasi_hari, durasi_jam FROM service_catalog "
             "WHERE nama_layanan LIKE ? LIMIT 1", (f"%{nama}%",)
@@ -536,8 +539,8 @@ def _check_english_catalog(message: str):
             price = _get_price_for_nama(nama)
             print(f"[CATALOG] EN direct match: {en_kw!r} → {nama}")
             return (
-                f"Bisa Kak! SIJI menerima *{nama.title()}* \U0001f64c\n\n"
-                f"\U0001f4b0 Harga: {price}\n\n"
+                f"Bisa Kak! SIJI menerima *{nama.title()}*\n\n"
+                f"\U0001f3f7\ufe0f Harga: {_fmt_price(price)}\n\n"
                 f"Mau dijemput kurir kami, atau langsung antar ke toko ya Kak? \U0001f60a"
             )
     return None
@@ -651,8 +654,8 @@ def check_service_catalog(message: str) -> str | None:
     for brand, (_, nama, price_str) in _BRAND_MAP.items():
         if brand in msg_lower:
             return (
-                f"Bisa Kak! SIJI menerima *{nama}* \U0001f64c\n\n"
-                f"\U0001f4b0 Harga: {price_str}\n\n"
+                f"Bisa Kak! SIJI menerima *{nama}*\n\n"
+                f"\U0001f3f7\ufe0f Harga: {_fmt_price(price_str)}\n\n"
                 f"Mau dijemput kurir kami, atau langsung antar ke toko ya Kak? \U0001f60a"
             )
 
@@ -704,8 +707,8 @@ def check_service_catalog(message: str) -> str | None:
         price_str = meta.get("price_str", "")
 
         return (
-            f"Bisa Kak! SIJI menerima *{nama.title()}* 🙌\n\n"
-            f"💰 Harga: {price_str}\n\n"
+            f"Bisa Kak! SIJI menerima *{nama.title()}*\n\n"
+            f"🏷️ Harga: {_fmt_price(price_str)}\n\n"
             f"Mau dijemput kurir kami, atau langsung antar ke toko ya Kak? 😊"
         )
 
@@ -718,7 +721,7 @@ def check_service_catalog(message: str) -> str | None:
 
 """
 SIJI Bintaro
-Handles inbound messages from WA1 (0812-8878-3088)
+# Handles inbound WA messages via GOWA for SIJI.Bintaro
 Logs all customer communications to database.
 """
 
@@ -727,7 +730,6 @@ from datetime import datetime, timedelta
 import os
 import json
 import re
-import sqlite3
 import asyncio
 import httpx
 
@@ -757,442 +759,10 @@ except ImportError as _e:
 
 router = APIRouter(prefix="/api/wa", tags=["WhatsApp"])
 
-# Fonnte config
-FONNTE_TOKEN = os.getenv("FONNTE_TOKEN", "")
-FONNTE_DEVICE = "6281288783088"
-AUTOREPLY_ENABLED = False  # Disabled by Erik 23 Feb 2026
-WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "")
-FONNTE_API_URL = "https://api.fonnte.com/send"
 TELEGRAM_BOT_TOKEN = "8510158455:AAHT5gd5xKtrCtzl3kAXuMVUsyCYTAyacjc"
 TELEGRAM_ADMIN_CHAT_ID = "5309429603"
 TELEGRAM_API_URL = "https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/sendMessage"
 
-
-# === CONDITIONAL ROUTING CONFIG ===
-ALLOWED_NUMBERS = [
-    "62811319003",    # Erik
-    "628118606999",   # Ocha SIJI
-    "62811309991",    # Ocha Property
-    "6282124046283",  # Filean
-    "6281288783088",  # Kasir SIJI
-    "6281227760808",  # Rizky (Kurir)
-    "6285892726416",  # Denisa (Produksi & Setrika)
-    "6285715247073",  # Unaesih (Kasir & Produksi)
-]
-
-ADMIN_NUMBERS = [
-    "62811319003",   # Erik
-    "628118606999",  # Ocha SIJI
-]
-# === GOWA AUTOREPLY CONFIG ===
-GOWA_AUTOREPLY_ENABLED = True   # Diaktifkan 2026-03-08
-GOWA_BASE = "http://127.0.0.1:3002"
-GOWA_AUTH = ("siji", "SijiBintaro2026!")
-GOWA_DEVICE_ID = "73834210-3694-43bf-a14d-c75d487b18cb"
-
-# Numbers that should NEVER receive autoreply (admin + staff)
-SKIP_AUTOREPLY_NUMBERS = [
-    # "62811319003",  # Erik — sementara dikeluarkan untuk TESTING MODE
-    "628118606999",   # Ocha (Owner SIJI — hanya eskalasi)
-    "6282124046283",  # Filean (Owner/Manajer — hanya eskalasi)
-    "62811309991",    # Ocha Livinin (Manager)
-    "6281288783088",  # Karyawan SIJI / nomor outlet SIJI
-    "6281227760808",  # Rizky (Karyawan)
-    "6285892726416",  # Denisa (Karyawan)
-    "6285715247073",  # Unaesih (Karyawan)
-    # Vendor / Supplier
-    "6281314155208",  # Laris Jaya Pasmod (supplier)
-    "6282186554606",  # Tukang Karpet 2 (vendor)
-]
-
-# === TEST MODE ===
-# Aktif: hanya TEST_NUMBERS yang dapat autoreply, customer lain dilewati
-# Nonaktifkan (GOWA_TEST_MODE = False) saat siap production
-GOWA_TEST_MODE = True
-GOWA_TEST_NUMBERS = [
-    "62811319003",    # Erik — testing sebagai pelanggan
-]
-
-ESCALATION_NUMBERS = [
-    "628118606999",   # Ocha (Owner) — terima notif eskalasi
-    "62811319003",    # Erik (owner) — acknowledge complaint
-]
-
-# Dedup cache: cegah GOWA webhook retry menyebabkan double/triple reply
-# {msg_id_wa: timestamp} — entri dihapus setelah 5 menit
-import time as _time
-_PROCESSED_MSG_IDS: dict = {}
-_DEDUP_TTL = 300  # 5 menit
-
-def _is_duplicate(msg_id: str) -> bool:
-    """Return True jika msg_id sudah diproses dalam 5 menit terakhir"""
-    if not msg_id:
-        return False
-    now = _time.time()
-    expired = [k for k, v in _PROCESSED_MSG_IDS.items() if now - v > _DEDUP_TTL]
-    for k in expired:
-        del _PROCESSED_MSG_IDS[k]
-    if msg_id in _PROCESSED_MSG_IDS:
-        return True
-    _PROCESSED_MSG_IDS[msg_id] = now
-    return False
-
-# Staff-handled tracker: kalau karyawan sudah balas ke JID ini, bot diam dulu
-# {chat_jid: timestamp_last_staff_reply}
-_STAFF_LAST_REPLY: dict = {}
-STAFF_COOLDOWN_SEC = 1800  # 30 menit — bot diam setelah karyawan reply
-
-# Default reply cooldown: jangan kirim default reply berulang ke nomor yg sama
-_DEFAULT_REPLY_SENT: dict = {}  # {sender: timestamp}
-DEFAULT_REPLY_COOLDOWN = 600  # 10 menit
-
-def _can_send_default(sender: str) -> bool:
-    """Return True jika belum kirim default reply ke sender dalam 10 menit"""
-    now = _time.time()
-    last = _DEFAULT_REPLY_SENT.get(sender, 0)
-    if now - last < DEFAULT_REPLY_COOLDOWN:
-        return False
-    _DEFAULT_REPLY_SENT[sender] = now
-    return True
-
-def _mark_staff_replied(jid: str):
-    """Catat bahwa karyawan baru saja reply ke JID ini"""
-    _STAFF_LAST_REPLY[jid] = _time.time()
-
-def _staff_is_handling(jid: str) -> bool:
-    """Return True jika karyawan reply ke JID ini dalam 30 menit terakhir"""
-    last = _STAFF_LAST_REPLY.get(jid, 0)
-    return (_time.time() - last) < STAFF_COOLDOWN_SEC
-
-# Keywords indikasi komplain pelanggan → trigger eskalasi
-# ── Tier 1: Strong complaint — selalu escalate, tidak perlu konteks ──────────
-COMPLAINT_STRONG = [
-    "komplain", "kecewa", "tidak puas", "ga puas", "gak puas",
-    "nggak puas", "ngga puas", "kecewa banget", "sangat kecewa",
-    "tidak profesional", "gak profesional", "mengecewakan",
-    "bohong", "tipu", "menipu",
-    "mau refund", "kembalikan uang",
-    "kemahalan", "terlalu mahal", "salah tagih", "tagihan salah",
-    "harga beda", "harga tidak sesuai",
-    "buruk banget", "jelek banget",
-    # Waktu — multi-word yang jelas ekspresi kecewa
-    "terlalu lama", "lama banget", "lama sekali", "nunggu lama", "nunggunya lama",
-    "belum selesai juga", "belum jadi juga", "belum datang juga",
-    # Masalah hasil — multi-word yang jelas
-    "masih kotor", "masih bau", "belum bersih", "tidak bersih", "gak bersih",
-]
-
-# ── Tier 2: Context-required — escalate HANYA jika ada kata konteks ──────────
-# Kata damage/masalah yang bisa juga muncul dalam pertanyaan biasa
-COMPLAINT_DAMAGE_KW = [
-    "rusak", "sobek", "hilang", "luntur", "bau", "kotor",
-    "kelunturan", "pudar", "cacat", "lecet", "robek",
-    "lambat", "telat", "terlambat",
-    "cancel", "batalkan",
-    "belum selesai", "belum jadi", "belum datang",
-    "belum diantar", "belum dijemput",
-]
-
-# Kata konteks yang menunjukkan barang SUDAH di-laundry / milik customer
-COMPLAINT_CONTEXT_KW = [
-    # Kepemilikan
-    "saya", "aku", "gue", "gw", "punya", "milik",
-    "bajuku", "sepatuku", "tasku", "karpetku",
-    # Post-service / setelah laundry
-    "setelah", "habis", "sudah dicuci", "sudah dilaundry",
-    "abis laundry", "dari siji", "dari laundry",
-    "hasilnya", "hasil cuci", "hasil laundry",
-    # Nada kecewa / pertanyaan masalah
-    "kok", "kenapa", "gimana ini", "bagaimana ini",
-    "ini gimana", "tolong", "mohon",
-]
-
-# Reply default untuk pesan non-keyword, non-komplain
-AUTO_REPLY_DEFAULT = (
-    "Halo Kak! 👋 Pesan kamu sudah kami terima.\n"
-    "Tim kami akan segera membalas ya 🙏"
-)
-
-# Keywords status order — intercept sebelum LLM (LLM tidak bisa akses DB order)
-ORDER_STATUS_KEYWORDS = [
-    "sudah selesai", "sudah jadi", "sudah beres", "udah selesai", "udah jadi",
-    "laundry saya", "cucian saya", "order saya", "pesanan saya",
-    "kapan selesai", "kapan jadi", "kapan bisa diambil", "kapan bisa dijemput",
-    "selesai belum", "jadi belum", "beres belum", "sudah bisa",
-    "cek order", "cek pesanan", "status order", "status laundry",
-    "sudah dikirim", "sudah diantar", "sudah di antar",
-    "besok selesai", "selesaikah", "bisa besok", "besok bisa",
-    "besok jadi", "besok sudah", "kapan siap", "siap besok",
-    "bisa diambil besok", "besok bisa diambil",
-]
-
-# Reply untuk pesan yang tidak jelas itemnya ("bisa cuci ini?", kirim foto)
-ASK_ITEM_REPLY = (
-    "Halo Kak! 😊 Boleh disebutkan barang apa yang mau dicuci/dilaundry?\n"
-    "Nanti kami langsung cek layanan dan harganya ya!"
-)
-
-ASK_ITEM_KEYWORDS = [
-    "cuci ini", "laundry ini", "ini bisa", "bisa dicuci", "bisa dilaundry",
-    "ini laundry", "ini cuci", "bisa cuci gak", "bisa laundry gak",
-    "cuci apa ini", "ini apa bisa", "terima ini", "bisa terima ini",
-]
-
-
-def is_vague_item_query(message: str) -> bool:
-    """Deteksi pertanyaan item tidak jelas — customer tidak sebut nama barang."""
-    msg_lower = message.lower().strip()
-    # Cocok dengan keyword vague
-    if any(kw in msg_lower for kw in ASK_ITEM_KEYWORDS):
-        return True
-    # Pesan sangat pendek dengan "ini" + kata tanya (max 6 kata)
-    words = msg_lower.split()
-    if len(words) <= 6 and "ini" in words and any(q in msg_lower for q in ["bisa", "boleh", "cuci", "laundry"]):
-        return True
-    return False
-
-
-ORDER_STATUS_REPLY = (
-    "Halo Kak! 👋 Untuk cek status laundry, tim kami akan segera konfirmasi ya.\n"
-    "Mohon ditunggu sebentar 🙏"
-)
-
-
-def is_order_status_query(message: str) -> bool:
-    """Deteksi pertanyaan status order — jangan sampai LLM yang jawab (bisa halusinasi)"""
-    msg_lower = message.lower()
-    return any(kw in msg_lower for kw in ORDER_STATUS_KEYWORDS)
-
-
-def is_complaint(message: str) -> bool:
-    """
-    Context-aware complaint detection — dua tier:
-    Tier 1: Strong keywords → escalate langsung (tidak butuh konteks)
-    Tier 2: Damage keywords → hanya escalate jika ada kata konteks kepemilikan/post-service
-
-    Contoh:
-      "baju saya rusak setelah dicuci" → Tier 2 + konteks "saya"/"setelah" → COMPLAINT ✅
-      "baju rusak gak kalau dicuci?" → Tier 2, tidak ada konteks → NOT complaint ✅
-      "saya kecewa" → Tier 1 → COMPLAINT ✅
-      "bau asap bisa ilang gak?" → Tier 2, tidak ada konteks → NOT complaint ✅
-    """
-    msg = message.lower().strip()
-
-    # Tier 1: langsung escalate tanpa cek konteks
-    if any(kw in msg for kw in COMPLAINT_STRONG):
-        return True
-
-    # Tier 2: damage keyword + konteks kepemilikan/post-service
-    has_damage  = any(kw in msg for kw in COMPLAINT_DAMAGE_KW)
-    has_context = any(cx in msg for cx in COMPLAINT_CONTEXT_KW)
-    return has_damage and has_context
-
-
-def get_time_greeting() -> str:
-    """Return sapaan berdasarkan jam WIB (UTC+7)"""
-    from datetime import datetime, timezone, timedelta
-    wib = datetime.now(timezone(timedelta(hours=7)))
-    hour = wib.hour
-    if 5 <= hour < 12:
-        return "Selamat pagi"
-    elif 12 <= hour < 15:
-        return "Selamat siang"
-    elif 15 <= hour < 19:
-        return "Selamat sore"
-    else:
-        return "Selamat malam"
-
-
-def _extract_salutation(name: str) -> str:
-    """Ekstrak salutation Pak/Bu dari nama, atau Kak sebagai default."""
-    if not name:
-        return "Kak"
-    n = name.strip()
-    nl = n.lower()
-    # Nama sudah ada prefix Pak/Bu/Ibu/Bapak
-    for prefix in ["ibu ", "bu "]:
-        if nl.startswith(prefix):
-            rest = n[len(prefix):].strip().split()
-            short = rest[0] if rest else ""
-            return f"Bu {short}" if short else "Bu"
-    for prefix in ["bapak ", "pak "]:
-        if nl.startswith(prefix):
-            rest = n[len(prefix):].strip().split()
-            short = rest[0] if rest else ""
-            return f"Pak {short}" if short else "Pak"
-    # Nama polos — pakai Kak (gender neutral)
-    parts = n.split()
-    short = parts[0] if parts else n
-    return f"Kak {short}"
-
-
-def build_greeting(cust_name: str, segment: str) -> str:
-    """
-    Return greeting line untuk customer dikenal.
-    VIP: nama lengkap + emoji khusus.
-    Reguler/Baru: sapaan standar.
-    Sapaan: Pak/Bu jika ada prefix di nama, Kak jika tidak.
-    """
-    sapa = get_time_greeting()
-    if not cust_name:
-        return ""
-    salut = _extract_salutation(cust_name)
-    if segment == "VIP":
-        return f"{sapa} {salut}! 😊✨"
-    return f"{sapa} {salut}! 😊"
-
-
-# Landing page karir
-KARIR_URL = "https://sijibintaro.id/karir"
-
-# Job application keywords
-JOB_KEYWORDS = ["lamar", "kerja", "lowongan", "pelamar", "apply", "hiring", "rekrut", "karyawan baru"]
-
-# Auto-reply untuk nomor tidak dikenal
-AUTO_REPLY_UNKNOWN = (
-    "Halo! Terima kasih sudah menghubungi SIJI.Bintaro 👋\n\n"
-    "Untuk layanan laundry dan pertanyaan umum, silakan chat ke nomor customer service kami.\n\n"
-    "Sedang mencari info lowongan kerja? Cek di sini:\n"
-    "👉 {karir_url}\n\n"
-    "Tim kami akan segera menghubungi Anda. Terima kasih! 🙏"
-).format(karir_url=KARIR_URL)
-
-AUTO_REPLY_JOB = (
-    "Halo! Terima kasih sudah tertarik bergabung dengan SIJI.Bintaro 🙌\n\n"
-    "Silakan lengkapi form lamaran di sini:\n"
-    "👉 {karir_url}\n\n"
-    "Tim kami akan menghubungi Anda jika ada posisi yang sesuai. Terima kasih! 💪"
-).format(karir_url=KARIR_URL)
-
-# === KATALOG LAYANAN (Layer 2.5) ===
-# Pakai ChromaDB similarity search dari collection siji_services (61 item dari DB)
-# Lebih robust: handle variasi bahasa, typo, bahasa Inggris, sinonim
-COLLECTION_SERVICES = "siji_services"
-SERVICES_COLLECTION_ID = None  # di-cache saat pertama kali dipanggil
-SERVICE_SIMILARITY_THRESHOLD = 0.70  # min score untuk dianggap match
-
-# === KATALOG LAYANAN (Layer 2.5) ===
-# Deteksi "bisa cuci X?" → jawab langsung dari katalog, tanpa LLM
-# SERVICE_CATALOG hardcode di bawah masih ada sebagai reference,
-# tapi check_service_catalog() sekarang pakai ChromaDB similarity.
-# Update layanan cukup di service_catalog DB + re-populate siji_services collection.
-SERVICE_CATALOG = {  # DEPRECATED — gunakan siji_services ChromaDB
-    # Kiloan
-    "kiloan":    ("cuci kering setrika reguler", "Rp16.000/kg (min 3kg, 3 hari)"),
-    "setrika":   ("setrika kiloan reguler", "Rp12.000/kg (min 3kg, 3 hari)"),
-    # Household
-    "karpet":    ("karpet", "Rp35.000/m² (10 hari)"),
-    "carpet":    ("karpet", "Rp35.000/m² (10 hari)"),
-    "permadani": ("karpet", "Rp35.000/m² (10 hari)"),
-    "gordyn":    ("gordyn", "Rp16.000/m² (tebal/blackout), Rp10.000/m² (tipis/vetrase)"),
-    "gorden":    ("gordyn", "Rp16.000/m² (tebal/blackout), Rp10.000/m² (tipis/vetrase)"),
-    "sofa":      ("sarung sofa", "Rp30.000/m²"),
-    # Bedding
-    "stroller":  ("baby stroller", "Rp250.000/unit (6 hari)"),
-    "bedcover":  ("bedcover", "Rp70.000/lembar (3 hari), Express 24 jam Rp115.000"),
-    "bed cover": ("bedcover", "Rp70.000/lembar (3 hari), Express 24 jam Rp115.000"),
-    "sprei":     ("sprei 1 set", "Rp35.000/set (3 hari), Express 24 jam Rp55.000"),
-    "bantal":    ("bantal/guling", "Rp40.000 (kecil), Rp60.000 (besar/guling)"),
-    "guling":    ("bantal/guling", "Rp40.000 (kecil), Rp60.000 (besar/guling)"),
-    "kasur":     ("kasur/matras", "Rp95.000/unit (matras tipis), Rp400.000 (kasur lipat)"),
-    "matras":    ("kasur/matras", "Rp95.000/unit (matras tipis), Rp400.000 (kasur lipat)"),
-    "boneka":    ("boneka", "Rp40.000 (kecil), Rp100.000 (besar)"),
-    # Sepatu
-    "sepatu":    ("sepatu", "Rp90.000/pasang (reguler, 3 hari), Rp150.000 (kulit/boot, 4 hari)"),
-    "shoes":     ("sepatu", "Rp90.000/pasang (reguler, 3 hari), Rp150.000 (kulit/boot, 4 hari)"),
-    "shoe":      ("sepatu", "Rp90.000/pasang (reguler, 3 hari), Rp150.000 (kulit/boot, 4 hari)"),
-    "sneakers":  ("sepatu", "Rp90.000/pasang (reguler, 3 hari), Rp150.000 (kulit/boot, 4 hari)"),
-    "boot":      ("sepatu boot", "Rp150.000/pcs (4 hari)"),
-    "helm":      ("helm", "Rp80.000/pcs (3 hari)"),
-    # Tas
-    "tas":       ("tas", "Rp140.000 (reguler), Rp250.000 (USA brand), Rp500.000 (EU brand/LV/Gucci)"),
-    "bag":       ("tas", "Rp140.000 (reguler), Rp250.000 (USA brand), Rp500.000 (EU brand/LV/Gucci)"),
-    "handbag":   ("tas", "Rp140.000 (reguler), Rp250.000 (USA brand), Rp500.000 (EU brand/LV/Gucci)"),
-    "dompet":    ("dompet", "Rp100.000 (reguler), Rp200.000 (USA brand), Rp350.000 (EU brand)"),
-    "ransel":    ("tas gunung/ransel", "Rp200.000/pcs (5 hari)"),
-    # Dry clean / Pakaian
-    "blazer":    ("blazer/jaket", "Rp65.000/pcs (3 hari)"),
-    "jaket":     ("blazer/jaket", "Rp65.000/pcs biasa, Rp150.000 (kulit, 12 hari)"),
-    "jas":       ("dry clean blazer/jas", "Rp80.000/pcs (4 hari)"),
-    "kulit":     ("pakaian/jaket kulit", "Rp150.000/pcs (12 hari)"),
-    "dress":     ("dress/kebaya/brokat", "Rp100.000/pcs (4 hari)"),
-    "kebaya":    ("dress/kebaya/brokat", "Rp100.000/pcs (4 hari)"),
-    "topi":      ("cuci topi", "Rp65.000/pcs (4 hari)"),
-    # Lainnya
-    "koper":     ("koper", "Rp190.000/unit (4 hari)"),
-    "sleeping":  ("sleeping bag", "Rp90.000/pcs (5 hari)"),
-}
-
-# Kata tanya / pertanyaan yang menandakan customer butuh info layanan
-# Keyword auto-replies
-KEYWORD_REPLIES = {
-    "harga": (
-        "Halo! Ini daftar harga SIJI.Bintaro 👕\n\n"
-        "*KILOAN (min. 3kg):*\n"
-        "🧺 Cuci Kering Setrika Reguler: Rp 16.000/kg (3 hari)\n"
-        "👔 Cuci Kering Lipat Reguler: Rp 12.000/kg (3 hari)\n"
-        "🔥 Setrika Kiloan Reguler: Rp 12.000/kg (3 hari)\n\n"
-        "*EXPRESS:*\n"
-        "⚡ Cuci Kering Setrika Express 24 jam: Rp 30.000/kg\n"
-        "🚀 Same Day 10 jam: Rp 36.000/kg\n\n"
-        "*SATUAN:*\n"
-        "👗 Laundry Satuan Reguler: Rp 40.000/pcs\n"
-        "🛏️ Bedcover: Rp 70.000/lembar\n"
-        "🛏️ Sprei 1 Set: Rp 35.000/paket\n"
-        "🥿 Sepatu Reguler: Rp 90.000/pasang\n\n"
-        "Info lengkap & order: wa.me/6281288783088 😊"
-    ),
-    "jam": (
-        "Jam operasional SIJI.Bintaro ⏰\n\n"
-        "Senin - Sabtu: 08.00 - 20.00\n"
-        "Minggu: 08.00 - 16.00\n\n"
-        "Tersedia layanan antar jemput oleh kurir kami! 😊"
-    ),
-    "lokasi": (
-        "📍 SIJI.Bintaro\n"
-        "Jl. Raya Emerald Boulevard, BLOK CE/A1 No.5\n"
-        "(Ruko PHD, Sebelah Marchand), Bintaro Jaya\n\n"
-        "Google Maps: https://maps.app.goo.gl/sijibintaro\n"
-        "Ditunggu ya Kak! 😊"
-    ),
-    "promo": (
-        "Promo SIJI.Bintaro bulan ini 🎁\n\n"
-        "Cek update terbaru di Instagram kami:\n"
-        "@siji.bintaro\n\n"
-        "Atau tanya langsung aja ya Kak! 😊"
-    ),
-    "antar_jemput": (
-        "Halo Kak! SIJI Bintaro ada layanan *antar jemput FREE* "
-        "untuk area dalam radius *3 km dari outlet* kami (via jalur jalan).\n\n"
-        "Emerald, Discovery, Kebayoran dan sekitarnya — *FREE* ya Kak! 🎉\n"
-        "Nanti kurir kami yang akan pick up & antar ke Kak 😊\n"
-        "Di luar area itu? Konfirmasi dulu ya, kami bantu cek.\n\n"
-        "📍 Outlet: Jl. Raya Emerald Boulevard, BLOK CE/A1 No.5 (Ruko PHD)\n"
-        "📞 Chat kami: wa.me/6281288783088"
-    ),
-}
-
-# Keywords that trigger each reply
-# Urutan penting: lebih spesifik dulu (jam/lokasi sebelum harga)
-KEYWORD_MAP = {
-    "jam": ["jam buka", "jam tutup", "buka jam", "tutup jam", "jam operasional",
-            "jam kerja", "buka pukul", " buka ", "masih buka", "sudah tutup",
-            "hari ini buka", "buka hari", "jam berapa buka"],
-    "lokasi": ["lokasi", "alamat", "dimana", "di mana", "maps", "map",
-               "google maps", "tempat", "di bintaro"],
-    "harga": ["harga", "price", "tarif", "biaya", "berapa harga", "berapa tarif",
-              "berapa biaya", "harga cuci", "harga laundry", "harga kiloan",
-              "harga bedcover", "harga sepatu", "harga tas", "daftar harga"],
-    "promo": ["promo", "diskon", "discount", "voucher", "promo apa"],
-    "antar_jemput": ["antar jemput", "antar-jemput", "pickup", "jemput laundry",
-                     "ambil laundry", "diantar", "dijemput", "layanan antar",
-                     "bisa antar", "bisa jemput", "ada jemput", "ada antar",
-                     "free antar", "gratis antar", "gratis gak", "free gak",
-                     "wilayah emerald", "area emerald", "emerald gratis",
-                     "ke emerald", "jemput gratis", "antar gratis",
-                     "wilayah bintaro", "area bintaro", "ongkir", "biaya antar",
-                     "biaya jemput", "kena ongkos", "bayar ongkos"],
-}
 
 
 def match_keyword(message: str) -> str | None:
@@ -1359,11 +929,11 @@ async def handle_presensi(conn, sender: str, message: str) -> bool:
         )
 
     if reply:
-        await send_fonnte_message(sender, reply)
+        await send_gowa_message(sender, reply)
         log_message(
             conn=conn,
-            wa_number=FONNTE_DEVICE,
-            sender=FONNTE_DEVICE,
+            wa_number=GOWA_DEVICE_NUMBER,
+            sender=GOWA_DEVICE_NUMBER,
             recipient=sender,
             direction="outbound",
             message=reply,
@@ -1388,7 +958,7 @@ async def forward_to_admins(sender: str, message: str, media_url: str = None):
         notif += f"\nMedia: {media_url}"
 
     for admin in ADMIN_NUMBERS:
-        await send_fonnte_message(admin, notif)
+        await send_gowa_message(admin, notif)
 
 
 async def notify_telegram(sender: str, message: str, category: str = "", routing: str = ""):
@@ -1442,28 +1012,6 @@ async def send_gowa_message(phone: str, message: str) -> dict:
         print(f"[GOWA Send Error] {phone}: {e}")
         return {"error": str(e)}
 
-async def send_fonnte_message(target: str, message: str, url: str = None) -> dict:
-    """Send message via Fonnte API"""
-    if not FONNTE_TOKEN:
-        return {"error": "FONNTE_TOKEN not configured"}
-    
-    payload = {
-        "target": target,
-        "message": message,
-        "delay": "2",
-    }
-    if url:
-        payload["url"] = url
-    
-    async with httpx.AsyncClient() as client:
-        resp = await client.post(
-            FONNTE_API_URL,
-            headers={"Authorization": FONNTE_TOKEN},
-            data=payload,
-            timeout=30.0
-        )
-        return resp.json()
-
 
 def init_wa_tables(conn):
     """Create WA-related tables if not exist"""
@@ -1491,12 +1039,6 @@ def init_wa_tables(conn):
     """)
 
     # Migrate existing tables: add new columns if missing
-    cursor.execute("PRAGMA table_info(wa_conversations)")
-    existing_cols = {row[1] for row in cursor.fetchall()}
-    for col, coltype in [("media_extension", "TEXT"), ("wa_timestamp", "TEXT"),
-                         ("inbox_id", "TEXT"), ("group_member", "TEXT")]:
-        if col not in existing_cols:
-            cursor.execute(f"ALTER TABLE wa_conversations ADD COLUMN {col} {coltype}")
     
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS wa_customers (
@@ -1534,17 +1076,41 @@ def log_message(conn, wa_number: str, sender: str, recipient: str,
                 replied_by: str = None, media_extension: str = None,
                 wa_timestamp: str = None, inbox_id: str = None,
                 group_member: str = None):
-    """Log a message to wa_conversations"""
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO wa_conversations
-        (wa_number, sender, recipient, direction, message, media_url, media_filename,
-         media_extension, wa_timestamp, inbox_id, group_member, category, replied_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (wa_number, sender, recipient, direction, message, media_url, media_filename,
-          media_extension, wa_timestamp, inbox_id, group_member, category, replied_by))
-    conn.commit()
-    return cursor.lastrowid
+    """Log a message to wa_messages (PostgreSQL schema)"""
+    # Build jid from sender/recipient
+    is_outbound = direction == "outbound"
+    chat_jid = (recipient if is_outbound else sender) + "@s.whatsapp.net"
+    from_jid = (wa_number if is_outbound else sender) + "@s.whatsapp.net"
+    msg_id = inbox_id or f"log_{wa_timestamp or 'now'}"
+    try:
+        cursor = conn.cursor()
+        # Upsert conversation header
+        cursor.execute("""
+            INSERT INTO wa_conversations (jid, phone, is_group, last_message, last_message_time, synced_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(jid) DO UPDATE SET
+                last_message = excluded.last_message,
+                last_message_time = COALESCE(excluded.last_message_time, wa_conversations.last_message_time),
+                total_messages = wa_conversations.total_messages + 1,
+                synced_at = excluded.synced_at
+        """, (chat_jid, chat_jid.split("@")[0], False, message,
+              wa_timestamp or datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+              datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")))
+        # Insert message
+        cursor.execute("""
+            INSERT INTO wa_messages
+            (conversation_jid, message_id, sender_jid, message_text, message_type,
+             media_url, is_from_me, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (message_id) DO NOTHING
+        """, (chat_jid, msg_id, from_jid, message, "text",
+              media_url, is_outbound,
+              wa_timestamp or datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")))
+        conn.commit()
+        return msg_id
+    except Exception as e:
+        print(f"[log_message] Error: {e}")
+        return None
 
 
 def upsert_customer(conn, no_hp: str, name: str = ""):
@@ -1578,158 +1144,12 @@ def upsert_customer(conn, no_hp: str, name: str = ""):
 
 # === ROUTES ===
 
-@router.api_route("/webhook/{token}", methods=["GET", "POST"])
-async def fonnte_webhook(request: Request, token: str):
-    # Validate webhook token
-    if not WEBHOOK_SECRET or token != WEBHOOK_SECRET:
-        return {"status": "unauthorized"}
-    import sqlite3
-    
-    try:
-        # Fonnte sends JSON (not form data) — try JSON first, fallback to form
-        try:
-            data = await request.json()
-        except Exception:
-            data = dict(await request.form())
-
-        sender = data.get("sender", "")
-        message = data.get("message", "")
-        name = data.get("name", "")
-        device = data.get("device", "")
-        media_url = data.get("url", "")
-        filename = data.get("filename", "")
-        # Fonnte "all feature" package fields
-        extension = data.get("extension", "")
-        timestamp = data.get("timestamp", "")
-        inboxid = data.get("inboxid", "")
-        member = data.get("member", "")
-
-        # Display-friendly message for non-text (media-only) messages
-        if not message and media_url:
-            message = f"[{extension or 'file'}: {filename or 'attachment'}]"
-
-        if not sender or not message:
-            # Could be status callback, ignore
-            return {"status": "ignored", "reason": "no sender or message"}
-        
-        # Connect to DB
-        conn = sqlite3.connect("/opt/siji-dashboard/siji_database.db")
-        conn.row_factory = sqlite3.Row
-        init_wa_tables(conn)
-        
-        try:
-            # 1. Upsert customer
-            customer = upsert_customer(conn, sender, name=name)
-
-            # 2. === CONDITIONAL ROUTING ===
-            whitelisted = is_whitelisted(sender)
-            job_inquiry = is_job_application(message)
-            category = match_keyword(message)
-            reply_sent = False
-            routing = "whitelist" if whitelisted else ("job" if job_inquiry else "unknown")
-
-            # 3. Log inbound message
-            msg_id = log_message(
-                conn=conn,
-                wa_number=device or FONNTE_DEVICE,
-                sender=sender,
-                recipient=device or FONNTE_DEVICE,
-                direction="inbound",
-                message=message,
-                media_url=media_url if media_url else None,
-                media_filename=filename if filename else None,
-                media_extension=extension if extension else None,
-                wa_timestamp=timestamp if timestamp else None,
-                inbox_id=inboxid if inboxid else None,
-                group_member=member if member else None,
-                category=category or routing
-            )
-
-            # 4. === PRESENSI CHECK (priority: runs before whitelist routing) ===
-            if AUTOREPLY_ENABLED:
-                presensi_handled = await handle_presensi(conn, sender, message)
-                if presensi_handled:
-                    reply_sent = True
-
-            if reply_sent:
-                pass  # presensi handled — skip further routing
-            elif whitelisted:
-                # === WHITELIST: full interaction, keyword auto-reply only ===
-                if AUTOREPLY_ENABLED and category and category in KEYWORD_REPLIES:
-                    reply_text = KEYWORD_REPLIES[category]
-                    await send_fonnte_message(sender, reply_text)
-                    log_message(
-                        conn=conn,
-                        wa_number=FONNTE_DEVICE,
-                        sender=FONNTE_DEVICE,
-                        recipient=sender,
-                        direction="outbound",
-                        message=reply_text,
-                        category=category,
-                        replied_by="auto"
-                    )
-                    reply_sent = True
-
-            elif job_inquiry:
-                # === PELAMAR: auto-reply ke landing page karir ===
-                if AUTOREPLY_ENABLED:
-                    await send_fonnte_message(sender, AUTO_REPLY_JOB)
-                    log_message(
-                        conn=conn,
-                        wa_number=FONNTE_DEVICE,
-                        sender=FONNTE_DEVICE,
-                        recipient=sender,
-                        direction="outbound",
-                        message=AUTO_REPLY_JOB,
-                        category="job_application",
-                        replied_by="auto"
-                    )
-                    await forward_to_admins(sender, message, media_url or None)
-                    reply_sent = True
-
-            else:
-                # === NOMOR TIDAK DIKENAL: auto-reply + forward ke admin ===
-                if AUTOREPLY_ENABLED:
-                    await send_fonnte_message(sender, AUTO_REPLY_UNKNOWN)
-                    log_message(
-                        conn=conn,
-                        wa_number=FONNTE_DEVICE,
-                        sender=FONNTE_DEVICE,
-                        recipient=sender,
-                        direction="outbound",
-                        message=AUTO_REPLY_UNKNOWN,
-                        category="unknown",
-                        replied_by="auto"
-                    )
-                    await forward_to_admins(sender, message, media_url or None)
-                    reply_sent = True
-
-            return {
-                "status": "ok",
-                "message_id": msg_id,
-                "customer_hp": sender,
-                "routing": routing,
-                "category": category,
-                "auto_replied": reply_sent
-            }
-        
-        finally:
-            conn.close()
-    
-    except Exception as e:
-        # Log error but don't crash — Fonnte needs 200 response
-        print(f"[WA Webhook Error] {e}")
-        return {"status": "error", "detail": str(e)}
-
-
 @router.post("/send")
 async def send_wa_message(request: Request):
     """
-    Send outbound message via Fonnte + log to DB.
+    Send outbound message via GOWA + log to DB.
     Body: { "target": "628xxx", "message": "...", "url": "optional media", "sent_by": "staff|system" }
     """
-    import sqlite3
-    
     data = await request.json()
     target = data.get("target")
     message = data.get("message")
@@ -1739,19 +1159,17 @@ async def send_wa_message(request: Request):
     if not target or not message:
         raise HTTPException(status_code=400, detail="target and message required")
     
-    # Send via Fonnte
-    result = await send_fonnte_message(target, message, url=media_url)
+    # Send via GOWA
+    result = await send_gowa_message(target, message, url=media_url)
     
     # Log to DB
-    conn = sqlite3.connect("/opt/siji-dashboard/siji_database.db")
-    conn.row_factory = sqlite3.Row
-    init_wa_tables(conn)
+    conn = get_db_connection()
     
     try:
         log_message(
             conn=conn,
-            wa_number=FONNTE_DEVICE,
-            sender=FONNTE_DEVICE,
+            wa_number=GOWA_DEVICE_NUMBER,
+            sender=GOWA_DEVICE_NUMBER,
             recipient=target,
             direction="outbound",
             message=message,
@@ -1761,17 +1179,13 @@ async def send_wa_message(request: Request):
     finally:
         conn.close()
     
-    return {"status": "ok", "fonnte_response": result}
+    return {"status": "ok", "gowa_response": result}
 
 
 @router.get("/conversations/{phone}")
 async def get_conversations(phone: str, limit: int = 50):
     """Get conversation history for a phone number"""
-    import sqlite3
-    
-    conn = sqlite3.connect("/opt/siji-dashboard/siji_database.db")
-    conn.row_factory = sqlite3.Row
-    init_wa_tables(conn)
+    conn = get_db_connection()
     
     try:
         cursor = conn.cursor()
@@ -1791,11 +1205,7 @@ async def get_conversations(phone: str, limit: int = 50):
 @router.get("/customers")
 async def get_wa_customers(limit: int = 100):
     """Get all WA customers"""
-    import sqlite3
-    
-    conn = sqlite3.connect("/opt/siji-dashboard/siji_database.db")
-    conn.row_factory = sqlite3.Row
-    init_wa_tables(conn)
+    conn = get_db_connection()
     
     try:
         cursor = conn.cursor()
@@ -1814,11 +1224,7 @@ async def get_wa_customers(limit: int = 100):
 @router.get("/stats")
 async def get_wa_stats():
     """Get WA messaging statistics"""
-    import sqlite3
-    
-    conn = sqlite3.connect("/opt/siji-dashboard/siji_database.db")
-    conn.row_factory = sqlite3.Row
-    init_wa_tables(conn)
+    conn = get_db_connection()
     
     try:
         cursor = conn.cursor()
@@ -1872,8 +1278,6 @@ async def get_wa_stats():
 
 
 # === DB PATHS ===
-WA_DB = "/opt/siji-dashboard/siji_database.db"  # FIXED: was siji.db
-TX_DB = "/opt/siji-dashboard/siji_database.db"
 
 
 def normalize_phone(phone) -> str:
@@ -1969,12 +1373,9 @@ async def get_pipeline(mode: str = "wa"):
         "selesai":     {"label": "Selesai",     "color": "#777777"},
     }
 
-    wa_conn = sqlite3.connect(WA_DB)
-    wa_conn.row_factory = sqlite3.Row
-    init_wa_tables(wa_conn)
+    wa_conn = get_db_connection()
 
-    tx_conn = sqlite3.connect(TX_DB)
-    tx_conn.row_factory = sqlite3.Row
+    tx_conn = get_db_connection()
 
     try:
         wa_cur = wa_conn.cursor()
@@ -2099,12 +1500,9 @@ async def get_pipeline_customer(phone: str):
 
     today = datetime.now().date()
 
-    wa_conn = sqlite3.connect(WA_DB)
-    wa_conn.row_factory = sqlite3.Row
-    init_wa_tables(wa_conn)
+    wa_conn = get_db_connection()
 
-    tx_conn = sqlite3.connect(TX_DB)
-    tx_conn.row_factory = sqlite3.Row
+    tx_conn = get_db_connection()
 
     try:
         wa_cur = wa_conn.cursor()
@@ -2179,7 +1577,6 @@ async def get_pipeline_customer(phone: str):
 # HMAC secret must match WHATSAPP_WEBHOOK_SECRET in GOWA .env
 # ============================================================
 GOWA_WEBHOOK_SECRET = "secret"  # GOWA default
-TX_DB_PATH = "/opt/siji-dashboard/siji_database.db"
 
 
 def _detect_message_type(payload: dict) -> tuple[str, str]:
@@ -2201,7 +1598,6 @@ def _detect_message_type(payload: dict) -> tuple[str, str]:
 
 @router.post("/gowa-webhook")
 async def gowa_webhook(request: Request):
-    import sqlite3 as _sqlite3
     import hmac as _hmac
     import hashlib as _hashlib
 
@@ -2225,14 +1621,9 @@ async def gowa_webhook(request: Request):
     payload = data.get("payload", {})
     device_id = data.get("device_id", "")
 
-    # --- Log to Fonnte-era siji.db (existing pipeline, old schema) ---
-    SIJI_DB_PATH = "/root/sijibintaro.id/api/siji.db"
-    wa_conn = _sqlite3.connect(SIJI_DB_PATH)
-    wa_conn.row_factory = _sqlite3.Row
-    init_wa_tables(wa_conn)
-
-    # --- Also log to siji_database.db (new GOWA pipeline, new schema) ---
-    tx_conn = _sqlite3.connect(TX_DB_PATH)
+    # --- Log to PostgreSQL (siji_bintaro schema) ---
+    wa_conn = get_db_connection()
+    tx_conn = wa_conn  # single connection
 
     try:
         if event == "message":
@@ -2255,11 +1646,11 @@ async def gowa_webhook(request: Request):
             wa_number = device_id.replace("@s.whatsapp.net", "")
             is_group = "@g.us" in chat_jid
 
-            # 1) Existing siji.db pipeline (Fonnte-compatible)
+            # 1) Existing siji.db pipeline
             if not is_from_me and sender:
                 upsert_customer(wa_conn, sender, name=from_name)
 
-            fonnte_msg_id = log_message(
+            msg_id = log_message(
                 conn=wa_conn,
                 wa_number=wa_number,
                 sender=sender if not is_from_me else wa_number,
@@ -2290,10 +1681,11 @@ async def gowa_webhook(request: Request):
                   is_group, body_text, timestamp, now))
 
             tx_conn.execute("""
-                INSERT OR IGNORE INTO wa_messages
+                INSERT INTO wa_messages
                 (conversation_jid, message_id, sender_jid, sender_name, message_text, message_type,
                  media_url, is_from_me, is_forwarded, quoted_message_id, timestamp)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT (message_id) DO NOTHING
             """, (chat_jid, msg_id_wa, from_jid, from_name, body_text, msg_type,
                   media_path or None, is_from_me, is_forwarded, replied_to or None, timestamp))
 
@@ -2453,7 +1845,7 @@ async def gowa_webhook(request: Request):
                         await send_gowa_message(sender, reply_text)
                         print(f"[AUTOREPLY] {reply_layer} → {sender}: {reply_text[:60]}")
 
-            return {"status": "ok", "message_id": fonnte_msg_id, "direction": direction}
+            return {"status": "ok", "message_id": msg_id, "direction": direction}
 
         elif event == "message.ack":
             # Read/delivery receipt

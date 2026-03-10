@@ -1,13 +1,17 @@
 """
 siji_llm.py — LLM reply generator untuk SIJI Bintaro
-Model: qwen2.5:1.5b via Ollama (local, zero cost)
+Primary:  qwen2.5:1.5b via Ollama (local, zero cost)
+Fallback: gpt-4o-mini via OpenAI (~$0.50/month untuk ~1000 msg)
 Tone: karyawan SIJI (Unaesih, Rizky, Denisa) — dari data percakapan real
 """
 import httpx
+import os
 from typing import Optional
 
-OLLAMA_BASE = "http://localhost:11434"
-LLM_MODEL   = "qwen2.5:1.5b"
+OLLAMA_BASE    = "http://localhost:11434"
+LLM_MODEL      = "qwen2.5:1.5b"
+OPENAI_MODEL   = "gpt-4o-mini"
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 
 SIJI_SYSTEM_PROMPT = """Kamu staf laundry SIJI Bintaro yang sedang balas WA pelanggan.
 
@@ -86,10 +90,9 @@ def build_prompt_messages(customer_message: str, context: dict) -> list:
     ]
 
 
-def generate_reply(customer_message: str, context: dict) -> Optional[str]:
-    """Generate reply via qwen2.5:1.5b. Returns string or None."""
+def _generate_ollama(messages: list) -> Optional[str]:
+    """Try Ollama (qwen2.5:1.5b). Returns reply string or None."""
     try:
-        messages = build_prompt_messages(customer_message, context)
         resp = httpx.post(
             f"{OLLAMA_BASE}/api/chat",
             json={
@@ -98,20 +101,58 @@ def generate_reply(customer_message: str, context: dict) -> Optional[str]:
                 "stream": False,
                 "options": {"temperature": 0.7, "num_predict": 80, "stop": ["\n\n"]}
             },
-            timeout=90
+            timeout=5  # Timeout ketat — fallback cepat ke OpenAI kalau Ollama lambat
         )
         reply = resp.json().get("message", {}).get("content", "").strip()
         if reply:
-            print(f"[LLM] Generated: {reply[:80]}")
+            print(f"[LLM:ollama] {reply[:80]}")
             return reply
         return None
     except Exception as e:
-        print(f"[LLM] generate error: {e}")
+        print(f"[LLM:ollama] failed: {e}")
         return None
 
 
+def _generate_openai(messages: list) -> Optional[str]:
+    """Fallback: OpenAI GPT-4o-mini. Returns reply string or None."""
+    if not OPENAI_API_KEY:
+        print("[LLM:openai] OPENAI_API_KEY not set, skip fallback")
+        return None
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=OPENAI_API_KEY)
+        resp = client.chat.completions.create(
+            model=OPENAI_MODEL,
+            messages=messages,
+            temperature=0.7,
+            max_tokens=100,
+        )
+        reply = resp.choices[0].message.content.strip()
+        if reply:
+            print(f"[LLM:openai] {reply[:80]}")
+            return reply
+        return None
+    except Exception as e:
+        print(f"[LLM:openai] failed: {e}")
+        return None
+
+
+def generate_reply(customer_message: str, context: dict) -> Optional[str]:
+    """Generate reply — Ollama primary, OpenAI fallback. Returns string or None."""
+    messages = build_prompt_messages(customer_message, context)
+
+    # Primary: Ollama (local, zero cost)
+    reply = _generate_ollama(messages)
+    if reply:
+        return reply
+
+    # Fallback: OpenAI GPT-4o-mini (~$0.50/bulan @ 1000 msg)
+    print("[LLM] Ollama failed, falling back to OpenAI...")
+    return _generate_openai(messages)
+
+
 def warmup_model():
-    """Pre-load model into memory (call once at startup)"""
+    """Pre-load Ollama model into memory (call once at startup)"""
     try:
         httpx.post(f"{OLLAMA_BASE}/api/generate",
                    json={"model": LLM_MODEL, "prompt": "halo", "stream": False,
