@@ -1486,8 +1486,8 @@ async def get_pipeline(mode: str = "wa"):
         }
 
     finally:
-        wa_release_db_connection(conn)
-        tx_release_db_connection(conn)
+        release_db_connection(wa_conn)
+        pass  # tx_conn shares wa_conn
 
 
 @router.get("/pipeline/customer/{phone}")
@@ -1565,8 +1565,8 @@ async def get_pipeline_customer(phone: str):
         }
 
     finally:
-        wa_release_db_connection(conn)
-        tx_release_db_connection(conn)
+        release_db_connection(wa_conn)
+        pass  # tx_conn shares wa_conn
 
 # ============================================================
 # GOWA Webhook — go-whatsapp-web-multidevice
@@ -1894,5 +1894,5 @@ async def gowa_webhook(request: Request):
             pass
         return {"status": "error", "detail": str(e)}
     finally:
-        wa_release_db_connection(conn)
-        tx_release_db_connection(conn)
+        release_db_connection(wa_conn)
+        pass  # tx_conn shares wa_conn
