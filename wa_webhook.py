@@ -513,7 +513,7 @@ def _get_price_for_nama(nama: str) -> str:
             "SELECT nama_layanan, harga, satuan, durasi_hari, durasi_jam FROM service_catalog "
             "WHERE nama_layanan LIKE ? LIMIT 1", (f"%{nama}%",)
         ).fetchone()
-        conn.close()
+        release_db_connection(conn)
         if row:
             _, h, sat, dh, dj = row
             p = f"Rp{h:,}".replace(",",".")
@@ -1177,7 +1177,7 @@ async def send_wa_message(request: Request):
             replied_by=sent_by
         )
     finally:
-        conn.close()
+        release_db_connection(conn)
     
     return {"status": "ok", "gowa_response": result}
 
@@ -1199,7 +1199,7 @@ async def get_conversations(phone: str, limit: int = 50):
         rows = cursor.fetchall()
         return [dict(r) for r in rows]
     finally:
-        conn.close()
+        release_db_connection(conn)
 
 
 @router.get("/customers")
@@ -1218,7 +1218,7 @@ async def get_wa_customers(limit: int = 100):
         rows = cursor.fetchall()
         return [dict(r) for r in rows]
     finally:
-        conn.close()
+        release_db_connection(conn)
 
 
 @router.get("/stats")
@@ -1274,7 +1274,7 @@ async def get_wa_stats():
             "categories_today": categories,
         }
     finally:
-        conn.close()
+        release_db_connection(conn)
 
 
 # === DB PATHS ===
@@ -1374,8 +1374,7 @@ async def get_pipeline(mode: str = "wa"):
     }
 
     wa_conn = get_db_connection()
-
-    tx_conn = get_db_connection()
+    tx_conn = wa_conn  # single connection
 
     try:
         wa_cur = wa_conn.cursor()
@@ -1487,8 +1486,8 @@ async def get_pipeline(mode: str = "wa"):
         }
 
     finally:
-        wa_conn.close()
-        tx_conn.close()
+        wa_release_db_connection(conn)
+        tx_release_db_connection(conn)
 
 
 @router.get("/pipeline/customer/{phone}")
@@ -1501,8 +1500,7 @@ async def get_pipeline_customer(phone: str):
     today = datetime.now().date()
 
     wa_conn = get_db_connection()
-
-    tx_conn = get_db_connection()
+    tx_conn = wa_conn  # single connection
 
     try:
         wa_cur = wa_conn.cursor()
@@ -1567,8 +1565,8 @@ async def get_pipeline_customer(phone: str):
         }
 
     finally:
-        wa_conn.close()
-        tx_conn.close()
+        wa_release_db_connection(conn)
+        tx_release_db_connection(conn)
 
 # ============================================================
 # GOWA Webhook — go-whatsapp-web-multidevice
@@ -1896,5 +1894,5 @@ async def gowa_webhook(request: Request):
             pass
         return {"status": "error", "detail": str(e)}
     finally:
-        wa_conn.close()
-        tx_conn.close()
+        wa_release_db_connection(conn)
+        tx_release_db_connection(conn)
