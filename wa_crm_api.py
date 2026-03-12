@@ -650,3 +650,75 @@ async def get_customer_profile(phone: str):
         }
     finally:
         conn.close()
+
+
+
+@router.get("/media/list")
+async def list_recent_media(limit: int = 50):
+    """List recent media files"""
+    import glob
+    files = glob.glob(f"{GOWA_MEDIA_PATH}/*.jpe") + glob.glob(f"{GOWA_MEDIA_PATH}/*.jpg")
+    files.sort(key=os.path.getmtime, reverse=True)
+    return [{"name": os.path.basename(f), "size": os.path.getsize(f)} for f in files[:limit]]
+
+# ─── Media Serving ────────────────────────────────────────────────────────────
+from fastapi.responses import FileResponse
+import os
+import glob
+
+GOWA_MEDIA_PATH = "/opt/gowa/storages"
+
+@router.get("/media/by-timestamp/{timestamp}")
+async def serve_media_by_timestamp(timestamp: str):
+    """Find and serve media by message timestamp. 
+    Timestamp format: 2026-03-12T10:54:08Z or unix timestamp."""
+    import datetime
+    
+    try:
+        # Parse ISO timestamp to unix
+        if "T" in timestamp:
+            dt = datetime.datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+            unix_ts = int(dt.timestamp())
+        else:
+            unix_ts = int(timestamp)
+    except:
+        return {"error": "Invalid timestamp"}
+    
+    # Find files within 5 seconds of timestamp
+    matches = []
+    for f in glob.glob(f"{GOWA_MEDIA_PATH}/*.jpe"):
+        fname = os.path.basename(f)
+        try:
+            file_ts = int(fname.split("-")[0])
+            if abs(file_ts - unix_ts) <= 5:
+                matches.append(f)
+        except:
+            continue
+    
+    if not matches:
+        return {"error": "No media found", "searched_ts": unix_ts}
+    
+    # Return first match
+    filepath = matches[0]
+    return FileResponse(filepath, media_type="image/jpeg")
+
+
+@router.get("/media/{filename}")
+async def serve_media(filename: str):
+    """Serve media files from GOWA storage"""
+    allowed_ext = (".jpe", ".jpg", ".jpeg", ".png", ".gif", ".webp", ".mp4", ".pdf")
+    if not filename.lower().endswith(allowed_ext):
+        return {"error": "Invalid file type"}
+    
+    filepath = os.path.join(GOWA_MEDIA_PATH, filename)
+    if not os.path.exists(filepath):
+        return {"error": "File not found"}
+    
+    ext = os.path.splitext(filename)[1].lower()
+    content_types = {
+        ".jpe": "image/jpeg", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+        ".png": "image/png", ".gif": "image/gif", ".webp": "image/webp",
+        ".mp4": "video/mp4", ".pdf": "application/pdf"
+    }
+    
+    return FileResponse(filepath, media_type=content_types.get(ext, "application/octet-stream"))
