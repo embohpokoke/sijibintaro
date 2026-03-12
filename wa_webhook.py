@@ -831,7 +831,8 @@ KEYWORD_MAP = {
 
 # ─── HOLIDAY MODE (Lebaran 2026) ─────────────────────────────────────────────
 # Tanggal libur: 21-23 Maret 2026
-HOLIDAY_START = (2026, 3, 21)
+GREETING_START = (2026, 3, 20)  # Ucapan Lebaran mulai 20 Maret
+HOLIDAY_START = (2026, 3, 21)  # SIJI tutup 21-23 Maret
 HOLIDAY_END   = (2026, 3, 23)
 
 HOLIDAY_GREETING = (
@@ -858,6 +859,14 @@ def is_holiday_mode() -> bool:
     today = (now.year, now.month, now.day)
     return HOLIDAY_START <= today <= HOLIDAY_END
 
+
+
+def is_greeting_mode() -> bool:
+    """Check if should show Lebaran greeting (from 20 March 2026)"""
+    from datetime import datetime
+    now = datetime.now()
+    today = (now.year, now.month, now.day)
+    return today >= GREETING_START and today <= HOLIDAY_END
 
 def match_keyword(message: str) -> str | None:
     """Match message to keyword category — checks in order, returns first match"""
@@ -1912,8 +1921,8 @@ async def gowa_webhook(request: Request):
                     # - Holiday mode: use HOLIDAY_FALLBACK
                     # - Normal: use AUTO_REPLY_DEFAULT with cooldown logic
                     if not reply_text and not reply_layer:
-                        _is_holiday = is_holiday_mode()
-                        if _is_holiday:
+                        _is_greeting = is_greeting_mode()
+                        if is_holiday_mode():
                             # Holiday mode — special fallback
                             reply_text = HOLIDAY_FALLBACK
                             reply_layer = "holiday:fallback"
@@ -1934,11 +1943,11 @@ async def gowa_webhook(request: Request):
                     # Layer LLM (rag_llm) sudah handle greeting sendiri via system prompt
                     # Layer lain (keyword, catalog, default) → prepend greeting
                     if reply_text and reply_layer and not reply_layer.startswith("rag_llm"):
-                        _is_holiday = is_holiday_mode()
-                        if _is_holiday and not reply_layer.startswith("holiday"):
+                        _is_greeting = is_greeting_mode()
+                        if _is_greeting and not reply_layer.startswith("holiday"):
                             # Holiday mode — prepend Lebaran greeting
                             reply_text = f"{HOLIDAY_GREETING}{reply_text}"
-                        elif not _is_holiday:
+                        elif not _is_greeting:
                             # Normal mode — personal greeting for known customers
                             greeting = build_greeting(cust_name, cust_ctx.get("segment", "Baru"))
                             if greeting and cust_ctx.get("found"):
