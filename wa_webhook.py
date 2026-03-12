@@ -1098,7 +1098,7 @@ async def notify_telegram(sender: str, message: str, category: str = "", routing
 
 
 async def send_gowa_message(phone: str, message: str) -> dict:
-    """Send WA message via GOWA API (self-hosted, port 3002)"""
+    """Send WA message via GOWA API (self-hosted, port 3002) and save to DB"""
     url = f"{GOWA_BASE}/send/message"
     payload = {"phone": phone, "message": message}
     headers = {"X-Device-Id": GOWA_DEVICE_ID}
@@ -1110,6 +1110,29 @@ async def send_gowa_message(phone: str, message: str) -> dict:
             )
             result = resp.json()
             print(f"[GOWA Send] → {phone}: {message[:50]} | resp: {result}")
+            
+            # Save outgoing message to wa_messages for CRM visibility
+            try:
+                import sqlite3
+                from datetime import datetime
+                import uuid
+                db = sqlite3.connect("/opt/siji-dashboard/siji_database.db")
+                jid = phone + "@s.whatsapp.net"
+                msg_id = "BOT_" + uuid.uuid4().hex[:16].upper()
+                now_iso = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+                db.execute("""
+                    INSERT OR IGNORE INTO wa_messages 
+                    (conversation_jid, message_id, sender_jid, sender_name, message_text, 
+                     message_type, is_from_me, timestamp, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (jid, msg_id, GOWA_DEVICE_NUMBER + "@s.whatsapp.net", "SIJI Bot", 
+                      message, "text", 1, now_iso, "sent"))
+                db.commit()
+                db.close()
+                print(f"[GOWA Send] Saved to DB: {msg_id}")
+            except Exception as db_err:
+                print(f"[GOWA Send] DB save error: {db_err}")
+            
             return result
     except Exception as e:
         print(f"[GOWA Send Error] {phone}: {e}")
