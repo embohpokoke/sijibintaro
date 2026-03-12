@@ -105,6 +105,18 @@ class PostgreSQLiteConnection:
             cur.execute(f'SET search_path TO {DB_SCHEMA}, public')
         self._pg_conn.commit()
     
+    
+    def execute(self, sql, params=None):
+        """Execute SQL directly on connection (SQLite compatibility)"""
+        # Convert ? to %s for PostgreSQL
+        sql = sql.replace("?", "%s")
+        cursor = self._pg_conn.cursor()
+        if params:
+            cursor.execute(sql, params)
+        else:
+            cursor.execute(sql)
+        return PostgreSQLiteCursor(cursor)
+    
     def cursor(self):
         pg_cursor = self._pg_conn.cursor()
         return PostgreSQLiteCursor(pg_cursor)
