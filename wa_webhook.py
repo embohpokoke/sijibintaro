@@ -829,6 +829,36 @@ KEYWORD_MAP = {
     "libur": ["libur", "lebaran", "idul fitri", "tutup", "buka kapan", "hari raya", "libur lebaran"],
 }
 
+# ─── HOLIDAY MODE (Lebaran 2026) ─────────────────────────────────────────────
+# Tanggal libur: 21-23 Maret 2026
+HOLIDAY_START = (2026, 3, 21)
+HOLIDAY_END   = (2026, 3, 23)
+
+HOLIDAY_GREETING = (
+    "🌙 *Selamat Idul Fitri 1447H!*\n"
+    "Mohon maaf lahir dan batin 🙏\n\n"
+)
+
+HOLIDAY_FALLBACK = (
+    "Terima kasih sudah menghubungi SIJI.Bintaro.\n\n"
+    "Saat ini kami sedang libur Lebaran (21-23 Maret 2026).\n"
+    "Kami akan buka kembali tanggal *24 Maret 2026*.\n\n"
+    "Pertanyaan Kakak akan kami jawab saat sudah buka ya! 🙏\n\n"
+    "Selamat merayakan Hari Raya! 🕌"
+)
+
+def is_holiday_mode() -> bool:
+    """Check if current date is within Lebaran holiday (21-23 March 2026)"""
+    from datetime import datetime
+    now = datetime.now()
+    # WIB = UTC+7
+    wib_hour = (now.hour + 7) % 24
+    wib_day = now.day if wib_hour >= 7 else now.day
+    # For proper date handling
+    today = (now.year, now.month, now.day)
+    return HOLIDAY_START <= today <= HOLIDAY_END
+
+
 def match_keyword(message: str) -> str | None:
     """Match message to keyword category — checks in order, returns first match"""
     msg_lower = " " + message.lower().strip() + " "  # pad for word-boundary check
@@ -1879,10 +1909,16 @@ async def gowa_webhook(request: Request):
                             print(f"[AUTOREPLY] RAG error: {_rag_err}")
 
                     # Layer 5: Default fallback
-                    # - Kalau RAG score tinggi tapi LLM gagal: kirim default TANPA cooldown (retry ok)
-                    # - Kalau RAG score rendah (pertanyaan tidak relevan): cooldown 10 menit
+                    # - Holiday mode: use HOLIDAY_FALLBACK
+                    # - Normal: use AUTO_REPLY_DEFAULT with cooldown logic
                     if not reply_text and not reply_layer:
-                        if _rag_score >= 0.75:
+                        _is_holiday = is_holiday_mode()
+                        if _is_holiday:
+                            # Holiday mode — special fallback
+                            reply_text = HOLIDAY_FALLBACK
+                            reply_layer = "holiday:fallback"
+                            print(f"[AUTOREPLY] Holiday fallback → {sender}")
+                        elif _rag_score >= 0.75:
                             # LLM timeout/gagal — kirim default, tidak set cooldown supaya bisa retry
                             reply_text = AUTO_REPLY_DEFAULT
                             reply_layer = "default:llm_fail"
@@ -1894,13 +1930,19 @@ async def gowa_webhook(request: Request):
                         else:
                             print(f"[AUTOREPLY] Default cooldown active (low score): {sender}")
 
-                    # Inject greeting personal untuk customer dikenal
+                    # Inject greeting (holiday or personal)
                     # Layer LLM (rag_llm) sudah handle greeting sendiri via system prompt
                     # Layer lain (keyword, catalog, default) → prepend greeting
                     if reply_text and reply_layer and not reply_layer.startswith("rag_llm"):
-                        greeting = build_greeting(cust_name, cust_ctx.get("segment", "Baru"))
-                        if greeting and cust_ctx.get("found"):
-                            reply_text = f"{greeting}\n{reply_text}"
+                        _is_holiday = is_holiday_mode()
+                        if _is_holiday and not reply_layer.startswith("holiday"):
+                            # Holiday mode — prepend Lebaran greeting
+                            reply_text = f"{HOLIDAY_GREETING}{reply_text}"
+                        elif not _is_holiday:
+                            # Normal mode — personal greeting for known customers
+                            greeting = build_greeting(cust_name, cust_ctx.get("segment", "Baru"))
+                            if greeting and cust_ctx.get("found"):
+                                reply_text = f"{greeting}\n{reply_text}"
 
                     # SEND — kirim reply kalau ada (layer 1/2/4/5)
                     if reply_text:
