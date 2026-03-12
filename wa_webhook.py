@@ -765,6 +765,70 @@ TELEGRAM_API_URL = "https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/sendM
 
 
 
+
+# ─── KEYWORD AUTOREPLY ───────────────────────────────────────────────────────
+
+KEYWORD_REPLIES = {
+    "harga": (
+        "Halo! Ini daftar harga SIJI.Bintaro 👕\n\n"
+        "*KILOAN (min. 3kg):*\n"
+        "🧺 Cuci Kering Setrika Reguler: Rp 16.000/kg (3 hari)\n"
+        "👔 Cuci Kering Lipat Reguler: Rp 12.000/kg (3 hari)\n"
+        "🔥 Setrika Kiloan Reguler: Rp 12.000/kg (3 hari)\n\n"
+        "*EXPRESS:*\n"
+        "⚡ Cuci Kering Setrika Express 24 jam: Rp 30.000/kg\n"
+        "🚀 Same Day 10 jam: Rp 36.000/kg\n\n"
+        "*SATUAN:*\n"
+        "👗 Laundry Satuan Reguler: Rp 40.000/pcs\n"
+        "🛏️ Bedcover: Rp 70.000/lembar\n"
+        "🛏️ Sprei 1 Set: Rp 35.000/paket\n"
+        "🥿 Sepatu Reguler: Rp 90.000/pasang\n\n"
+        "Info lengkap & order: wa.me/6281288783088 😊"
+    ),
+    "jam": (
+        "Jam operasional SIJI.Bintaro ⏰\n\n"
+        "Senin - Sabtu: 08.00 - 20.00\n"
+        "Minggu: 08.00 - 16.00\n\n"
+        "📢 *INFO LEBARAN 2026*\n"
+        "Libur: 21-23 Maret 2026\n"
+        "Buka kembali: 24 Maret 2026\n\n"
+        "Bisa jemput & antar juga lho! 🛵\n"
+        "Area: Emerald, Discovery, Kebayoran dan sekitarnya"
+    ),
+    "lokasi": (
+        "📍 SIJI.Bintaro\n"
+        "Jl. Raya Emerald Boulevard, BLOK CE/A1 No.5\n"
+        "Bintaro Jaya, Tangerang Selatan\n\n"
+        "Google Maps: https://maps.app.goo.gl/sijibintaro\n"
+        "Ditunggu ya Kak! 😊"
+    ),
+    "promo": (
+        "Promo SIJI.Bintaro bulan ini 🎁\n\n"
+        "Cek update terbaru di Instagram kami:\n"
+        "@siji.bintaro\n\n"
+        "Atau tanya langsung aja ya Kak! 😊"
+    ),
+    "libur": (
+        "📢 *INFO LIBUR LEBARAN SIJI.Bintaro*\n\n"
+        "🕌 Idul Fitri 1447H: 21-22 Maret 2026\n\n"
+        "🚫 *SIJI.Bintaro LIBUR:*\n"
+        "21 - 23 Maret 2026\n\n"
+        "✅ *Buka Kembali:*\n"
+        "24 Maret 2026 (jam reguler)\n\n"
+        "Mohon maaf atas ketidaknyamanannya ya Kak 🙏\n"
+        "Selamat Hari Raya Idul Fitri!\n"
+        "Taqabbalallahu minna wa minkum 🌙"
+    ),
+}
+
+KEYWORD_MAP = {
+    "harga": ["harga", "price", "berapa", "tarif", "biaya", "ongkos"],
+    "jam": ["jam buka", "jam tutup", "jam operasional", "buka jam", "tutup jam", "waktu buka"],
+    "lokasi": ["lokasi", "alamat", "dimana", "di mana", "maps", "map", "tempat"],
+    "promo": ["promo", "diskon", "discount", "voucher", "potongan"],
+    "libur": ["libur", "lebaran", "idul fitri", "tutup", "buka kapan", "hari raya", "libur lebaran"],
+}
+
 def match_keyword(message: str) -> str | None:
     """Match message to keyword category — checks in order, returns first match"""
     msg_lower = " " + message.lower().strip() + " "  # pad for word-boundary check
