@@ -48,7 +48,7 @@ security = HTTPBearer(auto_error=False)
 ADMIN_TOKEN = os.getenv("SIJI_ADMIN_TOKEN", "sijiadmin2026")
 
 # Upload directories
-CV_UPLOAD_DIR = "/root/sijibintaro.id/api/uploads/cv"
+CV_UPLOAD_DIR = "/var/www/sijibintaro/uploads/cv"
 
 # Initialize database on startup
 @app.on_event("startup")

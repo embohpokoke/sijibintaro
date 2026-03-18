@@ -7,7 +7,7 @@ Dibagi per posisi, split per chunk agar tidak terlalu panjang.
 import sqlite3, subprocess
 from collections import defaultdict
 
-DB_PATH = "/root/sijibintaro.id/api/siji.db"
+DB_PATH = "/var/www/sijibintaro/siji.db"
 
 TARGETS = [
     "+628118606999",  # Ocha SIJI

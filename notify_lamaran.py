@@ -11,7 +11,7 @@ import os, sys, sqlite3, subprocess, argparse, logging
 from datetime import datetime, timedelta
 
 # ─── Config ───────────────────────────────────────────────────────────────────
-DB_PATH     = "/root/sijibintaro.id/api/siji.db"
+DB_PATH     = "/var/www/sijibintaro/siji.db"
 ADMIN_TOKEN = os.getenv("SIJI_ADMIN_TOKEN", "sijiadmin2026")
 API_BASE    = "http://127.0.0.1:8002"
 

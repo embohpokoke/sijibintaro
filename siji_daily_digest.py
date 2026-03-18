@@ -9,7 +9,7 @@ import sqlite3
 import httpx
 from datetime import datetime, date
 
-DB_PATH = '/root/sijibintaro.id/api/siji.db'
+DB_PATH = '/var/www/sijibintaro/siji.db'
 TELEGRAM_BOT_TOKEN = '8510158455:AAHT5gd5xKtrCtzl3kAXuMVUsyCYTAyacjc'
 TELEGRAM_CHAT_ID = '5309429603'
 TELEGRAM_URL = f'https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage'
