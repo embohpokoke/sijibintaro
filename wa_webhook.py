@@ -12,6 +12,7 @@ import re
 import asyncio
 import httpx
 from database import get_db_connection, release_db_connection
+from rate_limiter import limiter
 
 # Customer context lookup (Phase 3)
 try:
@@ -1032,6 +1033,8 @@ async def handle_presensi(conn, sender: str, message: str) -> bool:
         )
 
     if reply:
+        # Rate limiting (Phase 3)
+        if not limiter.check_and_log(sender): reply = None  # Skip if over limit
         await send_gowa_message(sender, reply)
         log_message(
             conn=conn,
@@ -1123,10 +1126,10 @@ async def send_gowa_message(phone: str, message: str) -> dict:
                 db.execute("""
                     INSERT OR IGNORE INTO wa_messages 
                     (conversation_jid, message_id, sender_jid, sender_name, message_text, 
-                     message_type, is_from_me, timestamp, status)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     message_type, is_from_me, is_bot, timestamp, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (jid, msg_id, GOWA_DEVICE_NUMBER + "@s.whatsapp.net", "SIJI Bot", 
-                      message, "text", 1, now_iso, "sent"))
+                      message, "text", 1, 1, now_iso, "sent"))
                 db.commit()
                 db.close()
                 print(f"[GOWA Send] Saved to DB: {msg_id}")

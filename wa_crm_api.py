@@ -123,7 +123,7 @@ async def get_messages(
 
         rows = conn.execute("""
             SELECT message_id, sender_jid, sender_name, message_text, message_type,
-                   media_url, is_from_me, is_forwarded, quoted_message_id, timestamp, status
+                   media_url, is_from_me, is_bot, is_forwarded, quoted_message_id, timestamp, status
             FROM wa_messages WHERE conversation_jid = ?
             ORDER BY timestamp ASC LIMIT ? OFFSET ?
         """, (jid, limit, offset)).fetchall()

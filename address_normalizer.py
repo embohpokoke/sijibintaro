@@ -239,7 +239,7 @@ if __name__ == "__main__":
     
     if len(sys.argv) > 1 and sys.argv[1] == 'batch':
         import psycopg2
-        pg = psycopg2.connect(host='localhost', port=5432, dbname='siji_db', user='siji', password='siji2026db')
+        pg = psycopg2.connect(host='localhost', port=5432, dbname='siji_db', user='siji', password=os.environ.get('SIJI_DB_PASSWORD', 'siji2026db'))
         ref_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'location_references.json')
         if not os.path.exists(ref_path):
             ref_path = None

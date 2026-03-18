@@ -18,12 +18,14 @@ from wa_webhook import router as wa_router
 from dashboard_api import router as dashboard_router
 from wa_crm_api import router as wa_crm_router
 from order_tracking_api import router as order_tracking_router
+from media_upload_api import router as media_upload_router
 
 app = FastAPI(title="SIJI Bintaro API", version="1.0.0")
 app.include_router(wa_router)
 app.include_router(dashboard_router)
 app.include_router(wa_crm_router)
 app.include_router(order_tracking_router)
+app.include_router(media_upload_router)
 
 # CORS middleware
 app.add_middleware(
@@ -32,6 +34,8 @@ app.add_middleware(
         "https://sijibintaro.id",
         "https://www.sijibintaro.id",
         "https://dashboard.sijibintaro.id",
+        "https://crm.sijibintaro.id",
+        "https://ops.sijibintaro.id",
         "https://gowa.sijibintaro.id",
     ],
     allow_credentials=True,
