@@ -12,3 +12,5 @@ uploads/
 *.backup-*
 *.bak
 *.sqlite.backup
+*.pre-cache
+logs/
