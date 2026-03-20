@@ -1,7 +1,8 @@
 """
-SIJI Bintaro - Dashboard API v2.2
+SIJI Bintaro - Dashboard API v2.3
 FastAPI router untuk analytics dashboard
-Database: SQLite /opt/siji-dashboard/siji_database.db (13,180 transactions, 2021-2026)
+Database: PostgreSQL (livininbintaro DB, schema: siji_bintaro)
+Migrated from SQLite - 2026-03-20
 Supports: month, year, date_from/date_to filtering
 New: SLA alerts, customer search/detail, area analysis, LLM insights
 """
@@ -10,7 +11,8 @@ from fastapi import APIRouter, HTTPException, Query
 from cache_decorator import cached
 from pydantic import BaseModel
 from typing import Optional
-import sqlite3
+import psycopg2
+from psycopg2.extras import RealDictCursor
 import json
 import urllib.request
 from datetime import datetime, timedelta
@@ -18,13 +20,26 @@ import calendar
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
-DB_PATH = "/opt/siji-dashboard/siji_database.db"
+DB_URL = "postgresql://livin:L1v1n!B1nt4r0_2026@172.17.0.2:5432/livininbintaro"
+
+
+class DBConn:
+    """Wrapper to provide sqlite3-compatible execute() interface over psycopg2"""
+    def __init__(self, conn):
+        self._conn = conn
+
+    def execute(self, sql, params=()):
+        cur = self._conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(sql, params)
+        return cur
+
+    def close(self):
+        self._conn.close()
 
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    conn = psycopg2.connect(DB_URL, options='-c search_path=siji_bintaro')
+    return DBConn(conn)
 
 
 def get_sla_days(service_name: str) -> int:
@@ -137,7 +152,7 @@ async def get_overview(
                 COALESCE(SUM(total_tagihan), 0) as revenue,
                 COUNT(DISTINCT customer_phone) as active_customers
             FROM transactions
-            WHERE date_of_transaction >= ? AND date_of_transaction <= ?
+            WHERE date_of_transaction >= %s AND date_of_transaction <= %s
               AND total_tagihan > 0
         """, (start, end))
         current = dict(cur.fetchone())
@@ -147,7 +162,7 @@ async def get_overview(
                 COUNT(*) as total_orders,
                 COALESCE(SUM(total_tagihan), 0) as revenue
             FROM transactions
-            WHERE date_of_transaction >= ? AND date_of_transaction <= ?
+            WHERE date_of_transaction >= %s AND date_of_transaction <= %s
               AND total_tagihan > 0
         """, (prev_start, prev_end))
         previous = dict(cur.fetchone())
@@ -155,12 +170,12 @@ async def get_overview(
         cur = conn.execute("""
             SELECT COUNT(DISTINCT customer_phone) as new_customers
             FROM transactions
-            WHERE date_of_transaction >= ? AND date_of_transaction <= ?
+            WHERE date_of_transaction >= %s AND date_of_transaction <= %s
               AND total_tagihan > 0
               AND customer_phone NOT IN (
                   SELECT DISTINCT customer_phone
                   FROM transactions
-                  WHERE date_of_transaction < ?
+                  WHERE date_of_transaction < %s
                     AND customer_phone IS NOT NULL
               )
         """, (start, end, start))
@@ -169,7 +184,7 @@ async def get_overview(
         cur = conn.execute("""
             SELECT pembayaran, COUNT(*) as count
             FROM transactions
-            WHERE date_of_transaction >= ? AND date_of_transaction <= ?
+            WHERE date_of_transaction >= %s AND date_of_transaction <= %s
               AND total_tagihan > 0
             GROUP BY pembayaran
         """, (start, end))
@@ -178,15 +193,15 @@ async def get_overview(
         cur = conn.execute("""
             SELECT
                 CASE
-                    WHEN progress_status = '100%' AND pengambilan = 'Diambil Semua' THEN 'Selesai'
-                    WHEN progress_status = '100%' AND pengambilan != 'Diambil Semua' THEN 'Siap Diambil'
+                    WHEN progress_status = '100%%' AND pengambilan = 'Diambil Semua' THEN 'Selesai'
+                    WHEN progress_status = '100%%' AND pengambilan != 'Diambil Semua' THEN 'Siap Diambil'
                     ELSE 'Proses'
                 END as status,
                 COUNT(*) as count
             FROM transactions
-            WHERE date_of_transaction >= ? AND date_of_transaction <= ?
+            WHERE date_of_transaction >= %s AND date_of_transaction <= %s
               AND total_tagihan > 0
-            GROUP BY status
+            GROUP BY 1
         """, (start, end))
         order_status = {r["status"]: r["count"] for r in cur.fetchall()}
 
@@ -209,10 +224,10 @@ async def get_overview(
         cur = conn.execute("""
             SELECT no_nota, customer_name, nama_layanan, group_layanan,
                 date_of_transaction, progress_status,
-                CAST(julianday('now') - julianday(date_of_transaction) AS INTEGER) as days_in_progress
+                EXTRACT(DAY FROM NOW() - date_of_transaction::timestamp)::INTEGER as days_in_progress
             FROM transactions
             WHERE total_tagihan > 0
-              AND progress_status != '100%'
+              AND progress_status != '100%%'
             ORDER BY days_in_progress DESC
         """)
         sla_alerts = []
@@ -286,14 +301,14 @@ async def get_revenue_monthly():
     try:
         cur = conn.execute("""
             SELECT
-                strftime('%Y-%m', date_of_transaction) as month,
+                to_char(date_of_transaction, 'YYYY-MM') as month,
                 COALESCE(SUM(total_tagihan), 0) as revenue,
                 COUNT(*) as orders
             FROM transactions
             WHERE total_tagihan > 0
-              AND date_of_transaction >= date('now', '-72 months')
-            GROUP BY month
-            ORDER BY month
+              AND date_of_transaction >= CURRENT_DATE - INTERVAL '72 months'
+            GROUP BY 1
+            ORDER BY 1
         """)
         data = [{"month": r["month"], "revenue": r["revenue"], "orders": r["orders"]} for r in cur.fetchall()]
         return {"period": "monthly", "data": data}
@@ -319,12 +334,12 @@ async def get_revenue_daily(
                 COALESCE(SUM(total_tagihan), 0) as revenue,
                 COUNT(*) as orders
             FROM transactions
-            WHERE date_of_transaction >= ? AND date_of_transaction <= ?
+            WHERE date_of_transaction >= %s AND date_of_transaction <= %s
               AND total_tagihan > 0
             GROUP BY date_of_transaction
             ORDER BY date_of_transaction
         """, (start, end))
-        data = [{"date": r["date"], "revenue": r["revenue"], "orders": r["orders"]} for r in cur.fetchall()]
+        data = [{"date": str(r["date"]), "revenue": r["revenue"], "orders": r["orders"]} for r in cur.fetchall()]
         return {"period": "daily", "label": label, "data": data}
     finally:
         conn.close()
@@ -347,9 +362,9 @@ async def get_revenue_by_service(
                 COALESCE(SUM(total_tagihan), 0) as revenue,
                 COUNT(*) as orders
             FROM transactions
-            WHERE date_of_transaction >= ? AND date_of_transaction <= ?
+            WHERE date_of_transaction >= %s AND date_of_transaction <= %s
               AND total_tagihan > 0
-            GROUP BY name
+            GROUP BY 1
             ORDER BY revenue DESC
         """, (start, end))
         by_category = [dict(r) for r in cur.fetchall()]
@@ -361,7 +376,7 @@ async def get_revenue_by_service(
                 COALESCE(SUM(total_tagihan), 0) as revenue,
                 COUNT(*) as orders
             FROM transactions
-            WHERE date_of_transaction >= ? AND date_of_transaction <= ?
+            WHERE date_of_transaction >= %s AND date_of_transaction <= %s
               AND total_tagihan > 0
               AND nama_layanan IS NOT NULL AND nama_layanan != ''
             GROUP BY nama_layanan, group_layanan
@@ -393,7 +408,7 @@ async def get_orders(
 
     conn = get_db()
     try:
-        where = "WHERE date_of_transaction >= ? AND date_of_transaction <= ? AND total_tagihan > 0"
+        where = "WHERE date_of_transaction >= %s AND date_of_transaction <= %s AND total_tagihan > 0"
         params = [start, end]
 
         if status == "Lunas":
@@ -401,12 +416,12 @@ async def get_orders(
         elif status == "Belum Lunas":
             where += " AND pembayaran = 'Belum Lunas'"
         elif status == "Proses":
-            where += " AND progress_status != '100%'"
+            where += " AND progress_status != '100%%'"
         elif status == "Siap Diambil":
-            where += " AND progress_status = '100%' AND pengambilan != 'Diambil Semua'"
+            where += " AND progress_status = '100%%' AND pengambilan != 'Diambil Semua'"
 
         if search:
-            where += " AND (customer_name LIKE ? OR no_nota LIKE ? OR customer_phone LIKE ?)"
+            where += " AND (customer_name LIKE %s OR no_nota LIKE %s OR customer_phone LIKE %s)"
             params.extend([f"%{search}%", f"%{search}%", f"%{search}%"])
 
         cur = conn.execute(f"SELECT COUNT(*) as total FROM transactions {where}", params)
@@ -421,7 +436,7 @@ async def get_orders(
             FROM transactions
             {where}
             ORDER BY date_of_transaction DESC
-            LIMIT ? OFFSET ?
+            LIMIT %s OFFSET %s
         """, params + [limit, offset])
 
         orders = []
@@ -437,7 +452,7 @@ async def get_orders(
 
             orders.append({
                 "no_nota": r["no_nota"],
-                "date": r["date_of_transaction"],
+                "date": str(r["date_of_transaction"]),
                 "customer": r["customer_name"],
                 "phone": r["customer_phone"],
                 "address": r["customer_address"],
@@ -475,7 +490,7 @@ async def get_ongoing_orders():
                 pembayaran, pengambilan, nama_layanan, group_layanan
             FROM transactions
             WHERE total_tagihan > 0
-              AND (progress_status != '100%' OR pengambilan != 'Diambil Semua')
+              AND (progress_status != '100%%' OR pengambilan != 'Diambil Semua')
             ORDER BY date_of_transaction DESC
             LIMIT 20
         """)
@@ -487,7 +502,7 @@ async def get_ongoing_orders():
                 status = "Proses"
             orders.append({
                 "no_nota": r["no_nota"],
-                "date": r["date_of_transaction"],
+                "date": str(r["date_of_transaction"]),
                 "customer": r["customer_name"],
                 "service": r["nama_layanan"] or r["group_layanan"] or "-",
                 "amount": r["total_tagihan"],
@@ -508,22 +523,22 @@ async def get_customers_summary():
         cur = conn.execute("SELECT COUNT(DISTINCT customer_phone) as total FROM transactions WHERE customer_phone IS NOT NULL AND total_tagihan > 0")
         total = cur.fetchone()["total"]
 
-        cur = conn.execute("SELECT COUNT(DISTINCT customer_phone) as active FROM transactions WHERE total_tagihan > 0 AND date_of_transaction >= date('now', '-60 days')")
+        cur = conn.execute("SELECT COUNT(DISTINCT customer_phone) as active FROM transactions WHERE total_tagihan > 0 AND date_of_transaction >= CURRENT_DATE - INTERVAL '60 days'")
         active = cur.fetchone()["active"]
 
-        cur = conn.execute("SELECT COUNT(*) as hvc FROM (SELECT customer_phone FROM transactions WHERE customer_phone IS NOT NULL AND total_tagihan > 0 GROUP BY customer_phone HAVING COUNT(*) >= 5 OR SUM(total_tagihan) >= 1000000)")
+        cur = conn.execute("SELECT COUNT(*) as hvc FROM (SELECT customer_phone FROM transactions WHERE customer_phone IS NOT NULL AND total_tagihan > 0 GROUP BY customer_phone HAVING COUNT(*) >= 5 OR SUM(total_tagihan) >= 1000000) sub")
         hvc_count = cur.fetchone()["hvc"]
 
-        cur = conn.execute("SELECT COUNT(*) as churn FROM (SELECT customer_phone FROM transactions WHERE customer_phone IS NOT NULL AND total_tagihan > 0 GROUP BY customer_phone HAVING COUNT(*) >= 2 AND julianday('now') - julianday(MAX(date_of_transaction)) >= 60)")
+        cur = conn.execute("SELECT COUNT(*) as churn FROM (SELECT customer_phone FROM transactions WHERE customer_phone IS NOT NULL AND total_tagihan > 0 GROUP BY customer_phone HAVING COUNT(*) >= 2 AND EXTRACT(DAY FROM NOW() - MAX(date_of_transaction)::timestamp) >= 60) sub")
         churn_count = cur.fetchone()["churn"]
 
         cur = conn.execute("""
             SELECT
                 CASE WHEN cnt >= 8 THEN 'VIP' WHEN cnt >= 5 THEN 'High-Value' WHEN cnt >= 3 THEN 'Regular' WHEN cnt >= 2 THEN 'Occasional' ELSE 'One-time' END as segment,
                 COUNT(*) as count
-            FROM (SELECT customer_phone, COUNT(*) as cnt FROM transactions WHERE customer_phone IS NOT NULL AND total_tagihan > 0 GROUP BY customer_phone)
-            GROUP BY segment
-            ORDER BY CASE segment WHEN 'VIP' THEN 1 WHEN 'High-Value' THEN 2 WHEN 'Regular' THEN 3 WHEN 'Occasional' THEN 4 ELSE 5 END
+            FROM (SELECT customer_phone, COUNT(*) as cnt FROM transactions WHERE customer_phone IS NOT NULL AND total_tagihan > 0 GROUP BY customer_phone) sub
+            GROUP BY 1
+            ORDER BY CASE WHEN MIN(cnt) >= 8 THEN 1 WHEN MIN(cnt) >= 5 THEN 2 WHEN MIN(cnt) >= 3 THEN 3 WHEN MIN(cnt) >= 2 THEN 4 ELSE 5 END
         """)
         segments = [{"segment": r["segment"], "count": r["count"]} for r in cur.fetchall()]
 
@@ -531,9 +546,9 @@ async def get_customers_summary():
             SELECT
                 CASE WHEN cnt = 1 THEN '1 order' WHEN cnt BETWEEN 2 AND 5 THEN '2-5 orders' WHEN cnt BETWEEN 6 AND 10 THEN '6-10 orders' ELSE '10+ orders' END as range_label,
                 COUNT(*) as count
-            FROM (SELECT customer_phone, COUNT(*) as cnt FROM transactions WHERE customer_phone IS NOT NULL AND total_tagihan > 0 GROUP BY customer_phone)
-            GROUP BY range_label
-            ORDER BY CASE range_label WHEN '1 order' THEN 1 WHEN '2-5 orders' THEN 2 WHEN '6-10 orders' THEN 3 ELSE 4 END
+            FROM (SELECT customer_phone, COUNT(*) as cnt FROM transactions WHERE customer_phone IS NOT NULL AND total_tagihan > 0 GROUP BY customer_phone) sub
+            GROUP BY 1
+            ORDER BY MIN(cnt)
         """)
         frequency = [{"range": r["range_label"], "count": r["count"]} for r in cur.fetchall()]
 
@@ -550,12 +565,19 @@ async def get_top_customers(limit: int = 20):
             SELECT customer_name, customer_phone, COUNT(*) as total_orders,
                 COALESCE(SUM(total_tagihan), 0) as total_spent, ROUND(AVG(total_tagihan), 0) as avg_order,
                 MIN(date_of_transaction) as first_order, MAX(date_of_transaction) as last_order,
-                CAST(julianday('now') - julianday(MAX(date_of_transaction)) AS INTEGER) as days_since,
+                EXTRACT(DAY FROM NOW() - MAX(date_of_transaction)::timestamp)::INTEGER as days_since,
                 CASE WHEN COUNT(*) >= 8 THEN 'VIP' WHEN COUNT(*) >= 5 THEN 'High-Value' WHEN COUNT(*) >= 3 THEN 'Regular' WHEN COUNT(*) >= 2 THEN 'Occasional' ELSE 'One-time' END as segment
             FROM transactions WHERE customer_phone IS NOT NULL AND total_tagihan > 0
-            GROUP BY customer_phone ORDER BY total_spent DESC LIMIT ?
+            GROUP BY customer_phone, customer_name ORDER BY total_spent DESC LIMIT %s
         """, (limit,))
-        return {"customers": [dict(r) for r in cur.fetchall()]}
+        rows = cur.fetchall()
+        result = []
+        for r in rows:
+            d = dict(r)
+            d["first_order"] = str(d["first_order"]) if d["first_order"] else None
+            d["last_order"] = str(d["last_order"]) if d["last_order"] else None
+            result.append(d)
+        return {"customers": result}
     finally:
         conn.close()
 
@@ -568,12 +590,18 @@ async def get_hvc_customers():
             SELECT customer_name, customer_phone, COUNT(*) as total_orders,
                 COALESCE(SUM(total_tagihan), 0) as total_spent, ROUND(AVG(total_tagihan), 0) as avg_order,
                 MAX(date_of_transaction) as last_order,
-                CAST(julianday('now') - julianday(MAX(date_of_transaction)) AS INTEGER) as days_since
+                EXTRACT(DAY FROM NOW() - MAX(date_of_transaction)::timestamp)::INTEGER as days_since
             FROM transactions WHERE customer_phone IS NOT NULL AND total_tagihan > 0
-            GROUP BY customer_phone HAVING COUNT(*) >= 5 OR SUM(total_tagihan) >= 1000000
+            GROUP BY customer_phone, customer_name HAVING COUNT(*) >= 5 OR SUM(total_tagihan) >= 1000000
             ORDER BY total_spent DESC
         """)
-        return {"hvc": [dict(r) for r in cur.fetchall()]}
+        rows = cur.fetchall()
+        result = []
+        for r in rows:
+            d = dict(r)
+            d["last_order"] = str(d["last_order"]) if d["last_order"] else None
+            result.append(d)
+        return {"hvc": result}
     finally:
         conn.close()
 
@@ -586,18 +614,24 @@ async def get_churn_risk():
             SELECT customer_name, customer_phone, COUNT(*) as total_orders,
                 COALESCE(SUM(total_tagihan), 0) as total_spent,
                 MAX(date_of_transaction) as last_order,
-                CAST(julianday('now') - julianday(MAX(date_of_transaction)) AS INTEGER) as days_since,
+                EXTRACT(DAY FROM NOW() - MAX(date_of_transaction)::timestamp)::INTEGER as days_since,
                 CASE
-                    WHEN julianday('now') - julianday(MAX(date_of_transaction)) >= 90 THEN 'High'
-                    WHEN julianday('now') - julianday(MAX(date_of_transaction)) >= 60 THEN 'Medium'
+                    WHEN EXTRACT(DAY FROM NOW() - MAX(date_of_transaction)::timestamp) >= 90 THEN 'High'
+                    WHEN EXTRACT(DAY FROM NOW() - MAX(date_of_transaction)::timestamp) >= 60 THEN 'Medium'
                     ELSE 'Low'
                 END as risk
             FROM transactions WHERE customer_phone IS NOT NULL AND total_tagihan > 0
-            GROUP BY customer_phone
-            HAVING COUNT(*) >= 2 AND julianday('now') - julianday(MAX(date_of_transaction)) >= 30
+            GROUP BY customer_phone, customer_name
+            HAVING COUNT(*) >= 2 AND EXTRACT(DAY FROM NOW() - MAX(date_of_transaction)::timestamp) >= 30
             ORDER BY days_since DESC
         """)
-        return {"churn_risk": [dict(r) for r in cur.fetchall()]}
+        rows = cur.fetchall()
+        result = []
+        for r in rows:
+            d = dict(r)
+            d["last_order"] = str(d["last_order"]) if d["last_order"] else None
+            result.append(d)
+        return {"churn_risk": result}
     finally:
         conn.close()
 
@@ -611,9 +645,9 @@ async def get_customer_frequency():
                 CASE WHEN cnt = 1 THEN '1 order' WHEN cnt BETWEEN 2 AND 3 THEN '2-3 orders' WHEN cnt BETWEEN 4 AND 5 THEN '4-5 orders'
                      WHEN cnt BETWEEN 6 AND 10 THEN '6-10 orders' WHEN cnt BETWEEN 11 AND 20 THEN '11-20 orders' ELSE '20+ orders' END as range_label,
                 COUNT(*) as count
-            FROM (SELECT customer_phone, COUNT(*) as cnt FROM transactions WHERE customer_phone IS NOT NULL AND total_tagihan > 0 GROUP BY customer_phone)
-            GROUP BY range_label
-            ORDER BY CASE range_label WHEN '1 order' THEN 1 WHEN '2-3 orders' THEN 2 WHEN '4-5 orders' THEN 3 WHEN '6-10 orders' THEN 4 WHEN '11-20 orders' THEN 5 ELSE 6 END
+            FROM (SELECT customer_phone, COUNT(*) as cnt FROM transactions WHERE customer_phone IS NOT NULL AND total_tagihan > 0 GROUP BY customer_phone) sub
+            GROUP BY 1
+            ORDER BY MIN(cnt)
         """)
         return {"frequency": [{"range": r["range_label"], "count": r["count"]} for r in cur.fetchall()]}
     finally:
@@ -634,7 +668,7 @@ async def get_payment_status(
     try:
         cur = conn.execute("""
             SELECT pembayaran, COUNT(*) as count, COALESCE(SUM(total_tagihan), 0) as amount
-            FROM transactions WHERE date_of_transaction >= ? AND date_of_transaction <= ? AND total_tagihan > 0
+            FROM transactions WHERE date_of_transaction >= %s AND date_of_transaction <= %s AND total_tagihan > 0
             GROUP BY pembayaran
         """, (start, end))
         return {"label": label, "status": [{"label": r["pembayaran"] or "Unknown", "count": r["count"], "amount": r["amount"]} for r in cur.fetchall()]}
@@ -657,15 +691,15 @@ async def get_products(
         cur = conn.execute("""
             SELECT COALESCE(group_layanan, nama_layanan, 'Lainnya') as name,
                 COALESCE(SUM(total_tagihan), 0) as revenue, COUNT(*) as orders
-            FROM transactions WHERE date_of_transaction >= ? AND date_of_transaction <= ? AND total_tagihan > 0
-            GROUP BY name ORDER BY revenue DESC
+            FROM transactions WHERE date_of_transaction >= %s AND date_of_transaction <= %s AND total_tagihan > 0
+            GROUP BY 1 ORDER BY revenue DESC
         """, (start, end))
         by_category = [dict(r) for r in cur.fetchall()]
 
         cur = conn.execute("""
             SELECT nama_layanan as name, group_layanan as category,
                 COALESCE(SUM(total_tagihan), 0) as revenue, COUNT(*) as orders
-            FROM transactions WHERE date_of_transaction >= ? AND date_of_transaction <= ?
+            FROM transactions WHERE date_of_transaction >= %s AND date_of_transaction <= %s
               AND total_tagihan > 0 AND nama_layanan IS NOT NULL AND nama_layanan != ''
             GROUP BY nama_layanan, group_layanan ORDER BY revenue DESC LIMIT 10
         """, (start, end))
@@ -692,8 +726,8 @@ async def get_locations(
             SELECT COALESCE(normalized_cluster, normalized_area, customer_address, 'Unknown') as location,
                 COUNT(*) as orders, COALESCE(SUM(total_tagihan), 0) as revenue,
                 COUNT(DISTINCT customer_phone) as customers
-            FROM transactions WHERE date_of_transaction >= ? AND date_of_transaction <= ? AND total_tagihan > 0
-            GROUP BY location ORDER BY orders DESC LIMIT 20
+            FROM transactions WHERE date_of_transaction >= %s AND date_of_transaction <= %s AND total_tagihan > 0
+            GROUP BY 1 ORDER BY orders DESC LIMIT 20
         """, (start, end))
         return {"label": label, "locations": [dict(r) for r in cur.fetchall()]}
     finally:
@@ -714,10 +748,10 @@ async def search_customers(
         params = []
 
         if q:
-            where_parts.append("(customer_name LIKE ? OR customer_phone LIKE ? OR customer_address LIKE ?)")
+            where_parts.append("(customer_name LIKE %s OR customer_phone LIKE %s OR customer_address LIKE %s)")
             params.extend([f"%{q}%", f"%{q}%", f"%{q}%"])
         if area:
-            where_parts.append("normalized_area = ?")
+            where_parts.append("normalized_area = %s")
             params.append(area)
 
         where = " AND ".join(where_parts)
@@ -730,7 +764,7 @@ async def search_customers(
                 ROUND(AVG(total_tagihan), 0) as avg_order,
                 MAX(date_of_transaction) as last_order,
                 MIN(date_of_transaction) as first_order,
-                CAST(julianday('now') - julianday(MAX(date_of_transaction)) AS INTEGER) as days_since,
+                EXTRACT(DAY FROM NOW() - MAX(date_of_transaction)::timestamp)::INTEGER as days_since,
                 CASE WHEN COUNT(*) >= 8 THEN 'VIP'
                      WHEN COUNT(*) >= 5 THEN 'High-Value'
                      WHEN COUNT(*) >= 3 THEN 'Regular'
@@ -738,11 +772,17 @@ async def search_customers(
                      ELSE 'One-time' END as segment
             FROM transactions
             WHERE {where}
-            GROUP BY customer_phone
+            GROUP BY customer_phone, customer_name, customer_address, normalized_area
             ORDER BY total_spent DESC
-            LIMIT ?
+            LIMIT %s
         """, params)
-        results = [dict(r) for r in cur.fetchall()]
+        rows = cur.fetchall()
+        results = []
+        for r in rows:
+            d = dict(r)
+            d["last_order"] = str(d["last_order"]) if d["last_order"] else None
+            d["first_order"] = str(d["first_order"]) if d["first_order"] else None
+            results.append(d)
         return {"query": q, "area": area, "count": len(results), "results": results}
     finally:
         conn.close()
@@ -760,19 +800,22 @@ async def get_customer_detail(phone: str):
                 ROUND(AVG(total_tagihan), 0) as avg_order,
                 MAX(date_of_transaction) as last_order,
                 MIN(date_of_transaction) as first_order,
-                CAST(julianday('now') - julianday(MAX(date_of_transaction)) AS INTEGER) as days_since,
+                EXTRACT(DAY FROM NOW() - MAX(date_of_transaction)::timestamp)::INTEGER as days_since,
                 CASE WHEN COUNT(*) >= 8 THEN 'VIP'
                      WHEN COUNT(*) >= 5 THEN 'High-Value'
                      WHEN COUNT(*) >= 3 THEN 'Regular'
                      WHEN COUNT(*) >= 2 THEN 'Occasional'
                      ELSE 'One-time' END as segment
             FROM transactions
-            WHERE customer_phone = ? AND total_tagihan > 0
+            WHERE customer_phone = %s AND total_tagihan > 0
+            GROUP BY customer_phone, customer_name, customer_address, normalized_area
         """, (phone,))
         row = cur.fetchone()
         if not row or not row["customer_name"]:
             raise HTTPException(status_code=404, detail="Customer not found")
         summary = dict(row)
+        summary["last_order"] = str(summary["last_order"]) if summary["last_order"] else None
+        summary["first_order"] = str(summary["first_order"]) if summary["first_order"] else None
 
         # Churn risk
         days = summary.get("days_since", 0) or 0
@@ -789,7 +832,7 @@ async def get_customer_detail(phone: str):
         cur = conn.execute("""
             SELECT COUNT(*) as count, COALESCE(SUM(total_tagihan), 0) as amount
             FROM transactions
-            WHERE customer_phone = ? AND pembayaran = 'Belum Lunas' AND total_tagihan > 0
+            WHERE customer_phone = %s AND pembayaran = 'Belum Lunas' AND total_tagihan > 0
         """, (phone,))
         unpaid = dict(cur.fetchone())
         summary["unpaid"] = unpaid
@@ -799,19 +842,19 @@ async def get_customer_detail(phone: str):
             SELECT COALESCE(group_layanan, nama_layanan, 'Lainnya') as service,
                 COUNT(*) as orders, COALESCE(SUM(total_tagihan), 0) as revenue
             FROM transactions
-            WHERE customer_phone = ? AND total_tagihan > 0
-            GROUP BY service ORDER BY orders DESC LIMIT 5
+            WHERE customer_phone = %s AND total_tagihan > 0
+            GROUP BY 1 ORDER BY orders DESC LIMIT 5
         """, (phone,))
         top_services = [dict(r) for r in cur.fetchall()]
 
         # Monthly trend (12m)
         cur = conn.execute("""
-            SELECT strftime('%Y-%m', date_of_transaction) as month,
+            SELECT to_char(date_of_transaction, 'YYYY-MM') as month,
                 COUNT(*) as orders, COALESCE(SUM(total_tagihan), 0) as revenue
             FROM transactions
-            WHERE customer_phone = ? AND total_tagihan > 0
-              AND date_of_transaction >= date('now', '-12 months')
-            GROUP BY month ORDER BY month
+            WHERE customer_phone = %s AND total_tagihan > 0
+              AND date_of_transaction >= CURRENT_DATE - INTERVAL '12 months'
+            GROUP BY 1 ORDER BY 1
         """, (phone,))
         monthly_trend = [dict(r) for r in cur.fetchall()]
 
@@ -821,10 +864,15 @@ async def get_customer_detail(phone: str):
                 total_tagihan as amount, pembayaran as payment, progress_status,
                 pengambilan, jenis
             FROM transactions
-            WHERE customer_phone = ? AND total_tagihan > 0
+            WHERE customer_phone = %s AND total_tagihan > 0
             ORDER BY date_of_transaction DESC LIMIT 20
         """, (phone,))
-        recent_orders = [dict(r) for r in cur.fetchall()]
+        recent_orders_raw = cur.fetchall()
+        recent_orders = []
+        for r in recent_orders_raw:
+            d = dict(r)
+            d["date"] = str(d["date"]) if d["date"] else None
+            recent_orders.append(d)
 
         return {
             "summary": summary,
@@ -876,17 +924,17 @@ async def get_areas_analysis():
             cur2 = conn.execute("""
                 SELECT COALESCE(SUM(total_tagihan), 0) as rev
                 FROM transactions
-                WHERE normalized_area = ? AND total_tagihan > 0
-                  AND date_of_transaction >= date('now', '-3 months')
+                WHERE normalized_area = %s AND total_tagihan > 0
+                  AND date_of_transaction >= CURRENT_DATE - INTERVAL '3 months'
             """, (area_name,))
             recent_rev = cur2.fetchone()["rev"]
 
             cur2 = conn.execute("""
                 SELECT COALESCE(SUM(total_tagihan), 0) as rev
                 FROM transactions
-                WHERE normalized_area = ? AND total_tagihan > 0
-                  AND date_of_transaction >= date('now', '-6 months')
-                  AND date_of_transaction < date('now', '-3 months')
+                WHERE normalized_area = %s AND total_tagihan > 0
+                  AND date_of_transaction >= CURRENT_DATE - INTERVAL '6 months'
+                  AND date_of_transaction < CURRENT_DATE - INTERVAL '3 months'
             """, (area_name,))
             prev_rev = cur2.fetchone()["rev"]
 
@@ -895,15 +943,15 @@ async def get_areas_analysis():
             # Recent orders (60 days)
             cur2 = conn.execute("""
                 SELECT COUNT(*) as cnt FROM transactions
-                WHERE normalized_area = ? AND total_tagihan > 0
-                  AND date_of_transaction >= date('now', '-60 days')
+                WHERE normalized_area = %s AND total_tagihan > 0
+                  AND date_of_transaction >= CURRENT_DATE - INTERVAL '60 days'
             """, (area_name,))
             a["recent_orders"] = cur2.fetchone()["cnt"]
 
             # Unpaid
             cur2 = conn.execute("""
                 SELECT COALESCE(SUM(total_tagihan), 0) as amount FROM transactions
-                WHERE normalized_area = ? AND pembayaran = 'Belum Lunas' AND total_tagihan > 0
+                WHERE normalized_area = %s AND pembayaran = 'Belum Lunas' AND total_tagihan > 0
             """, (area_name,))
             a["unpaid"] = cur2.fetchone()["amount"]
 
@@ -997,7 +1045,7 @@ async def health_check():
         cur = conn.execute("SELECT COUNT(*) as total FROM transactions")
         total = cur.fetchone()["total"]
         conn.close()
-        return {"status": "ok", "database": "sqlite", "transactions": total}
+        return {"status": "ok", "database": "postgresql", "transactions": total}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 

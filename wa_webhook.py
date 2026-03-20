@@ -325,7 +325,7 @@ def build_greeting(cust_name: str, segment: str) -> str:
 
 
 # Landing page karir
-KARIR_URL = "https://sijibintaro.id/karir"
+KARIR_URL = "https://s.id/lokersiji"
 
 # Job application keywords
 JOB_KEYWORDS = ["lamar", "kerja", "lowongan", "pelamar", "apply", "hiring", "rekrut", "karyawan baru"]
@@ -698,7 +698,7 @@ def check_service_catalog(message: str) -> str | None:
             return None
 
         score = 1 - dists[0]  # cosine distance → similarity
-        print(f"[CATALOG] similarity={score:.3f} | {metas[0].get('nama_layanan','?')[:40]}")
+        print(f"[CATALOG] similarity={score:.3f} | {metas[0].get('nama_layanan','%s')[:40]}")
 
         if score < SERVICE_SIMILARITY_THRESHOLD:
             return None
@@ -956,7 +956,7 @@ async def handle_presensi(conn, sender: str, message: str) -> bool:
             )
         else:
             conn.execute(
-                "INSERT INTO presensi (karyawan_id, tanggal, jam_masuk, tipe, sumber) VALUES (?,?,?,?,?)",
+                "INSERT INTO presensi (karyawan_id, tanggal, jam_masuk, tipe, sumber) VALUES (%s,%s,%s,%s,%s)",
                 (karyawan_id, today, now_time, "hadir", "wa")
             )
             conn.commit()
@@ -1002,7 +1002,7 @@ async def handle_presensi(conn, sender: str, message: str) -> bool:
         if not cursor.fetchone():
             catatan_izin = message if len(message) > 4 else None
             conn.execute(
-                "INSERT INTO presensi (karyawan_id, tanggal, tipe, sumber, catatan) VALUES (?,?,?,?,?)",
+                "INSERT INTO presensi (karyawan_id, tanggal, tipe, sumber, catatan) VALUES (%s,%s,%s,%s,%s)",
                 (karyawan_id, today, "izin", "wa", catatan_izin)
             )
             conn.commit()
@@ -1020,7 +1020,7 @@ async def handle_presensi(conn, sender: str, message: str) -> bool:
         )
         if not cursor.fetchone():
             conn.execute(
-                "INSERT INTO presensi (karyawan_id, tanggal, tipe, sumber, catatan) VALUES (?,?,?,?,?)",
+                "INSERT INTO presensi (karyawan_id, tanggal, tipe, sumber, catatan) VALUES (%s,%s,%s,%s,%s)",
                 (karyawan_id, today, "sakit", "wa", message)
             )
             conn.commit()
@@ -1114,25 +1114,37 @@ async def send_gowa_message(phone: str, message: str) -> dict:
             result = resp.json()
             print(f"[GOWA Send] → {phone}: {message[:50]} | resp: {result}")
             
-            # Save outgoing message to wa_messages for CRM visibility
+            # Save outgoing message to wa_messages for CRM visibility (PostgreSQL)
             try:
-                import sqlite3
                 from datetime import datetime
                 import uuid
-                db = sqlite3.connect("/opt/siji-dashboard/siji_database.db")
-                jid = phone + "@s.whatsapp.net"
-                msg_id = "BOT_" + uuid.uuid4().hex[:16].upper()
-                now_iso = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
-                db.execute("""
-                    INSERT OR IGNORE INTO wa_messages 
-                    (conversation_jid, message_id, sender_jid, sender_name, message_text, 
-                     message_type, is_from_me, is_bot, timestamp, status)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (jid, msg_id, GOWA_DEVICE_NUMBER + "@s.whatsapp.net", "SIJI Bot", 
-                      message, "text", 1, 1, now_iso, "sent"))
-                db.commit()
-                db.close()
-                print(f"[GOWA Send] Saved to DB: {msg_id}")
+                _conn = get_db_connection()
+                try:
+                    _cur = _conn.cursor()
+                    jid = phone + "@s.whatsapp.net"
+                    msg_id = "BOT_" + uuid.uuid4().hex[:16].upper()
+                    now_iso = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+                    # Ensure conversation exists
+                    _cur.execute("""
+                        INSERT INTO wa_conversations (jid, phone, is_group, last_message, last_message_time, synced_at, bot_msg_count)
+                        VALUES (%s, %s, false, %s, %s, %s, 1)
+                        ON CONFLICT (jid) DO UPDATE SET
+                            last_message = EXCLUDED.last_message,
+                            last_message_time = EXCLUDED.last_message_time,
+                            bot_msg_count = wa_conversations.bot_msg_count + 1
+                    """, (jid, phone, message, now_iso, now_iso))
+                    _cur.execute("""
+                        INSERT INTO wa_messages 
+                        (conversation_jid, message_id, sender_jid, sender_name, message_text, 
+                         message_type, is_from_me, is_bot, timestamp, status)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        ON CONFLICT (message_id) DO NOTHING
+                    """, (jid, msg_id, GOWA_DEVICE_NUMBER + "@s.whatsapp.net", "SIJI Bot", 
+                          message, "text", True, True, now_iso, "sent"))
+                    _conn.commit()
+                    print(f"[GOWA Send] Saved to DB: {msg_id}")
+                finally:
+                    release_db_connection(_conn)
             except Exception as db_err:
                 print(f"[GOWA Send] DB save error: {db_err}")
             
@@ -1216,7 +1228,7 @@ def log_message(conn, wa_number: str, sender: str, recipient: str,
         # Upsert conversation header
         cursor.execute("""
             INSERT INTO wa_conversations (jid, phone, is_group, last_message, last_message_time, synced_at)
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s)
             ON CONFLICT(jid) DO UPDATE SET
                 last_message = excluded.last_message,
                 last_message_time = COALESCE(excluded.last_message_time, wa_conversations.last_message_time),
@@ -1230,7 +1242,7 @@ def log_message(conn, wa_number: str, sender: str, recipient: str,
             INSERT INTO wa_messages
             (conversation_jid, message_id, sender_jid, message_text, message_type,
              media_url, is_from_me, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (message_id) DO NOTHING
         """, (chat_jid, msg_id, from_jid, message, "text",
               media_url, is_outbound,
@@ -1245,29 +1257,29 @@ def log_message(conn, wa_number: str, sender: str, recipient: str,
 def upsert_customer(conn, no_hp: str, name: str = ""):
     """Find or create customer by phone number"""
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM wa_customers WHERE no_hp = ?", (no_hp,))
+    cursor.execute("SELECT * FROM wa_customers WHERE no_hp = %s", (no_hp,))
     customer = cursor.fetchone()
 
     if customer:
         if name and not customer["nama"]:
             cursor.execute("""
                 UPDATE wa_customers
-                SET total_messages = total_messages + 1, last_contact = CURRENT_TIMESTAMP, nama = ?
-                WHERE no_hp = ?
+                SET total_messages = total_messages + 1, last_contact = CURRENT_TIMESTAMP, nama = %s
+                WHERE no_hp = %s
             """, (name, no_hp))
         else:
             cursor.execute("""
                 UPDATE wa_customers
                 SET total_messages = total_messages + 1, last_contact = CURRENT_TIMESTAMP
-                WHERE no_hp = ?
+                WHERE no_hp = %s
             """, (no_hp,))
     else:
         cursor.execute("""
-            INSERT INTO wa_customers (no_hp, nama, total_messages) VALUES (?, ?, 1)
+            INSERT INTO wa_customers (no_hp, nama, total_messages) VALUES (%s, %s, 1)
         """, (no_hp, name if name else None))
     
     conn.commit()
-    cursor.execute("SELECT * FROM wa_customers WHERE no_hp = ?", (no_hp,))
+    cursor.execute("SELECT * FROM wa_customers WHERE no_hp = %s", (no_hp,))
     return cursor.fetchone()
 
 
@@ -1320,7 +1332,7 @@ async def get_conversations(phone: str, limit: int = 50):
         cursor = conn.cursor()
         cursor.execute("""
             SELECT * FROM wa_conversations 
-            WHERE sender = ? OR recipient = ?
+            WHERE sender = %s OR recipient = %s
             ORDER BY created_at DESC 
             LIMIT ?
         """, (phone, phone, limit))
@@ -1358,49 +1370,46 @@ async def get_wa_stats():
     try:
         cursor = conn.cursor()
         
-        # Total messages today
+        # Total conversations today
         cursor.execute("""
             SELECT COUNT(*) as total FROM wa_conversations 
-            WHERE date(created_at) = date('now')
+            WHERE DATE(created_at) = CURRENT_DATE
         """)
         today_total = cursor.fetchone()["total"]
         
-        # Inbound vs outbound today
+        # Inbound vs outbound — approximasi: inbound = human_msg_count > 0, outbound = bot_msg_count > 0
+        # Kolom 'direction' tidak ada di schema, pakai is_from_me di wa_messages
         cursor.execute("""
-            SELECT direction, COUNT(*) as count FROM wa_conversations 
-            WHERE date(created_at) = date('now')
-            GROUP BY direction
+            SELECT 
+                COUNT(CASE WHEN is_from_me = false THEN 1 END) as inbound,
+                COUNT(CASE WHEN is_from_me = true THEN 1 END) as outbound
+            FROM wa_messages
+            WHERE DATE(synced_at) = CURRENT_DATE
         """)
-        direction_stats = {row["direction"]: row["count"] for row in cursor.fetchall()}
+        dir_row = cursor.fetchone()
+        inbound_count = dir_row["inbound"] if dir_row else 0
+        outbound_count = dir_row["outbound"] if dir_row else 0
         
         # Total customers
         cursor.execute("SELECT COUNT(*) as total FROM wa_customers")
         total_customers = cursor.fetchone()["total"]
         
-        # Auto-reply rate today
+        # Auto-reply: konversasi yang ditangani bot (handled_by = 'bot' atau bot_msg_count > 0)
         cursor.execute("""
             SELECT COUNT(*) as total FROM wa_conversations 
-            WHERE date(created_at) = date('now') AND replied_by = 'auto'
+            WHERE DATE(created_at) = CURRENT_DATE AND (handled_by = 'bot' OR bot_msg_count > 0)
         """)
         auto_replies = cursor.fetchone()["total"]
-        
-        # Category breakdown today
-        cursor.execute("""
-            SELECT category, COUNT(*) as count FROM wa_conversations 
-            WHERE date(created_at) = date('now') AND direction = 'inbound'
-            GROUP BY category
-        """)
-        categories = {row["category"]: row["count"] for row in cursor.fetchall()}
         
         return {
             "today": {
                 "total_messages": today_total,
-                "inbound": direction_stats.get("inbound", 0),
-                "outbound": direction_stats.get("outbound", 0),
+                "inbound": inbound_count,
+                "outbound": outbound_count,
                 "auto_replies": auto_replies,
             },
             "total_customers": total_customers,
-            "categories_today": categories,
+            "categories_today": {},
         }
     finally:
         release_db_connection(conn)
@@ -1554,14 +1563,16 @@ async def get_pipeline(mode: str = "wa"):
             if p not in addr_by_phone and row["customer_address"]:
                 addr_by_phone[p] = row["customer_address"]
 
-        # Get last WA message per phone
+        # Get last WA message per phone (schema baru: pakai phone dari wa_conversations)
         wa_cur.execute("""
-            SELECT sender, recipient, message, direction, created_at
-            FROM wa_conversations ORDER BY created_at DESC
+            SELECT phone, last_message, last_message_time, 
+                   CASE WHEN human_msg_count > 0 THEN 'inbound' ELSE 'outbound' END as direction,
+                   last_message_time as created_at
+            FROM wa_conversations ORDER BY last_message_time DESC NULLS LAST
         """)
         last_msg_by_phone = {}
         for row in wa_cur.fetchall():
-            pk = normalize_phone(row["sender"]) if row["direction"] == "inbound" else normalize_phone(row["recipient"])
+            pk = normalize_phone(row["phone"])
             if pk and pk not in last_msg_by_phone:
                 last_msg_by_phone[pk] = dict(row)
 
@@ -1636,14 +1647,14 @@ async def get_pipeline_customer(phone: str):
         tx_cur = tx_conn.cursor()
 
         # WA customer info
-        wa_cur.execute("SELECT * FROM wa_customers WHERE no_hp = ?", (phone,))
+        wa_cur.execute("SELECT * FROM wa_customers WHERE no_hp = %s", (phone,))
         wa_row = wa_cur.fetchone()
         wa_info = dict(wa_row) if wa_row else None
 
         # WA conversations (last 30)
         wa_cur.execute("""
             SELECT * FROM wa_conversations
-            WHERE sender = ? OR recipient = ?
+            WHERE sender = %s OR recipient = %s
             ORDER BY created_at DESC LIMIT 30
         """, (phone, phone))
         conversations = [dict(r) for r in wa_cur.fetchall()]
@@ -1797,7 +1808,7 @@ async def gowa_webhook(request: Request):
 
             tx_conn.execute("""
                 INSERT INTO wa_conversations (jid, phone, contact_name, is_group, last_message, last_message_time, synced_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT(jid) DO UPDATE SET
                     contact_name = COALESCE(NULLIF(excluded.contact_name, ''), wa_conversations.contact_name),
                     last_message = excluded.last_message,
@@ -1811,7 +1822,7 @@ async def gowa_webhook(request: Request):
                 INSERT INTO wa_messages
                 (conversation_jid, message_id, sender_jid, sender_name, message_text, message_type,
                  media_url, is_from_me, is_forwarded, quoted_message_id, timestamp)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (message_id) DO NOTHING
             """, (chat_jid, msg_id_wa, from_jid, from_name, body_text, msg_type,
                   media_path or None, is_from_me, is_forwarded, replied_to or None, timestamp))
@@ -1824,6 +1835,21 @@ async def gowa_webhook(request: Request):
             # Tandai: karyawan sedang handle conversation ini
             if is_from_me and body_text.strip():
                 _mark_staff_replied(chat_jid)
+                # Track human reply untuk analytics
+                try:
+                    tx_conn.execute("""
+                        UPDATE siji_bintaro.wa_conversations
+                        SET human_msg_count = human_msg_count + 1,
+                            handled_by = CASE
+                                WHEN handled_by = 'bot_only' THEN 'hybrid'
+                                WHEN handled_by = 'unknown' THEN 'human_only'
+                                ELSE handled_by
+                            END
+                        WHERE jid = %s
+                    """, (chat_jid,))
+                    tx_conn.commit()
+                except Exception as _e:
+                    print(f"[Analytics] human tracking error: {_e}")
 
             # === GOWA AUTOREPLY PIPELINE ===
             # Stale check: skip pesan lebih dari 3 menit lalu (mencegah replay saat restart)
@@ -1872,15 +1898,15 @@ async def gowa_webhook(request: Request):
                         reply_text = AUTO_REPLY_JOB
                         reply_layer = "job"
 
-                    # Layer 0: Image/media — customer kirim foto + tanya bisa cuci?
+                    # Layer 0: Image/media — diteruskan ke karyawan, bot tidak reply
                     if not reply_text and msg_type in ("image", "video", "sticker"):
-                        reply_text = ASK_ITEM_REPLY
-                        reply_layer = "ask_item:media"
+                        reply_layer = "skip:media_to_employee"
+                        print(f"[AUTOREPLY] Media from {sender} — forwarded to employee, no bot reply")
 
-                    # Layer 0.5: Pesan teks tapi item tidak disebutkan ("bisa cuci ini?")
-                    if not reply_text and is_vague_item_query(body_text):
-                        reply_text = ASK_ITEM_REPLY
-                        reply_layer = "ask_item:vague"
+                    # Layer 0.5: Pesan vague — diteruskan ke karyawan, bot tidak reply
+                    if not reply_layer and is_vague_item_query(body_text):
+                        reply_layer = "skip:vague_to_employee"
+                        print(f"[AUTOREPLY] Vague query from {sender} — forwarded to employee, no bot reply")
 
                     # Layer 2: Complaint check DULU (sebelum catalog/keyword)
                     # "sepatu rusak setelah dicuci" → escalate, bukan catalog sepatu
@@ -1981,8 +2007,43 @@ async def gowa_webhook(request: Request):
 
                     # SEND — kirim reply kalau ada (layer 1/2/4/5)
                     if reply_text:
+                        _bot_send_start = time.time()
                         await send_gowa_message(sender, reply_text)
+                        _bot_response_ms = int((time.time() - _bot_send_start) * 1000)
                         print(f"[AUTOREPLY] {reply_layer} → {sender}: {reply_text[:60]}")
+                        # Save bot reply to PostgreSQL wa_messages
+                        try:
+                            import uuid as _uuid
+                            _bot_msg_id = "BOT_" + _uuid.uuid4().hex[:16].upper()
+                            _bot_now = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+                            tx_conn.execute("""
+                                INSERT INTO siji_bintaro.wa_messages
+                                (conversation_jid, message_id, sender_jid, sender_name,
+                                 message_text, message_type, is_from_me, is_bot,
+                                 reply_layer, bot_response_ms, timestamp, status)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                ON CONFLICT (message_id) DO NOTHING
+                            """, (chat_jid, _bot_msg_id,
+                                   GOWA_DEVICE_NUMBER + "@s.whatsapp.net", "SIJI Bot",
+                                   reply_text, "text", True, True,
+                                   reply_layer, _bot_response_ms, _bot_now, "sent"))
+                            # Update conversation analytics
+                            _is_escalation = reply_layer and reply_layer.startswith("escalated")
+                            tx_conn.execute("""
+                                UPDATE siji_bintaro.wa_conversations
+                                SET bot_msg_count = bot_msg_count + 1,
+                                    last_bot_layer = ?,
+                                    escalated = CASE WHEN ? THEN TRUE ELSE escalated END,
+                                    handled_by = CASE
+                                        WHEN handled_by = 'unknown' THEN 'bot_only'
+                                        WHEN handled_by = 'human_only' THEN 'hybrid'
+                                        ELSE handled_by
+                                    END
+                                WHERE jid = %s
+                            """, (reply_layer, _is_escalation, chat_jid))
+                            tx_conn.commit()
+                        except Exception as _e:
+                            print(f"[Analytics] bot save error: {_e}")
 
             return {"status": "ok", "message_id": msg_id, "direction": direction}
 
@@ -1991,14 +2052,14 @@ async def gowa_webhook(request: Request):
             receipt_type = payload.get("receipt_type", "")
             msg_ids = payload.get("ids", [])
             if receipt_type == "read" and msg_ids:
-                placeholders = ",".join("?" for _ in msg_ids)
-                tx_conn.execute(
+                placeholders = ",".join("%s" for _ in msg_ids)
+                tx_conn.cursor().execute(
                     f"UPDATE wa_messages SET status = 'read' WHERE message_id IN ({placeholders})",
                     msg_ids)
                 tx_conn.commit()
             elif receipt_type == "delivered" and msg_ids:
-                placeholders = ",".join("?" for _ in msg_ids)
-                tx_conn.execute(
+                placeholders = ",".join("%s" for _ in msg_ids)
+                tx_conn.cursor().execute(
                     f"UPDATE wa_messages SET status = 'delivered' WHERE message_id IN ({placeholders}) AND status IS NULL",
                     msg_ids)
                 tx_conn.commit()
@@ -2008,7 +2069,7 @@ async def gowa_webhook(request: Request):
             revoked_id = payload.get("revoked_message_id", "")
             if revoked_id:
                 tx_conn.execute(
-                    "UPDATE wa_messages SET message_text = '[message deleted]', message_type = 'revoked' WHERE message_id = ?",
+                    "UPDATE wa_messages SET message_text = '[message deleted]', message_type = 'revoked' WHERE message_id = %s",
                     (revoked_id,))
                 tx_conn.commit()
             return {"status": "ok", "event": "revoked"}
@@ -2018,7 +2079,7 @@ async def gowa_webhook(request: Request):
             new_body = payload.get("body", "")
             if orig_id and new_body:
                 tx_conn.execute(
-                    "UPDATE wa_messages SET message_text = ? WHERE message_id = ?",
+                    "UPDATE wa_messages SET message_text = %s WHERE message_id = %s",
                     (new_body, orig_id))
                 tx_conn.commit()
             return {"status": "ok", "event": "edited"}
