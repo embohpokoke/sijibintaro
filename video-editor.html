@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIJI Video Editor</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #0a0d14; color: #e0e4f0; min-height: 100vh; }
+  .page { max-width: 900px; margin: 0 auto; padding: 20px 16px; }
+
+  .header { text-align: center; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid #1e2535; }
+  .header h1 { font-size: 22px; font-weight: 800; color: #fff; }
+  .header h1 span { color: #c8a96e; }
+  .header p { font-size: 12px; color: #4a5270; margin-top: 4px; }
+
+  .card { background: #111620; border: 1px solid #1e2535; border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+  .card-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #c8a96e; margin-bottom: 16px; font-weight: 700; }
+
+  label { display: block; font-size: 11px; color: #7a8099; margin-bottom: 5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  input[type=text], input[type=password], select, input[type=number] {
+    width: 100%; padding: 10px 12px; border-radius: 8px;
+    background: #0a0d14; border: 1px solid #1e2535; color: #e0e4f0;
+    font-size: 13px; margin-bottom: 14px; font-family: inherit;
+  }
+  input:focus, select:focus { outline: none; border-color: #c8a96e; }
+  textarea {
+    width: 100%; padding: 10px 12px; border-radius: 8px;
+    background: #0a0d14; border: 1px solid #1e2535; color: #e0e4f0;
+    font-size: 13px; margin-bottom: 14px; font-family: inherit; resize: vertical; min-height: 80px;
+  }
+  textarea:focus { outline: none; border-color: #c8a96e; }
+
+  .btn { padding: 12px 20px; border-radius: 10px; border: none; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+  .btn-primary { background: #c8a96e; color: #0a0d14; }
+  .btn-primary:hover { background: #d4b57a; }
+  .btn-primary:disabled { background: #2a3040; color: #4a5270; cursor: not-allowed; }
+  .btn-outline { background: transparent; color: #7a8099; border: 1px solid #1e2535; }
+  .btn-outline:hover { border-color: #c8a96e; color: #c8a96e; }
+  .btn-danger { background: rgba(255,80,80,.15); color: #ff6b6b; border: 1px solid rgba(255,80,80,.2); }
+  .btn-sm { padding: 6px 12px; font-size: 11px; }
+
+  /* VIDEO LIBRARY */
+  .video-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-height: 320px; overflow-y: auto; }
+  .video-thumb {
+    position: relative; border-radius: 8px; overflow: hidden;
+    aspect-ratio: 9/16; background: #0a0d14; border: 2px solid #1e2535;
+    cursor: pointer; transition: border-color 0.2s;
+  }
+  .video-thumb.landscape { aspect-ratio: 16/9; }
+  .video-thumb.square { aspect-ratio: 1; }
+  .video-thumb:hover { border-color: #c8a96e44; }
+  .video-thumb.selected { border-color: #c8a96e; box-shadow: 0 0 0 2px rgba(200,169,110,.3); }
+  .video-thumb video { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+  .video-thumb .thumb-overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,.5);
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+    padding: 8px; opacity: 0; transition: 0.2s;
+  }
+  .video-thumb:hover .thumb-overlay, .video-thumb.selected .thumb-overlay { opacity: 1; }
+  .video-thumb .thumb-name { font-size: 9px; color: #fff; text-align: center; line-height: 1.3; }
+  .video-thumb .thumb-dur  { font-size: 10px; color: #c8a96e; font-weight: 700; }
+  .video-thumb .check { position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; background: #c8a96e; border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 11px; color: #000; font-weight: 700; }
+  .video-thumb.selected .check { display: flex; }
+
+  /* CLIP TIMELINE */
+  .timeline { display: flex; flex-direction: column; gap: 10px; }
+  .clip-item {
+    background: #0a0d14; border: 1px solid #1e2535; border-radius: 10px;
+    padding: 12px 14px; display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center;
+  }
+  .clip-num { width: 28px; height: 28px; background: #1e2535; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: #c8a96e; flex-shrink: 0; }
+  .clip-info { min-width: 0; }
+  .clip-name { font-size: 12px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .clip-controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+  .clip-controls input[type=number] { width: 64px; margin: 0; padding: 5px 8px; font-size: 11px; }
+  .clip-controls label { margin: 0; font-size: 10px; }
+  .clip-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+  /* OUTPUT SETTINGS */
+  .output-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .format-btn { padding: 14px; border-radius: 10px; border: 2px solid #1e2535; background: #0a0d14; cursor: pointer; text-align: center; transition: all 0.2s; }
+  .format-btn.active { border-color: #c8a96e; background: rgba(200,169,110,.08); }
+  .format-btn h4 { font-size: 14px; color: #fff; margin-bottom: 4px; }
+  .format-btn p  { font-size: 11px; color: #4a5270; }
+  .format-btn .ratio { font-size: 22px; font-weight: 800; color: #c8a96e; margin-bottom: 6px; }
+
+  /* POLISH */
+  .polish-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .polish-row label { width: 120px; margin: 0; flex-shrink: 0; }
+  .polish-row input[type=range] { flex: 1; accent-color: #c8a96e; }
+  .polish-row .val { width: 36px; text-align: right; font-size: 12px; color: #c8a96e; font-weight: 700; }
+
+  /* BUMPER */
+  .bumper-toggle { display: flex; gap: 8px; margin-bottom: 14px; }
+  .toggle-btn { padding: 8px 14px; border-radius: 8px; border: 1px solid #1e2535; background: transparent; color: #7a8099; cursor: pointer; font-size: 12px; font-family: inherit; font-weight: 600; transition: all 0.2s; }
+  .toggle-btn.active { border-color: #c8a96e; color: #c8a96e; background: rgba(200,169,110,.08); }
+
+  /* LOG */
+  .log-box { background: #050709; border-radius: 8px; padding: 12px; font-size: 11px; font-family: monospace; color: #38d9a9; height: 140px; overflow-y: auto; line-height: 1.6; }
+  .log-box .err { color: #ff6b6b; }
+  .log-box .warn { color: #fcc419; }
+  .log-box .info { color: #38d9a9; }
+  .log-box .muted { color: #2a3550; }
+
+  /* PROGRESS */
+  .progress { height: 4px; background: #1e2535; border-radius: 2px; overflow: hidden; margin: 10px 0; display: none; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #c8a96e, #38d9a9); border-radius: 2px; transition: width 0.5s; }
+
+  /* DOWNLOAD */
+  .download-card { background: rgba(56,217,169,.05); border: 1px solid rgba(56,217,169,.2); border-radius: 12px; padding: 20px; text-align: center; display: none; }
+  .download-card h3 { color: #38d9a9; margin-bottom: 8px; }
+  .download-card p { font-size: 12px; color: #5a6080; margin-bottom: 16px; }
+
+  .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; }
+  .badge-gold { background: rgba(200,169,110,.2); color: #c8a96e; }
+  .badge-green { background: rgba(56,217,169,.15); color: #38d9a9; }
+
+  @media (max-width: 600px) {
+    .video-grid { grid-template-columns: repeat(2, 1fr); }
+    .output-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <h1>SIJI<span>.</span>Video Editor</h1>
+    <p>Trim · Merge · Polish · Bumper → Siap posting IG Reels & TikTok</p>
+  </div>
+
+  <!-- AUTH -->
+  <div class="card" id="auth-card">
+    <div class="card-title">🔐 Login</div>
+    <label>Token</label>
+    <input type="password" id="token-input" placeholder="Upload token..." onkeydown="if(event.key==='Enter')login()">
+    <button class="btn btn-primary" onclick="login()">Masuk →</button>
+    <div id="auth-err" style="color:#ff6b6b;font-size:12px;margin-top:8px;display:none">Token salah.</div>
+  </div>
+
+  <div id="main" style="display:none">
+
+    <!-- STEP 1: SELECT CLIPS -->
+    <div class="card">
+      <div class="card-title">① Pilih Video Clips</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <span style="font-size:12px;color:#4a5270">Klik untuk pilih · Bisa multiple</span>
+        <button class="btn btn-outline btn-sm" onclick="refreshLibrary()">🔄 Refresh</button>
+      </div>
+      <div class="video-grid" id="video-grid">
+        <div style="color:#4a5270;font-size:12px;grid-column:span 3;text-align:center;padding:20px">Loading...</div>
+      </div>
+    </div>
+
+    <!-- STEP 2: TIMELINE -->
+    <div class="card">
+      <div class="card-title">② Timeline & Trim</div>
+      <div class="timeline" id="timeline">
+        <div style="color:#4a5270;font-size:12px;text-align:center;padding:12px">Belum ada clip dipilih</div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-outline btn-sm" onclick="clearTimeline()">🗑 Clear All</button>
+        <span id="total-dur" style="font-size:12px;color:#c8a96e;align-self:center;margin-left:auto"></span>
+      </div>
+    </div>
+
+    <!-- STEP 3: OUTPUT FORMAT -->
+    <div class="card">
+      <div class="card-title">③ Format Output</div>
+      <div class="output-grid">
+        <div class="format-btn active" id="fmt-916" onclick="setFormat('9:16')">
+          <div class="ratio">9:16</div>
+          <h4>Reels / TikTok</h4>
+          <p>1080×1920 · Portrait</p>
+        </div>
+        <div class="format-btn" id="fmt-11" onclick="setFormat('1:1')">
+          <div class="ratio">1:1</div>
+          <h4>IG Feed Square</h4>
+          <p>1080×1080 · Square</p>
+        </div>
+      </div>
+      <div style="margin-top:14px">
+        <label>Resolusi Output</label>
+        <select id="resolution">
+          <option value="1080">1080p (Recommended)</option>
+          <option value="720">720p (Lebih cepat render)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- STEP 4: POLISH -->
+    <div class="card">
+      <div class="card-title">④ Polish & Color Grade</div>
+      <div class="polish-row">
+        <label>Brightness</label>
+        <input type="range" id="brightness" min="-0.3" max="0.3" step="0.01" value="0.05" oninput="updateVal(this,'bv')">
+        <span class="val" id="bv">+0.05</span>
+      </div>
+      <div class="polish-row">
+        <label>Contrast</label>
+        <input type="range" id="contrast" min="0.7" max="1.5" step="0.01" value="1.05" oninput="updateVal(this,'cv')">
+        <span class="val" id="cv">1.05</span>
+      </div>
+      <div class="polish-row">
+        <label>Saturation</label>
+        <input type="range" id="saturation" min="0.5" max="2.0" step="0.05" value="1.1" oninput="updateVal(this,'sv')">
+        <span class="val" id="sv">1.10</span>
+      </div>
+      <div class="polish-row">
+        <label>Warmth (Gold)</label>
+        <input type="range" id="warmth" min="0" max="20" step="1" value="8" oninput="updateVal(this,'wv')">
+        <span class="val" id="wv">8</span>
+      </div>
+      <div class="polish-row">
+        <label>Sharpen</label>
+        <input type="range" id="sharpen" min="0" max="5" step="0.5" value="1" oninput="updateVal(this,'shv')">
+        <span class="val" id="shv">1.0</span>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button class="btn btn-outline btn-sm" onclick="resetPolish()">↺ Reset</button>
+        <button class="btn btn-outline btn-sm" onclick="setPreset('warm')">🌅 Warm Preset</button>
+        <button class="btn btn-outline btn-sm" onclick="setPreset('crisp')">❄️ Crisp Preset</button>
+      </div>
+    </div>
+
+    <!-- STEP 5: BUMPER -->
+    <div class="card">
+      <div class="card-title">⑤ Bumper / Branding</div>
+      <div style="margin-bottom:12px">
+        <label style="margin-bottom:8px">Intro Bumper</label>
+        <div class="bumper-toggle">
+          <button class="toggle-btn active" id="intro-none" onclick="setIntro('none')">None</button>
+          <button class="toggle-btn" id="intro-text" onclick="setIntro('text')">Text Overlay</button>
+          <button class="toggle-btn" id="intro-video" onclick="setIntro('video')">Video Closing</button>
+        </div>
+        <div id="intro-text-cfg" style="display:none">
+          <label>Teks Intro (muncul 2 detik)</label>
+          <input type="text" id="intro-text-val" value="SIJI Bintaro" placeholder="SIJI Bintaro">
+          <label>Sub-teks</label>
+          <input type="text" id="intro-sub-val" value="Premium Laundry & Care" placeholder="tagline">
+        </div>
+        <div id="intro-video-cfg" style="display:none">
+          <label>Pilih Video Closing</label>
+          <select id="closing-video">
+            <option value="">-- Pilih dari library --</option>
+          </select>
+          <div style="font-size:11px;color:#4a5270;margin-top:-10px">Video ini akan ditambahkan di AKHIR sebagai outro</div>
+        </div>
+      </div>
+
+      <div>
+        <label style="margin-bottom:8px">Watermark / Branding</label>
+        <div class="bumper-toggle">
+          <button class="toggle-btn active" id="wm-none" onclick="setWm('none')">None</button>
+          <button class="toggle-btn" id="wm-text" onclick="setWm('text')">@siji.bintaro</button>
+          <button class="toggle-btn" id="wm-logo" onclick="setWm('logo')">Logo SIJI</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 6: CAPTION -->
+    <div class="card">
+      <div class="card-title">⑥ Caption & Hashtag</div>
+      <label>Platform</label>
+      <select id="caption-platform" onchange="generateCaption()">
+        <option value="instagram">Instagram Reels</option>
+        <option value="tiktok">TikTok</option>
+      </select>
+      <label>Content Type</label>
+      <select id="content-type" onchange="generateCaption()">
+        <option value="shoes">Shoes Spa</option>
+        <option value="bag">Bag Spa / Luxury</option>
+        <option value="laundry">Laundry Kiloan</option>
+        <option value="promo">Promo</option>
+        <option value="edukasi">Tips & Edukasi</option>
+      </select>
+      <label>Caption</label>
+      <textarea id="caption-text" rows="5"></textarea>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline btn-sm" onclick="generateCaption()">✨ Generate Caption</button>
+        <button class="btn btn-outline btn-sm" onclick="copyCaption()">📋 Copy</button>
+      </div>
+    </div>
+
+    <!-- RENDER -->
+    <div class="card">
+      <div class="card-title">⑦ Render & Export</div>
+      <div style="margin-bottom:14px;font-size:12px;color:#5a6080;line-height:1.7">
+        Proses render di server VPS — tidak perlu tunggu di browser.<br>
+        File hasil akan muncul di gallery untuk di-download.
+      </div>
+      <label>Nama File Output</label>
+      <input type="text" id="output-name" placeholder="siji-reel-bag-spa-032026">
+      <button class="btn btn-primary" id="render-btn" onclick="startRender()" style="width:100%">
+        🎬 Render Video
+      </button>
+      <div class="progress" id="render-progress">
+        <div class="progress-fill" id="render-progress-fill" style="width:0%"></div>
+      </div>
+      <div style="margin-top:12px">
+        <div class="log-box" id="log-box">
+          <span class="muted">Siap render...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- DOWNLOAD -->
+    <div class="download-card" id="download-card">
+      <h3>✅ Render Selesai!</h3>
+      <p id="download-info">File siap didownload</p>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <a id="download-link" class="btn btn-primary" download>⬇️ Download Video</a>
+        <button class="btn btn-outline" onclick="copyToBuffer()">📤 Kirim ke Buffer</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const TOKEN = 'siji-media-2026';
+let authToken = '';
+let library = [];
+let timeline = [];
+let outputFormat = '9:16';
+let introMode = 'none';
+let wmMode = 'none';
+let renderedFile = null;
+
+// ── AUTH ─────────────────────────────────────────────
+function login() {
+  const v = document.getElementById('token-input').value;
+  if (v === TOKEN) {
+    authToken = v;
+    document.getElementById('auth-card').style.display = 'none';
+    document.getElementById('main').style.display = 'block';
+    loadLibrary();
+    generateCaption();
+  } else {
+    document.getElementById('auth-err').style.display = 'block';
+  }
+}
+
+// ── LIBRARY ──────────────────────────────────────────
+async function loadLibrary() {
+  const res = await fetch('/api/media-list?token=' + authToken);
+  const data = await res.json();
+  library = data.files.filter(f => f.name.match(/\.(mp4|mov|webm)$/i));
+  renderGrid();
+  populateClosingSelect();
+}
+
+function refreshLibrary() { loadLibrary(); }
+
+function renderGrid() {
+  const grid = document.getElementById('video-grid');
+  grid.innerHTML = '';
+  library.forEach((f, i) => {
+    const div = document.createElement('div');
+    div.className = 'video-thumb';
+    div.id = 'vt_' + i;
+    div.onclick = () => toggleClip(i);
+    div.innerHTML = `
+      <video src="/images/${f.name}" muted preload="metadata" loop></video>
+      <div class="thumb-overlay">
+        <div class="thumb-name">${f.name.replace(/\.mp4$/i,'')}</div>
+        <div class="thumb-dur">${f.size}</div>
+      </div>
+      <div class="check">✓</div>
+    `;
+    div.onmouseenter = () => div.querySelector('video').play();
+    div.onmouseleave = () => { const v = div.querySelector('video'); v.pause(); v.currentTime = 0; };
+    grid.appendChild(div);
+  });
+}
+
+function populateClosingSelect() {
+  const sel = document.getElementById('closing-video');
+  library.forEach(f => {
+    const opt = document.createElement('option');
+    opt.value = f.name;
+    opt.textContent = f.name;
+    sel.appendChild(opt);
+  });
+}
+
+function toggleClip(i) {
+  const f = library[i];
+  const el = document.getElementById('vt_' + i);
+  const existing = timeline.findIndex(c => c.name === f.name);
+  if (existing >= 0) {
+    timeline.splice(existing, 1);
+    el.classList.remove('selected');
+  } else {
+    timeline.push({ name: f.name, url: '/images/' + f.name, trim_start: 0, trim_end: null, size: f.size });
+    el.classList.add('selected');
+  }
+  renderTimeline();
+}
+
+// ── TIMELINE ─────────────────────────────────────────
+function renderTimeline() {
+  const tl = document.getElementById('timeline');
+  if (timeline.length === 0) {
+    tl.innerHTML = '<div style="color:#4a5270;font-size:12px;text-align:center;padding:12px">Belum ada clip dipilih</div>';
+    document.getElementById('total-dur').textContent = '';
+    return;
+  }
+  tl.innerHTML = '';
+  timeline.forEach((clip, i) => {
+    const div = document.createElement('div');
+    div.className = 'clip-item';
+    div.innerHTML = `
+      <div class="clip-num">${i+1}</div>
+      <div class="clip-info">
+        <div class="clip-name">${clip.name}</div>
+        <div class="clip-controls">
+          <label>Dari (s)</label>
+          <input type="number" min="0" step="0.5" value="${clip.trim_start}" onchange="updateTrim(${i},'start',this.value)">
+          <label>Sampai (s)</label>
+          <input type="number" min="0" step="0.5" placeholder="akhir" value="${clip.trim_end||''}" onchange="updateTrim(${i},'end',this.value)">
+        </div>
+      </div>
+      <div class="clip-actions">
+        <button class="btn btn-outline btn-sm" onclick="moveClip(${i},-1)" ${i===0?'disabled':''}>↑</button>
+        <button class="btn btn-outline btn-sm" onclick="moveClip(${i},1)" ${i===timeline.length-1?'disabled':''}>↓</button>
+        <button class="btn btn-danger btn-sm" onclick="removeClip(${i})">✕</button>
+      </div>
+    `;
+    tl.appendChild(div);
+  });
+  document.getElementById('total-dur').textContent = `${timeline.length} clips`;
+}
+
+function updateTrim(i, field, val) {
+  if (field === 'start') timeline[i].trim_start = parseFloat(val) || 0;
+  else timeline[i].trim_end = val ? parseFloat(val) : null;
+}
+
+function moveClip(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= timeline.length) return;
+  [timeline[i], timeline[j]] = [timeline[j], timeline[i]];
+  renderTimeline();
+}
+
+function removeClip(i) {
+  const name = timeline[i].name;
+  timeline.splice(i, 1);
+  // Deselect in grid
+  library.forEach((f, li) => { if (f.name === name) document.getElementById('vt_'+li)?.classList.remove('selected'); });
+  renderTimeline();
+}
+
+function clearTimeline() {
+  timeline = [];
+  document.querySelectorAll('.video-thumb').forEach(el => el.classList.remove('selected'));
+  renderTimeline();
+}
+
+// ── FORMAT ───────────────────────────────────────────
+function setFormat(fmt) {
+  outputFormat = fmt;
+  document.getElementById('fmt-916').classList.toggle('active', fmt === '9:16');
+  document.getElementById('fmt-11').classList.toggle('active', fmt === '1:1');
+}
+
+// ── POLISH ───────────────────────────────────────────
+function updateVal(el, id) {
+  const v = parseFloat(el.value);
+  document.getElementById(id).textContent = v >= 0 && el.id !== 'contrast' && el.id !== 'saturation' && el.id !== 'sharpen' ? (v > 0 ? '+' : '') + v.toFixed(2) : v.toFixed(2);
+}
+function resetPolish() {
+  document.getElementById('brightness').value = 0.05; updateVal(document.getElementById('brightness'), 'bv');
+  document.getElementById('contrast').value = 1.05; updateVal(document.getElementById('contrast'), 'cv');
+  document.getElementById('saturation').value = 1.1; updateVal(document.getElementById('saturation'), 'sv');
+  document.getElementById('warmth').value = 8; updateVal(document.getElementById('warmth'), 'wv');
+  document.getElementById('sharpen').value = 1; updateVal(document.getElementById('sharpen'), 'shv');
+}
+function setPreset(p) {
+  if (p === 'warm') {
+    document.getElementById('brightness').value = 0.08; updateVal(document.getElementById('brightness'), 'bv');
+    document.getElementById('contrast').value = 1.1; updateVal(document.getElementById('contrast'), 'cv');
+    document.getElementById('saturation').value = 1.2; updateVal(document.getElementById('saturation'), 'sv');
+    document.getElementById('warmth').value = 15; updateVal(document.getElementById('warmth'), 'wv');
+    document.getElementById('sharpen').value = 1.5; updateVal(document.getElementById('sharpen'), 'shv');
+  } else {
+    document.getElementById('brightness').value = 0.02; updateVal(document.getElementById('brightness'), 'bv');
+    document.getElementById('contrast').value = 1.15; updateVal(document.getElementById('contrast'), 'cv');
+    document.getElementById('saturation').value = 0.95; updateVal(document.getElementById('saturation'), 'sv');
+    document.getElementById('warmth').value = 3; updateVal(document.getElementById('warmth'), 'wv');
+    document.getElementById('sharpen').value = 2.5; updateVal(document.getElementById('sharpen'), 'shv');
+  }
+}
+
+// ── BUMPER ───────────────────────────────────────────
+function setIntro(mode) {
+  introMode = mode;
+  ['none','text','video'].forEach(m => {
+    document.getElementById('intro-'+m).classList.toggle('active', m === mode);
+  });
+  document.getElementById('intro-text-cfg').style.display = mode === 'text' ? 'block' : 'none';
+  document.getElementById('intro-video-cfg').style.display = mode === 'video' ? 'block' : 'none';
+}
+function setWm(mode) {
+  wmMode = mode;
+  ['none','text','logo'].forEach(m => document.getElementById('wm-'+m).classList.toggle('active', m === mode));
+}
+
+// ── CAPTION ──────────────────────────────────────────
+const CAPTIONS = {
+  shoes: {
+    instagram: `✨ Sepatu kesayangan kamu layak perawatan terbaik!\n\nDi SIJI Bintaro, kami rawat setiap pasang dengan teliti — dari sneakers hingga boots kulit premium.\n\n🚗 Antar jemput GRATIS radius 3km\n📍 Jl. Emerald Boulevard, Bintaro\n📲 WA: 0812-8878-3088\n\n#LaundryBintaro #CuciSepatu #ShoesCare #SijiBintaro #SepatuBersih #ShoeSpa #BintaroLife`,
+    tiktok: `Sepatu kamu udah berapa lama gak dicuci? 👟✨\n\nBawa ke SIJI Bintaro — spesialis shoes care Bintaro!\nAntar jemput gratis, hasil premium 🔥\n\nKomen "SEPATU" buat info harga!\n\n#SijiBintaro #ShoesSpa #CuciSepatu #LaundryBintaro #fyp #shoescare`
+  },
+  bag: {
+    instagram: `💎 Tas branded kamu pantas dirawat oleh tangan yang tepat.\n\nSIJI Bintaro — satu-satunya di Bintaro yang spesialis luxury bag care.\nLV, Gucci, Prada, Coach, semua kami tangani dengan protokol premium.\n\n🚗 Antar jemput GRATIS\n📲 WA: 0812-8878-3088\n\n#BagSpa #LuxuryBag #LaundryBintaro #SijiBintaro #TasBranded #LouisVuitton #BagCare`,
+    tiktok: `Tas LV kamu perlu dimandiin? 👜✨\n\nSIJI Bintaro spesialis luxury bag care — LV, Gucci, Coach, semua bisa!\nHasil premium, ditangani profesional 💯\n\nKomen "TAS" buat info harga!\n\n#SijiBintaro #BagSpa #LuxuryBag #fyp #tasbranded #bagcare`
+  },
+  laundry: {
+    instagram: `🧺 Laundry kiloan yang beneran bersih, wangi, dan rapi!\n\nMulai Rp12.000/kg — cuci kering lipat\nMulai Rp16.000/kg — cuci kering setrika\n\n✅ Antar jemput GRATIS radius 3km\n✅ Selesai 2-3 hari\n✅ Express tersedia\n\n📲 WA: 0812-8878-3088\n\n#LaundryBintaro #LaundryKiloan #SijiBintaro #LaundryMurah #BintaroLife`,
+    tiktok: `Laundry kiloan terpercaya di Bintaro! 🧺\n\nMulai 12rb/kg, antar jemput gratis, hasilnya bersih dan wangi 💙\n\nKomen "ORDER" sekarang!\n\n#LaundryBintaro #LaundryKiloan #SijiBintaro #fyp #laundry`
+  },
+  promo: {
+    instagram: `🎉 PROMO SPESIAL!\n\nCuci sepatu + tas dalam 1 order → dapat DISKON 10%!\nBerlaku weekend ini aja.\n\n📲 WA: 0812-8878-3088 untuk order\n📍 SIJI Bintaro — Jl. Emerald Boulevard\n\n#PromoLaundry #SijiBintaro #CuciSepatu #BagSpa #LaundryBintaro #PromoWeekend`,
+    tiktok: `PROMO HARI INI DOANG! 🔥\n\nCuci sepatu + tas di SIJI → diskon 10%!\nJangan sampai ketinggalan ya!\n\nKomen "PROMO" sekarang 👇\n\n#SijiBintaro #PromoLaundry #fyp #promo #laundry`
+  },
+  edukasi: {
+    instagram: `💡 Tips Perawatan Sepatu:\n\n1️⃣ Jangan cuci dengan deterjen biasa — bisa merusak sol\n2️⃣ Keringkan di tempat teduh, bukan di bawah sinar matahari langsung\n3️⃣ Gunakan produk khusus untuk bahan kulit\n4️⃣ Rutin cuci minimal 1 bulan sekali\n\nSIJI Bintaro pakai produk premium khusus untuk setiap jenis material 👟\n\n#TipsLaundry #ShoesCare #SijiBintaro #LaundryBintaro #PeawatanSepatu`,
+    tiktok: `Tips rawat sepatu yang jarang orang tau! 👟\n\nJangan salah cuci ya — bisa rusak permanent!\nBawa ke SIJI aja, aman dan hasilnya maksimal ✨\n\n#TipsSepatu #ShoesCare #SijiBintaro #fyp #tipslaundry`
+  }
+};
+
+function generateCaption() {
+  const platform = document.getElementById('caption-platform').value;
+  const type = document.getElementById('content-type').value;
+  document.getElementById('caption-text').value = CAPTIONS[type]?.[platform] || '';
+}
+
+function copyCaption() {
+  navigator.clipboard.writeText(document.getElementById('caption-text').value);
+  showLog('📋 Caption disalin!', 'info');
+}
+
+// ── RENDER ───────────────────────────────────────────
+function showLog(msg, type = 'info') {
+  const box = document.getElementById('log-box');
+  const line = document.createElement('div');
+  line.className = type;
+  line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  box.appendChild(line);
+  box.scrollTop = box.scrollHeight;
+}
+
+async function startRender() {
+  if (timeline.length === 0) {
+    showLog('⚠️ Pilih minimal 1 clip dulu!', 'warn');
+    return;
+  }
+
+  const btn = document.getElementById('render-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Rendering...';
+  document.getElementById('render-progress').style.display = 'block';
+  document.getElementById('download-card').style.display = 'none';
+
+  const payload = {
+    token: authToken,
+    clips: timeline.map(c => ({
+      name: c.name,
+      trim_start: c.trim_start,
+      trim_end: c.trim_end
+    })),
+    format: outputFormat,
+    resolution: parseInt(document.getElementById('resolution').value),
+    polish: {
+      brightness: parseFloat(document.getElementById('brightness').value),
+      contrast: parseFloat(document.getElementById('contrast').value),
+      saturation: parseFloat(document.getElementById('saturation').value),
+      warmth: parseInt(document.getElementById('warmth').value),
+      sharpen: parseFloat(document.getElementById('sharpen').value),
+    },
+    bumper: {
+      intro_mode: introMode,
+      intro_text: document.getElementById('intro-text-val')?.value || 'SIJI Bintaro',
+      intro_sub: document.getElementById('intro-sub-val')?.value || 'Premium Laundry & Care',
+      closing_video: document.getElementById('closing-video')?.value || '',
+      watermark: wmMode,
+    },
+    output_name: document.getElementById('output-name').value || 'siji-reel-' + Date.now(),
+    caption: document.getElementById('caption-text').value,
+  };
+
+  showLog(`🎬 Render dimulai: ${timeline.length} clips`, 'info');
+  showLog(`📐 Format: ${outputFormat} | Polish: brightness=${payload.polish.brightness}`, 'info');
+
+  // Fake progress while waiting
+  let prog = 5;
+  const progEl = document.getElementById('render-progress-fill');
+  const progInterval = setInterval(() => {
+    prog = Math.min(prog + (Math.random() * 8), 90);
+    progEl.style.width = prog + '%';
+  }, 1200);
+
+  try {
+    const res = await fetch('/api/video-render', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    clearInterval(progInterval);
+    const data = await res.json();
+
+    if (res.ok && data.ok) {
+      progEl.style.width = '100%';
+      showLog(`✅ Render selesai: ${data.output_file}`, 'info');
+      showLog(`📊 Size: ${data.size_mb} MB | Durasi: ${data.duration_s}s`, 'info');
+
+      renderedFile = data.output_file;
+      const dlCard = document.getElementById('download-card');
+      dlCard.style.display = 'block';
+      document.getElementById('download-info').textContent = `${data.output_file} · ${data.size_mb} MB · ${data.duration_s}s`;
+      document.getElementById('download-link').href = '/images/rendered/' + data.output_file;
+      document.getElementById('download-link').download = data.output_file;
+    } else {
+      showLog('❌ Error: ' + (data.detail || JSON.stringify(data)), 'err');
+    }
+  } catch (e) {
+    clearInterval(progInterval);
+    showLog('❌ Network error: ' + e.message, 'err');
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🎬 Render Video';
+}
+
+async function copyToBuffer() {
+  if (!renderedFile) return;
+  showLog('📤 Mengirim ke Buffer...', 'info');
+  const res = await fetch('/api/buffer-post', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      token: authToken,
+      file: renderedFile,
+      caption: document.getElementById('caption-text').value,
+      platform: document.getElementById('caption-platform').value
+    })
+  });
+  const data = await res.json();
+  if (data.ok) showLog('✅ Berhasil kirim ke Buffer! ID: ' + data.idea_id, 'info');
+  else showLog('❌ Buffer error: ' + data.detail, 'err');
+}
+</script>
+</body>
+</html>

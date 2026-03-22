@@ -20,6 +20,7 @@ from wa_crm_api import router as wa_crm_router
 from order_tracking_api import router as order_tracking_router
 from media_upload_api import router as media_upload_router
 from media_upload_tool_api import router as media_tool_router
+from video_render_api import router as video_render_router
 from chatbot_analytics_api import router as chatbot_analytics_router
 from auth_api import router as auth_router
 from hr_api import router as hr_router
@@ -31,6 +32,7 @@ app.include_router(wa_crm_router)
 app.include_router(order_tracking_router)
 app.include_router(media_upload_router)
 app.include_router(media_tool_router)
+app.include_router(video_render_router)
 app.include_router(chatbot_analytics_router)
 app.include_router(auth_router)
 app.include_router(hr_router)
