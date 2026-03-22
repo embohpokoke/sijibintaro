@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIJI Media Upload</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #0f1117; color: #e0e4f0; min-height: 100vh; }
+  .page { max-width: 700px; margin: 0 auto; padding: 24px 16px; }
+
+  .header { text-align: center; margin-bottom: 32px; }
+  .header h1 { font-size: 24px; font-weight: 800; color: #fff; }
+  .header h1 span { color: #c8a96e; }
+  .header p { font-size: 13px; color: #5a6080; margin-top: 6px; }
+
+  .card { background: #1a1f2e; border: 1px solid #2a3550; border-radius: 16px; padding: 24px; margin-bottom: 20px; }
+  .card h3 { font-size: 14px; color: #c8a96e; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px; }
+
+  label { display: block; font-size: 12px; color: #7a8099; margin-bottom: 6px; font-weight: 600; }
+  input[type=text], input[type=password], select {
+    width: 100%; padding: 12px 14px; border-radius: 10px;
+    background: #0f1117; border: 1px solid #2a3550; color: #e0e4f0;
+    font-size: 14px; margin-bottom: 16px; font-family: inherit;
+  }
+  input:focus, select:focus { outline: none; border-color: #c8a96e; }
+
+  .drop-zone {
+    border: 2px dashed #2a3550; border-radius: 12px; padding: 40px 20px;
+    text-align: center; cursor: pointer; transition: all 0.2s;
+    background: #0f1117; position: relative; overflow: hidden;
+  }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: #c8a96e; background: rgba(200,169,110,.05); }
+  .drop-zone .icon { font-size: 48px; margin-bottom: 12px; }
+  .drop-zone h4 { font-size: 16px; color: #fff; margin-bottom: 6px; }
+  .drop-zone p { font-size: 12px; color: #5a6080; }
+  .drop-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+  .preview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+  .preview-item { position: relative; border-radius: 8px; overflow: hidden; aspect-ratio: 1; background: #0f1117; }
+  .preview-item img, .preview-item video { width: 100%; height: 100%; object-fit: cover; }
+  .preview-item .remove-btn {
+    position: absolute; top: 4px; right: 4px; width: 24px; height: 24px;
+    background: rgba(255,0,0,.7); border: none; border-radius: 50%;
+    color: #fff; cursor: pointer; font-size: 14px; display: flex;
+    align-items: center; justify-content: center;
+  }
+  .preview-item .file-name {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,.7); font-size: 9px; color: #ccc;
+    padding: 3px 6px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
+  }
+
+  .btn {
+    width: 100%; padding: 16px; border-radius: 12px; border: none;
+    font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit;
+    transition: all 0.2s;
+  }
+  .btn-primary { background: #c8a96e; color: #0f1117; }
+  .btn-primary:hover { background: #d4b57a; }
+  .btn-primary:disabled { background: #3a4060; color: #5a6080; cursor: not-allowed; }
+
+  .progress-bar { height: 6px; background: #0f1117; border-radius: 3px; overflow: hidden; margin-top: 12px; display: none; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #c8a96e, #38d9a9); border-radius: 3px; transition: width 0.3s; width: 0; }
+
+  .result-list { margin-top: 16px; display: none; }
+  .result-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 8px; margin-bottom: 6px;
+    font-size: 13px;
+  }
+  .result-item.ok { background: rgba(56,217,169,.1); color: #38d9a9; }
+  .result-item.err { background: rgba(255,107,107,.1); color: #ff6b6b; }
+
+  .gallery-section { margin-top: 12px; }
+  .gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .gallery-item { border-radius: 8px; overflow: hidden; aspect-ratio: 1; background: #0f1117; position: relative; cursor: pointer; }
+  .gallery-item img, .gallery-item video { width: 100%; height: 100%; object-fit: cover; }
+  .gallery-item .overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,.5);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    opacity: 0; transition: 0.2s;
+  }
+  .gallery-item:hover .overlay { opacity: 1; }
+  .gallery-item .overlay span { font-size: 10px; color: #fff; text-align: center; padding: 4px; }
+  .gallery-item.video-item::after {
+    content: '▶'; position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%); font-size: 24px; color: rgba(255,255,255,.8);
+    pointer-events: none;
+  }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #1a1f2e; border: 1px solid #2a3550; border-radius: 12px;
+    padding: 12px 20px; font-size: 13px; color: #e0e4f0;
+    box-shadow: 0 8px 32px rgba(0,0,0,.4); z-index: 999;
+    transition: all 0.3s; opacity: 0; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+  .toast.success { border-color: #38d9a9; color: #38d9a9; }
+  .toast.error { border-color: #ff6b6b; color: #ff6b6b; }
+
+  .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; }
+  .badge-green { background: rgba(56,217,169,.2); color: #38d9a9; }
+  .badge-yellow { background: rgba(200,169,110,.2); color: #c8a96e; }
+
+  @media (max-width: 480px) {
+    .preview-grid, .gallery-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <h1>SIJI<span>.</span>Media Upload</h1>
+    <p>Upload foto & video untuk landing page sijibintaro.id</p>
+  </div>
+
+  <!-- AUTH -->
+  <div class="card" id="auth-card">
+    <h3>🔐 Akses</h3>
+    <label>Upload Token</label>
+    <input type="password" id="token-input" placeholder="Masukkan token..." onkeydown="if(event.key==='Enter')checkToken()">
+    <button class="btn btn-primary" onclick="checkToken()">Masuk →</button>
+    <div id="auth-error" style="color:#ff6b6b;font-size:12px;margin-top:8px;display:none">Token salah.</div>
+  </div>
+
+  <!-- UPLOAD FORM -->
+  <div id="upload-section" style="display:none">
+    <div class="card">
+      <h3>📤 Upload Media</h3>
+      <label>Nama File (opsional, tanpa ekstensi)</label>
+      <input type="text" id="custom-name" placeholder="Contoh: service-bag-spa-2 (kosongkan = nama asli)">
+      <label>Kategori</label>
+      <select id="category">
+        <option value="">-- Pilih kategori --</option>
+        <option value="service-1">Service-1 (Hero Background)</option>
+        <option value="service-2">Service-2 (Fashion Care)</option>
+        <option value="service-3">Service-3 (Shoes Spa)</option>
+        <option value="service-4">Service-4 (Bag Spa)</option>
+        <option value="service-5">Service-5 (Home Laundry)</option>
+        <option value="google-place-photo">Outlet Photo</option>
+        <option value="custom">Custom (pakai nama di atas)</option>
+      </select>
+
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" id="file-input" multiple accept="image/*,video/*" onchange="handleFiles(this.files)">
+        <div class="icon">📁</div>
+        <h4>Pilih atau Drop File</h4>
+        <p>Foto (JPG, PNG, WebP) atau Video (MP4, MOV)<br>Bisa pilih multiple sekaligus</p>
+      </div>
+
+      <div class="preview-grid" id="preview-grid"></div>
+
+      <div style="margin-top:16px">
+        <button class="btn btn-primary" id="upload-btn" onclick="uploadAll()" disabled>
+          ⬆️ Upload Semua
+        </button>
+        <div class="progress-bar" id="progress-bar">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+      </div>
+
+      <div class="result-list" id="result-list"></div>
+    </div>
+
+    <!-- GALLERY -->
+    <div class="card">
+      <h3>🖼️ Media Tersimpan</h3>
+      <div class="gallery-section">
+        <div class="gallery-grid" id="gallery-grid">
+          <div style="color:#5a6080;font-size:13px;grid-column:span 3;text-align:center;padding:20px">
+            Loading...
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:12px">
+        <button onclick="loadGallery()" style="background:none;border:1px solid #2a3550;color:#7a8099;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px">🔄 Refresh Gallery</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const UPLOAD_TOKEN = 'siji-media-2026';
+let selectedFiles = [];
+let authToken = '';
+
+function checkToken() {
+  const val = document.getElementById('token-input').value;
+  if (val === UPLOAD_TOKEN) {
+    authToken = val;
+    document.getElementById('auth-card').style.display = 'none';
+    document.getElementById('upload-section').style.display = 'block';
+    loadGallery();
+  } else {
+    document.getElementById('auth-error').style.display = 'block';
+  }
+}
+
+function handleFiles(files) {
+  selectedFiles = [...files];
+  renderPreviews();
+  document.getElementById('upload-btn').disabled = selectedFiles.length === 0;
+}
+
+function renderPreviews() {
+  const grid = document.getElementById('preview-grid');
+  grid.innerHTML = '';
+  selectedFiles.forEach((file, i) => {
+    const div = document.createElement('div');
+    div.className = 'preview-item';
+    const isVideo = file.type.startsWith('video/');
+    const url = URL.createObjectURL(file);
+    if (isVideo) {
+      div.innerHTML = `<video src="${url}" muted playsinline style="width:100%;height:100%;object-fit:cover"></video>`;
+    } else {
+      div.innerHTML = `<img src="${url}" alt="">`;
+    }
+    div.innerHTML += `
+      <button class="remove-btn" onclick="removeFile(${i})">×</button>
+      <div class="file-name">${file.name}</div>
+    `;
+    grid.appendChild(div);
+  });
+}
+
+function removeFile(i) {
+  selectedFiles.splice(i, 1);
+  renderPreviews();
+  document.getElementById('upload-btn').disabled = selectedFiles.length === 0;
+}
+
+async function uploadAll() {
+  const btn = document.getElementById('upload-btn');
+  const progressBar = document.getElementById('progress-bar');
+  const progressFill = document.getElementById('progress-fill');
+  const resultList = document.getElementById('result-list');
+  const category = document.getElementById('category').value;
+  const customName = document.getElementById('custom-name').value.trim();
+
+  btn.disabled = true;
+  btn.textContent = '⬆️ Uploading...';
+  progressBar.style.display = 'block';
+  resultList.style.display = 'block';
+  resultList.innerHTML = '';
+
+  let done = 0;
+  for (const file of selectedFiles) {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('token', authToken);
+    if (category && category !== 'custom') fd.append('category', category);
+    if (customName) fd.append('custom_name', customName);
+
+    try {
+      const res = await fetch('/api/media-upload', { method: 'POST', body: fd });
+      const data = await res.json();
+      const item = document.createElement('div');
+      if (res.ok) {
+        item.className = 'result-item ok';
+        item.innerHTML = `✅ <strong>${file.name}</strong> → ${data.saved_as}`;
+      } else {
+        item.className = 'result-item err';
+        item.innerHTML = `❌ <strong>${file.name}</strong> — ${data.detail || 'Error'}`;
+      }
+      resultList.appendChild(item);
+    } catch(e) {
+      const item = document.createElement('div');
+      item.className = 'result-item err';
+      item.innerHTML = `❌ <strong>${file.name}</strong> — Network error`;
+      resultList.appendChild(item);
+    }
+
+    done++;
+    progressFill.style.width = (done / selectedFiles.length * 100) + '%';
+  }
+
+  btn.textContent = '✅ Selesai!';
+  showToast(`${done} file berhasil diupload`, 'success');
+  setTimeout(() => {
+    selectedFiles = [];
+    document.getElementById('preview-grid').innerHTML = '';
+    btn.textContent = '⬆️ Upload Semua';
+    btn.disabled = true;
+    progressBar.style.display = 'none';
+    progressFill.style.width = '0';
+    loadGallery();
+  }, 2000);
+}
+
+async function loadGallery() {
+  const grid = document.getElementById('gallery-grid');
+  grid.innerHTML = '<div style="color:#5a6080;font-size:13px;grid-column:span 3;text-align:center;padding:20px">Loading...</div>';
+  try {
+    const res = await fetch('/api/media-list?token=' + authToken);
+    const data = await res.json();
+    grid.innerHTML = '';
+    if (!data.files || data.files.length === 0) {
+      grid.innerHTML = '<div style="color:#5a6080;font-size:13px;grid-column:span 3;text-align:center;padding:20px">Belum ada media</div>';
+      return;
+    }
+    data.files.forEach(f => {
+      const div = document.createElement('div');
+      const isVideo = f.name.match(/\.(mp4|mov|webm)$/i);
+      div.className = 'gallery-item' + (isVideo ? ' video-item' : '');
+      const url = '/images/' + f.name;
+      div.innerHTML = isVideo
+        ? `<video src="${url}" muted preload="none"></video>`
+        : `<img src="${url}" alt="${f.name}" loading="lazy">`;
+      div.innerHTML += `<div class="overlay"><span>${f.name}</span><span style="color:#c8a96e">${f.size}</span></div>`;
+      div.onclick = () => window.open(url, '_blank');
+      grid.appendChild(div);
+    });
+  } catch(e) {
+    grid.innerHTML = '<div style="color:#ff6b6b;font-size:13px;grid-column:span 3;text-align:center;padding:20px">Error loading gallery</div>';
+  }
+}
+
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+// Drag and drop
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault();
+  dz.classList.remove('drag-over');
+  handleFiles(e.dataTransfer.files);
+});
+</script>
+</body>
+</html>
