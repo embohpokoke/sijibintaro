@@ -261,7 +261,7 @@ async function uploadAll() {
       const item = document.createElement('div');
       if (res.ok) {
         item.className = 'result-item ok';
-        item.innerHTML = `✅ <strong>${file.name}</strong> → ${data.saved_as}`;
+        item.innerHTML = `✅ <strong>${file.name}</strong> → ${data.saved_as} <span style="color:#c8a96e;font-size:11px">(${data.original_kb}KB → ${data.optimized_kb}KB, hemat ${data.savings_pct}%)</span>`;
       } else {
         item.className = 'result-item err';
         item.innerHTML = `❌ <strong>${file.name}</strong> — ${data.detail || 'Error'}`;
