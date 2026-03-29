@@ -134,10 +134,11 @@
         .dp-sep{color:var(--text-muted);font-size:.8rem}
 
         /* ═══ FORM INPUTS ═══ */
-        select,input[type="date"],input[type="text"]{background:var(--surface);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.4rem .75rem;font-size:.82rem;outline:none;font-family:var(--font-sans);transition:var(--transition-fast)}
-        select:focus,input[type="date"]:focus,input[type="text"]:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-subtle)}
-        input[type="text"]::placeholder{color:var(--text-muted)}
-        input[type="text"]{width:200px}
+        select,input[type="date"],input[type="text"],input[type="number"],textarea,input[type="file"]{background:var(--surface);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.4rem .75rem;font-size:.82rem;outline:none;font-family:var(--font-sans);transition:var(--transition-fast)}
+        select:focus,input[type="date"]:focus,input[type="text"]:focus,input[type="number"]:focus,textarea:focus,input[type="file"]:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-subtle)}
+        input[type="text"]::placeholder,textarea::placeholder{color:var(--text-muted)}
+        input[type="text"],input[type="number"]{width:200px}
+        textarea{width:100%;min-height:88px;resize:vertical}
 
         /* ═══ CARDS GRID ═══ */
         .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem}
@@ -266,6 +267,18 @@
         .search-row select{min-width:160px}
         .search-row button{background:var(--gold);color:#fff;border:none;border-radius:var(--radius-sm);padding:.4rem 1.1rem;font-size:.82rem;cursor:pointer;font-weight:500;font-family:var(--font-sans);transition:var(--transition-fast)}
         .search-row button:hover{background:var(--gold-deep)}
+        .accounting-toolbar{display:flex;gap:.75rem;align-items:center;flex-wrap:wrap}
+        .accounting-inline-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.75rem;margin-bottom:1rem}
+        .accounting-inline-form .full{grid-column:1/-1}
+        .accounting-actions{display:flex;gap:.5rem;flex-wrap:wrap}
+        .accounting-actions button{background:var(--gold);color:#fff;border:none;border-radius:var(--radius-sm);padding:.5rem 1rem;font-size:.82rem;cursor:pointer;font-weight:600;font-family:var(--font-sans)}
+        .accounting-actions button.secondary{background:var(--surface);color:var(--text-primary);border:1px solid var(--border)}
+        .accounting-actions button.danger{background:var(--danger)}
+        .accounting-preview-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.75rem}
+        .accounting-preview-item{padding:.85rem 1rem;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface-2)}
+        .accounting-preview-label{font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:.25rem}
+        .accounting-preview-value{font-size:.95rem;font-weight:700;color:var(--text-primary)}
+        .accounting-negative{color:var(--danger)!important}
 
         /* ═══ WHATSAPP LAYOUT ═══ */
         .wa-layout{display:flex;gap:1rem;min-height:calc(100vh - 200px)}
@@ -607,11 +620,25 @@
                 <div class="nav-item" data-page="whatsapp" role="button" tabindex="0" aria-label="Navigate to WhatsApp">
                     <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg></span> WhatsApp
                 </div>
+                <div class="nav-item" data-page="keuangan" role="button" tabindex="0" aria-label="Navigate to Keuangan">
+                    <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 000 7H14.5a3.5 3.5 0 010 7H6"/></svg></span> Keuangan
+                </div>
+                <a class="nav-item" href="https://dashboard.sijibintaro.id/chatbot/" aria-label="Chatbot Analytics" style="text-decoration:none">
+                    <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="14" rx="2"/><path d="M7 21l5-4 5 4"/><path d="M8 9h8m-8 4h5"/></svg></span> Chatbot Analytics
+                </a>
+                <a class="nav-item" href="https://dashboard.sijibintaro.id/hr/" aria-label="HR Karyawan" style="text-decoration:none">
+                    <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></span> HR Karyawan
+                </a>
                 <div class="nav-item" data-page="settings" role="button" tabindex="0" aria-label="Navigate to Settings">
                     <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.73 12.73l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></span> Settings
                 </div>
             </nav>
-            <div class="sidebar-footer">SIJI Bintaro v3.0<br>13,180 transaksi | 2021-2026</div>
+            <div class="sidebar-footer">
+                <div style="margin-bottom:.5rem;color:#444;font-size:.7rem">SIJI Bintaro v3.0</div>
+                <div onclick="doLogout()" style="display:flex;align-items:center;gap:.5rem;padding:.45rem .6rem;border-radius:5px;cursor:pointer;color:#777;font-size:.78rem;font-weight:500;transition:all .15s" onmouseover="this.style.background='rgba(229,90,78,0.1)';this.style.color='#E55A4E'" onmouseout="this.style.background='';this.style.color='#777'">
+                    <span>🚪</span> Logout
+                </div>
+            </div>
         </aside>
 
         <!-- Main Content -->
@@ -934,42 +961,251 @@
                 </div>
             </div>
 
+            <!-- ═══ Keuangan Page ═══ -->
+            <div class="page" id="pg-keuangan">
+                <div class="header-bar">
+                    <h1>Keuangan</h1>
+                    <div class="header-bar-actions">
+                        <div class="accounting-toolbar">
+                            <select id="acc-month" aria-label="Pilih bulan laporan"></select>
+                            <select id="acc-year" aria-label="Pilih tahun laporan"></select>
+                            <div class="accounting-actions">
+                                <button class="secondary" onclick="refreshAccountingPage()">Refresh</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cards">
+                    <div class="card">
+                        <div class="card-label">Pemasukan Bulan Ini</div>
+                        <div class="card-value" id="acc-total-income">-</div>
+                        <div class="card-sub neutral" id="acc-total-income-sub">transactions + manual</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Pengeluaran Bulan Ini</div>
+                        <div class="card-value" id="acc-total-expense">-</div>
+                        <div class="card-sub neutral">semua pengeluaran aktif</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Net Profit</div>
+                        <div class="card-value" id="acc-net-profit">-</div>
+                        <div class="card-sub neutral" id="acc-net-profit-sub">ringkasan laba rugi</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Mutasi Belum Ditautkan</div>
+                        <div class="card-value" id="acc-unlinked-mutasi">-</div>
+                        <div class="card-sub neutral">butuh rekonsiliasi</div>
+                    </div>
+                </div>
+
+                <div class="tab-bar" id="acc-tabs">
+                    <button class="tab-btn active" role="tab" aria-selected="true" data-tab="acc-overview">Overview</button>
+                    <button class="tab-btn" role="tab" aria-selected="false" data-tab="acc-pengeluaran">Pengeluaran</button>
+                    <button class="tab-btn" role="tab" aria-selected="false" data-tab="acc-pemasukan">Pemasukan Manual</button>
+                    <button class="tab-btn" role="tab" aria-selected="false" data-tab="acc-mutasi">Mutasi BCA</button>
+                    <button class="tab-btn" role="tab" aria-selected="false" data-tab="acc-laporan">Laporan</button>
+                </div>
+
+                <div class="tab-content active" id="acc-overview">
+                    <div class="grid-2">
+                        <div class="panel">
+                            <div class="panel-header"><div class="panel-title">Breakdown Pengeluaran</div></div>
+                            <div id="acc-breakdown-expense" class="accounting-preview-list"></div>
+                        </div>
+                        <div class="panel">
+                            <div class="panel-header"><div class="panel-title">Breakdown Pemasukan</div></div>
+                            <div id="acc-breakdown-income" class="accounting-preview-list"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="acc-pengeluaran">
+                    <div class="panel">
+                        <div class="panel-header"><div class="panel-title">Catat Pengeluaran</div></div>
+                        <div class="accounting-inline-form">
+                            <input type="date" id="acc-exp-date" aria-label="Tanggal pengeluaran">
+                            <input type="number" id="acc-exp-nominal" aria-label="Nominal pengeluaran" placeholder="Nominal">
+                            <select id="acc-exp-kategori" aria-label="Kategori pengeluaran"></select>
+                            <select id="acc-exp-metode" aria-label="Metode bayar pengeluaran">
+                                <option value="transfer_bca">Transfer BCA</option>
+                                <option value="cash">Cash</option>
+                                <option value="qris">QRIS</option>
+                                <option value="edc">EDC</option>
+                                <option value="lainnya">Lainnya</option>
+                            </select>
+                            <input type="text" id="acc-exp-supplier" aria-label="Nama supplier" placeholder="Supplier existing / baru">
+                            <select id="acc-exp-supplier-type" aria-label="Tipe supplier">
+                                <option value="lainnya">Tipe supplier</option>
+                                <option value="online">Online</option>
+                                <option value="offline">Offline</option>
+                                <option value="vendor">Vendor</option>
+                                <option value="individu">Individu</option>
+                                <option value="lainnya">Lainnya</option>
+                            </select>
+                            <input type="text" id="acc-exp-referensi" aria-label="Referensi pengeluaran" placeholder="No referensi / struk">
+                            <input type="text" id="acc-exp-by" aria-label="Dicatat oleh" placeholder="Dicatat oleh">
+                            <textarea class="full" id="acc-exp-desc" aria-label="Deskripsi pengeluaran" placeholder="Deskripsi pengeluaran"></textarea>
+                            <textarea class="full" id="acc-exp-note" aria-label="Catatan pengeluaran" placeholder="Catatan tambahan"></textarea>
+                        </div>
+                        <div class="accounting-actions">
+                            <button onclick="submitAccountingExpense()">Simpan Pengeluaran</button>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header"><div class="panel-title">Daftar Pengeluaran</div></div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Tanggal</th><th>Deskripsi</th><th>Kategori</th><th>Supplier</th><th>Metode</th><th>Nominal</th><th>Dicatat Oleh</th><th>Aksi</th></tr></thead>
+                                <tbody id="acc-exp-table"><tr><td colspan="8" class="loading"><div class="spinner"></div></td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="acc-pemasukan">
+                    <div class="panel">
+                        <div class="panel-header"><div class="panel-title">Catat Pemasukan Manual</div></div>
+                        <div class="accounting-inline-form">
+                            <input type="date" id="acc-inc-date" aria-label="Tanggal pemasukan">
+                            <input type="number" id="acc-inc-nominal" aria-label="Nominal pemasukan" placeholder="Nominal">
+                            <input type="text" id="acc-inc-customer" aria-label="Nama customer" placeholder="Nama customer">
+                            <input type="text" id="acc-inc-layanan" aria-label="Layanan SIJI" placeholder="Layanan / singkatan">
+                            <select id="acc-inc-metode" aria-label="Metode bayar pemasukan">
+                                <option value="cash">Cash</option>
+                                <option value="transfer">Transfer</option>
+                                <option value="qris">QRIS</option>
+                                <option value="edc">EDC</option>
+                            </select>
+                            <select id="acc-inc-status" aria-label="Status pemasukan">
+                                <option value="unverified">Unverified</option>
+                                <option value="verified">Verified</option>
+                                <option value="duplicate">Duplicate</option>
+                            </select>
+                            <input type="text" id="acc-inc-by" aria-label="Dicatat oleh pemasukan" placeholder="Dicatat oleh">
+                            <textarea class="full" id="acc-inc-note" aria-label="Catatan pemasukan" placeholder="Catatan tambahan"></textarea>
+                        </div>
+                        <div class="accounting-actions">
+                            <button onclick="submitAccountingIncome()">Simpan Pemasukan</button>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header"><div class="panel-title">Daftar Pemasukan Manual</div></div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Tanggal</th><th>Customer</th><th>Layanan</th><th>Kategori</th><th>Metode</th><th>Status</th><th>Nominal</th><th>Dicatat Oleh</th></tr></thead>
+                                <tbody id="acc-inc-table"><tr><td colspan="8" class="loading"><div class="spinner"></div></td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="acc-mutasi">
+                    <div class="panel">
+                        <div class="panel-header"><div class="panel-title">Import Mutasi BCA</div></div>
+                        <div class="accounting-inline-form">
+                            <input class="full" type="file" id="acc-mutasi-file" aria-label="Upload mutasi BCA" accept=".csv,.xlsx,.xlsm">
+                        </div>
+                        <div class="accounting-actions">
+                            <button onclick="submitAccountingMutasiImport()">Import Mutasi</button>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header"><div class="panel-title">Daftar Mutasi</div></div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Tanggal</th><th>Tipe</th><th>Nominal</th><th>Keterangan</th><th>Penerima</th><th>Status</th><th>Aksi</th></tr></thead>
+                                <tbody id="acc-mutasi-table"><tr><td colspan="7" class="loading"><div class="spinner"></div></td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="acc-laporan">
+                    <div class="panel">
+                        <div class="panel-header"><div class="panel-title">Export Laporan</div></div>
+                        <div class="accounting-preview-list" style="margin-bottom:1rem">
+                            <div class="accounting-preview-item">
+                                <div class="accounting-preview-label">Periode</div>
+                                <div class="accounting-preview-value" id="acc-report-period">-</div>
+                            </div>
+                            <div class="accounting-preview-item">
+                                <div class="accounting-preview-label">Total Pemasukan</div>
+                                <div class="accounting-preview-value" id="acc-report-income">-</div>
+                            </div>
+                            <div class="accounting-preview-item">
+                                <div class="accounting-preview-label">Total Pengeluaran</div>
+                                <div class="accounting-preview-value" id="acc-report-expense">-</div>
+                            </div>
+                            <div class="accounting-preview-item">
+                                <div class="accounting-preview-label">Net Profit</div>
+                                <div class="accounting-preview-value" id="acc-report-net">-</div>
+                            </div>
+                        </div>
+                        <div class="accounting-actions">
+                            <button onclick="exportAccountingReport('xlsx')">Export Excel</button>
+                            <button class="secondary" onclick="exportAccountingReport('pdf')">Export PDF</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- ═══ Settings Page ═══ -->
             <div class="page" id="pg-settings">
-                <div class="header-bar"><h1>Settings</h1><div class="header-bar-actions"></div></div>
+                <div class="header-bar"><h1>Pengaturan</h1><div class="header-bar-actions"></div></div>
+
+                <!-- SESSION -->
+                <div class="panel" style="margin-bottom:1rem">
+                    <div class="panel-title" style="margin-bottom:1rem">👤 Sesi Login</div>
+                    <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
+                        <div>
+                            <div id="session-user" style="font-size:.9rem;font-weight:600">Memuat...</div>
+                            <div style="font-size:.75rem;color:var(--text-muted);margin-top:2px">Login via JWT SSO · sijibintaro.id</div>
+                        </div>
+                        <button onclick="doLogout()" style="padding:6px 16px;border-radius:20px;border:1px solid var(--danger,#E55A4E);background:transparent;color:var(--danger,#E55A4E);cursor:pointer;font-size:.8rem;font-family:inherit;font-weight:500">🚪 Logout</button>
+                    </div>
+                </div>
+
+                <!-- QUICK LINKS -->
+                <div class="panel" style="margin-bottom:1rem">
+                    <div class="panel-title" style="margin-bottom:1rem">🔗 Navigasi Cepat</div>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:.6rem">
+                        <a href="https://dashboard.sijibintaro.id/" style="display:flex;align-items:center;gap:.6rem;padding:.65rem .85rem;border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:.83rem;font-weight:500;transition:border-color .15s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">📊 Dashboard Utama</a>
+                        <a href="https://dashboard.sijibintaro.id/chatbot/" style="display:flex;align-items:center;gap:.6rem;padding:.65rem .85rem;border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:.83rem;font-weight:500;transition:border-color .15s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">🤖 Chatbot Analytics</a>
+                        <a href="https://dashboard.sijibintaro.id/hr/" style="display:flex;align-items:center;gap:.6rem;padding:.65rem .85rem;border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:.83rem;font-weight:500;transition:border-color .15s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">👥 HR Rekrutmen</a>
+                        <a href="https://crm.sijibintaro.id/" style="display:flex;align-items:center;gap:.6rem;padding:.65rem .85rem;border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:.83rem;font-weight:500;transition:border-color .15s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'" target="_blank">💬 CRM WhatsApp</a>
+                        <a href="https://order.sijibintaro.id/" style="display:flex;align-items:center;gap:.6rem;padding:.65rem .85rem;border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:.83rem;font-weight:500;transition:border-color .15s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'" target="_blank">📦 Order Tracking</a>
+                        <a href="https://sijibintaro.id/gowa/" style="display:flex;align-items:center;gap:.6rem;padding:.65rem .85rem;border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:.83rem;font-weight:500;transition:border-color .15s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'" target="_blank">📱 GOWA Panel</a>
+                        <a href="https://ops.sijibintaro.id/" style="display:flex;align-items:center;gap:.6rem;padding:.65rem .85rem;border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:.83rem;font-weight:500;transition:border-color .15s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'" target="_blank">🖥 Ops Monitor</a>
+                        <a href="https://ops.sijibintaro.id/docs" style="display:flex;align-items:center;gap:.6rem;padding:.65rem .85rem;border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:.83rem;font-weight:500;transition:border-color .15s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'" target="_blank">📄 API Docs</a>
+                        <a href="https://sijibintaro.id/" style="display:flex;align-items:center;gap:.6rem;padding:.65rem .85rem;border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:.83rem;font-weight:500;transition:border-color .15s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'" target="_blank">🌐 Website SIJI</a>
+                        <a href="https://sijibintaro.id/karir" style="display:flex;align-items:center;gap:.6rem;padding:.65rem .85rem;border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:.83rem;font-weight:500;transition:border-color .15s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'" target="_blank">📝 Form Karir</a>
+                    </div>
+                </div>
+
+                <!-- DISPLAY -->
+                <div class="panel" style="margin-bottom:1rem">
+                    <div class="panel-title" style="margin-bottom:1rem">🎨 Tampilan</div>
+                    <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+                        <span style="font-size:.85rem;color:var(--text-muted)">Mode warna</span>
+                        <button class="chip active" onclick="ThemeManager.toggle()" style="cursor:pointer">🌙 Toggle Light / Dark</button>
+                    </div>
+                </div>
+
+                <!-- SYSTEM INFO -->
                 <div class="panel">
-                    <div class="panel-title" style="margin-bottom:1rem">Dashboard Info</div>
+                    <div class="panel-title" style="margin-bottom:1rem">ℹ️ Info Sistem</div>
                     <table>
-                        <tr><td style="color:var(--text-muted);width:200px">Version</td><td>3.0</td></tr>
-                        <tr><td style="color:var(--text-muted)">Database</td><td>SQLite (siji_database.db)</td></tr>
-                        <tr><td style="color:var(--text-muted)">Transactions</td><td id="s-total-tx">-</td></tr>
-                        <tr><td style="color:var(--text-muted)">Date Range</td><td>Feb 2021 - Feb 2026</td></tr>
-                        <tr><td style="color:var(--text-muted)">Revenue Target</td><td>Rp 40.000.000 / bulan</td></tr>
-                        <tr><td style="color:var(--text-muted)">API Endpoint</td><td>/api/dashboard/*</td></tr>
-                        <tr><td style="color:var(--text-muted)">Auth</td><td>Nginx Basic Auth (4 users)</td></tr>
-                        <tr><td style="color:var(--text-muted)">Theme</td><td><button class="chip active" onclick="ThemeManager.toggle()" style="cursor:pointer">Toggle Light/Dark</button></td></tr>
+                        <tr><td style="color:var(--text-muted);width:200px;padding:.35rem 0">Versi Dashboard</td><td style="padding:.35rem 0">3.0</td></tr>
+                        <tr><td style="color:var(--text-muted);padding:.35rem 0">Database</td><td style="padding:.35rem 0">PostgreSQL · siji_bintaro</td></tr>
+                        <tr><td style="color:var(--text-muted);padding:.35rem 0">Total Transaksi</td><td style="padding:.35rem 0" id="s-total-tx">-</td></tr>
+                        <tr><td style="color:var(--text-muted);padding:.35rem 0">Rentang Data</td><td style="padding:.35rem 0">Feb 2021 – skrg</td></tr>
+                        <tr><td style="color:var(--text-muted);padding:.35rem 0">Target Revenue</td><td style="padding:.35rem 0">Rp 40.000.000 / bulan</td></tr>
+                        <tr><td style="color:var(--text-muted);padding:.35rem 0">Auth</td><td style="padding:.35rem 0">JWT Cookie SSO · .sijibintaro.id</td></tr>
                     </table>
-                </div>
-                <div class="panel" style="margin-top:1rem">
-                    <div class="panel-title" style="margin-bottom:1rem">Documentation</div>
-                    <div style="display:flex;gap:.75rem;flex-wrap:wrap">
-                        <a href="/README.md" target="_blank">README (Project Overview)</a>
-                        <a href="/PAYMENT-INTEGRATION.md" target="_blank">Payment Integration Plan</a>
-                        <a href="/PLAN-v2.2.md" target="_blank">PLAN v2.2 (Implementation)</a>
-                    </div>
-                </div>
-                <div class="panel" style="margin-top:1rem">
-                    <div class="panel-title" style="margin-bottom:1rem">Quick Links</div>
-                    <div style="display:flex;gap:.75rem;flex-wrap:wrap">
-                        <a href="https://dashboard.sijibintaro.id">Dashboard</a>
-                        <a href="https://crm.sijibintaro.id">CRM</a>
-                        <a href="https://order.sijibintaro.id">Order Tracking</a>
-                        <a href="https://ops.sijibintaro.id">Ops Monitor</a>
-                        <a href="https://gowa.sijibintaro.id">GOWA</a>
-                        <a href="https://ops.sijibintaro.id/docs">API Docs</a>
-                        <a href="https://sijibintaro.id/admin.html">Admin Panel</a>
-                        <a href="https://sijibintaro.id">Website</a>
-                    </div>
                 </div>
             </div>
         </main>
@@ -1019,7 +1255,11 @@
         <div class="more-handle"></div>
         <div class="more-title">Menu Lainnya</div>
         <div class="more-grid">
-            <a class="more-item" href="/dashboard/hr/" target="_blank" rel="noopener">
+            <div class="more-item" onclick="closeMoreSheet();navigateTo('keuangan')">
+                <div class="more-icon">💰</div><span>Keuangan</span>
+            </div>
+            <a class="more-item" href="https://dashboard.sijibintaro.id/chatbot/" target="_blank" rel="noopener"><div class="more-icon">🤖</div><span>Chatbot</span></a>
+            <a class="more-item" href="https://dashboard.sijibintaro.id/hr/" target="_blank" rel="noopener">
                 <div class="more-icon">👥</div><span>HR</span>
             </a>
             <a class="more-item" href="/ops/" target="_blank" rel="noopener">
@@ -1044,6 +1284,13 @@
        ═══════════════════════════════════════════════════════════════ */
 
     const API = '/api/dashboard';
+    const ACCOUNTING_API = '/api/accounting';
+    const accountingState = {
+        initialized: false,
+        categories: [],
+        suppliers: [],
+        activeTab: 'acc-overview'
+    };
 
     // ─── Theme Manager ───────────────────────────────────────────────
     const ThemeManager = {
@@ -1081,8 +1328,26 @@
     function fmtDateShort(d) { if (!d) return '-'; return new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }); }
     async function api(endpoint) { const r = await fetch(API + endpoint); if (!r.ok) throw new Error('API ' + r.status); return r.json(); }
     async function apiPost(endpoint, body) { const r = await fetch(API + endpoint, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) }); if (!r.ok) throw new Error('API ' + r.status); return r.json(); }
+    async function accountingApi(endpoint, options) {
+        const opts = Object.assign({ credentials: 'include' }, options || {});
+        const response = await fetch(ACCOUNTING_API + endpoint, opts);
+        if (!response.ok) {
+            let detail = 'API ' + response.status;
+            try {
+                const data = await response.json();
+                detail = data.detail || detail;
+            } catch (e) {}
+            throw new Error(detail);
+        }
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) return response.json();
+        return response;
+    }
     function $(id) { return document.getElementById(id); }
     function escHtml(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+    function monthName(month) {
+        return ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][month - 1] || '-';
+    }
 
     function showToast(msg, duration) {
         duration = duration || 3000;
@@ -1797,6 +2062,327 @@
         return d.toLocaleDateString('id-ID',{day:'numeric',month:'short'});
     }
 
+    // ─── Accounting Page ────────────────────────────────────────────
+    function initAccountingPage() {
+        if (accountingState.initialized) return;
+        var monthSel = $('acc-month');
+        var yearSel = $('acc-year');
+        if (!monthSel || !yearSel) return;
+        var now = new Date();
+        for (var month = 1; month <= 12; month++) {
+            var option = document.createElement('option');
+            option.value = month;
+            option.textContent = monthName(month);
+            if (month === now.getMonth() + 1) option.selected = true;
+            monthSel.appendChild(option);
+        }
+        for (var year = now.getFullYear() - 2; year <= now.getFullYear() + 1; year++) {
+            var yearOption = document.createElement('option');
+            yearOption.value = year;
+            yearOption.textContent = year;
+            if (year === now.getFullYear()) yearOption.selected = true;
+            yearSel.appendChild(yearOption);
+        }
+        $('acc-exp-date').value = now.toISOString().slice(0, 10);
+        $('acc-inc-date').value = now.toISOString().slice(0, 10);
+        monthSel.addEventListener('change', refreshAccountingPage);
+        yearSel.addEventListener('change', refreshAccountingPage);
+        document.querySelectorAll('#acc-tabs .tab-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('#acc-tabs .tab-btn').forEach(function(item) { item.classList.remove('active'); });
+                document.querySelectorAll('#pg-keuangan .tab-content').forEach(function(content) { content.classList.remove('active'); });
+                btn.classList.add('active');
+                accountingState.activeTab = btn.dataset.tab;
+                $(btn.dataset.tab).classList.add('active');
+                if (btn.dataset.tab === 'acc-pengeluaran') loadAccountingExpenses();
+                if (btn.dataset.tab === 'acc-pemasukan') loadAccountingIncome();
+                if (btn.dataset.tab === 'acc-mutasi') loadAccountingMutasi();
+                if (btn.dataset.tab === 'acc-laporan') loadAccountingReportPreview();
+            });
+        });
+        accountingState.initialized = true;
+    }
+    function accountingPeriod() {
+        return {
+            bulan: parseInt($('acc-month').value || String(new Date().getMonth() + 1), 10),
+            tahun: parseInt($('acc-year').value || String(new Date().getFullYear()), 10)
+        };
+    }
+    async function loadAccountingLookups() {
+        var results = await Promise.all([
+            accountingApi('/kategori?include_children=false'),
+            accountingApi('/supplier')
+        ]);
+        accountingState.categories = results[0] || [];
+        accountingState.suppliers = results[1] || [];
+        renderAccountingCategoryOptions();
+    }
+    function renderAccountingCategoryOptions() {
+        var categorySelect = $('acc-exp-kategori');
+        if (!categorySelect) return;
+        categorySelect.innerHTML = '<option value="">Pilih kategori</option>';
+        accountingState.categories.forEach(function(cat) {
+            var option = document.createElement('option');
+            option.value = cat.id;
+            option.textContent = (cat.parent_id ? '↳ ' : '') + (cat.icon || '📦') + ' ' + cat.nama;
+            categorySelect.appendChild(option);
+        });
+    }
+    async function refreshAccountingPage() {
+        initAccountingPage();
+        try {
+            await loadAccountingLookups();
+            await loadAccountingOverview();
+            if (accountingState.activeTab === 'acc-pengeluaran') await loadAccountingExpenses();
+            if (accountingState.activeTab === 'acc-pemasukan') await loadAccountingIncome();
+            if (accountingState.activeTab === 'acc-mutasi') await loadAccountingMutasi();
+            if (accountingState.activeTab === 'acc-laporan') await loadAccountingReportPreview();
+        } catch (e) {
+            console.error('Accounting refresh error:', e);
+            showToast('Gagal memuat data keuangan: ' + e.message, 'error');
+        }
+    }
+    async function loadAccountingOverview() {
+        var period = accountingPeriod();
+        var summary = await accountingApi('/laporan/summary?bulan=' + period.bulan + '&tahun=' + period.tahun);
+        $('acc-total-income').textContent = rp(summary.total_pemasukan);
+        $('acc-total-income-sub').textContent = 'Smartlink ' + rp(summary.total_pemasukan_transactions) + ' + manual ' + rp(summary.total_pemasukan_manual);
+        $('acc-total-expense').textContent = rp(summary.total_pengeluaran);
+        $('acc-net-profit').textContent = rp(summary.net_profit);
+        $('acc-net-profit').classList.toggle('accounting-negative', summary.net_profit < 0);
+        $('acc-report-net').classList.toggle('accounting-negative', summary.net_profit < 0);
+        $('acc-net-profit-sub').textContent = summary.net_profit >= 0 ? 'operasional masih positif' : 'biaya lebih besar dari pemasukan';
+        $('acc-unlinked-mutasi').textContent = summary.unlinked_mutasi;
+        $('acc-report-period').textContent = monthName(period.bulan) + ' ' + period.tahun;
+        $('acc-report-income').textContent = rp(summary.total_pemasukan);
+        $('acc-report-expense').textContent = rp(summary.total_pengeluaran);
+        $('acc-report-net').textContent = rp(summary.net_profit);
+        $('acc-report-net').classList.toggle('accounting-negative', summary.net_profit < 0);
+        $('acc-breakdown-expense').innerHTML = renderAccountingBreakdown(summary.breakdown_pengeluaran);
+        $('acc-breakdown-income').innerHTML = renderAccountingBreakdown(summary.breakdown_pemasukan);
+    }
+    function renderAccountingBreakdown(items) {
+        if (!items || !items.length) return '<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">Belum ada data</div></div>';
+        return items.slice(0, 8).map(function(item) {
+            return '<div class="accounting-preview-item"><div class="accounting-preview-label">' + escHtml(item.label || '-') + '</div><div class="accounting-preview-value">' + rp(item.nominal) + '</div></div>';
+        }).join('');
+    }
+    async function loadAccountingExpenses() {
+        var period = accountingPeriod();
+        var data = await accountingApi('/pengeluaran?bulan=' + period.bulan + '&tahun=' + period.tahun + '&limit=200');
+        var tbody = $('acc-exp-table');
+        if (!data.items || data.items.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">Belum ada pengeluaran</div></div></td></tr>';
+            return;
+        }
+        tbody.innerHTML = data.items.map(function(item) {
+            return '<tr>'
+                + '<td>' + fmtDate(item.tanggal) + '</td>'
+                + '<td>' + escHtml(item.deskripsi || '-') + '</td>'
+                + '<td>' + escHtml(item.kategori_label || '-') + '</td>'
+                + '<td>' + escHtml(item.supplier_nama || '-') + '</td>'
+                + '<td>' + escHtml(item.metode_bayar || '-') + '</td>'
+                + '<td style="color:var(--text-metric);font-weight:600">' + rp(item.nominal) + '</td>'
+                + '<td>' + escHtml(item.dicatat_oleh || '-') + '</td>'
+                + '<td><button class="chip" style="cursor:pointer" onclick="deleteAccountingExpense(' + item.id + ')">Hapus</button></td>'
+                + '</tr>';
+        }).join('');
+    }
+    async function loadAccountingIncome() {
+        var period = accountingPeriod();
+        var data = await accountingApi('/pemasukan?bulan=' + period.bulan + '&tahun=' + period.tahun);
+        var tbody = $('acc-inc-table');
+        if (!data.items || data.items.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">Belum ada pemasukan manual</div></div></td></tr>';
+            return;
+        }
+        tbody.innerHTML = data.items.map(function(item) {
+            var statusClass = item.status === 'verified' ? 'badge-green' : item.status === 'duplicate' ? 'badge-red' : 'badge-orange';
+            return '<tr>'
+                + '<td>' + fmtDate(item.tanggal) + '</td>'
+                + '<td>' + escHtml(item.nama_customer || '-') + '</td>'
+                + '<td>' + escHtml(item.layanan || '-') + '</td>'
+                + '<td>' + escHtml(item.kategori || '-') + '</td>'
+                + '<td>' + escHtml(item.metode_bayar || '-') + '</td>'
+                + '<td><span class="badge ' + statusClass + '">' + escHtml(item.status || '-') + '</span></td>'
+                + '<td style="color:var(--text-metric);font-weight:600">' + rp(item.nominal) + '</td>'
+                + '<td>' + escHtml(item.dicatat_oleh || '-') + '</td>'
+                + '</tr>';
+        }).join('');
+    }
+    async function loadAccountingMutasi() {
+        var period = accountingPeriod();
+        var data = await accountingApi('/mutasi?bulan=' + period.bulan + '&tahun=' + period.tahun + '&status_link=');
+        var tbody = $('acc-mutasi-table');
+        if (!data.items || data.items.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">Belum ada mutasi</div></div></td></tr>';
+            return;
+        }
+        tbody.innerHTML = data.items.map(function(item) {
+            var statusClass = item.status_link === 'linked' ? 'badge-green' : item.status_link === 'ignored' ? 'badge-blue' : 'badge-orange';
+            var linkAction = item.status_link === 'linked'
+                ? '<span class="badge badge-green">Linked</span>'
+                : '<button class="chip" style="cursor:pointer" onclick="linkAccountingMutasi(' + item.id + ')">Tautkan</button>';
+            return '<tr>'
+                + '<td>' + fmtDate(item.tanggal) + '</td>'
+                + '<td>' + escHtml(item.tipe || '-') + '</td>'
+                + '<td style="color:var(--text-metric);font-weight:600">' + rp(item.nominal) + '</td>'
+                + '<td>' + escHtml(item.keterangan || '-') + '</td>'
+                + '<td>' + escHtml(item.penerima || '-') + '</td>'
+                + '<td><span class="badge ' + statusClass + '">' + escHtml(item.status_link || '-') + '</span></td>'
+                + '<td>' + linkAction + '</td>'
+                + '</tr>';
+        }).join('');
+    }
+    async function loadAccountingReportPreview() {
+        await loadAccountingOverview();
+    }
+    async function resolveAccountingSupplierId() {
+        var rawName = ($('acc-exp-supplier').value || '').trim();
+        if (!rawName) return null;
+        var existing = accountingState.suppliers.find(function(item) {
+            return (item.nama || '').toLowerCase() === rawName.toLowerCase();
+        });
+        if (existing) return existing.id;
+        var created = await accountingApi('/supplier', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                nama: rawName,
+                tipe: $('acc-exp-supplier-type').value || 'lainnya'
+            })
+        });
+        accountingState.suppliers.push(created);
+        return created.id;
+    }
+    async function submitAccountingExpense() {
+        try {
+            var supplierId = await resolveAccountingSupplierId();
+            var payload = {
+                tanggal: $('acc-exp-date').value || null,
+                nominal: parseInt($('acc-exp-nominal').value || '0', 10),
+                kategori_id: $('acc-exp-kategori').value ? parseInt($('acc-exp-kategori').value, 10) : null,
+                supplier_id: supplierId,
+                deskripsi: ($('acc-exp-desc').value || '').trim(),
+                metode_bayar: $('acc-exp-metode').value,
+                no_referensi: ($('acc-exp-referensi').value || '').trim() || null,
+                dicatat_oleh: ($('acc-exp-by').value || '').trim() || null,
+                sumber_input: 'dashboard',
+                catatan: ($('acc-exp-note').value || '').trim() || null
+            };
+            if (!payload.deskripsi || payload.nominal <= 0) {
+                showToast('Deskripsi dan nominal wajib diisi', 'warning');
+                return;
+            }
+            await accountingApi('/pengeluaran', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            $('acc-exp-nominal').value = '';
+            $('acc-exp-desc').value = '';
+            $('acc-exp-referensi').value = '';
+            $('acc-exp-note').value = '';
+            $('acc-exp-supplier').value = '';
+            showToast('Pengeluaran berhasil dicatat', 'success');
+            await refreshAccountingPage();
+            accountingState.activeTab = 'acc-pengeluaran';
+            loadAccountingExpenses();
+        } catch (e) {
+            console.error('Expense submit error:', e);
+            showToast('Gagal menyimpan pengeluaran: ' + e.message, 'error');
+        }
+    }
+    async function submitAccountingIncome() {
+        try {
+            var payload = {
+                tanggal: $('acc-inc-date').value || null,
+                nominal: parseInt($('acc-inc-nominal').value || '0', 10),
+                nama_customer: ($('acc-inc-customer').value || '').trim() || null,
+                layanan: ($('acc-inc-layanan').value || '').trim() || null,
+                metode_bayar: $('acc-inc-metode').value,
+                status: $('acc-inc-status').value,
+                dicatat_oleh: ($('acc-inc-by').value || '').trim() || null,
+                catatan: ($('acc-inc-note').value || '').trim() || null
+            };
+            if (payload.nominal <= 0) {
+                showToast('Nominal pemasukan wajib diisi', 'warning');
+                return;
+            }
+            await accountingApi('/pemasukan', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            $('acc-inc-nominal').value = '';
+            $('acc-inc-customer').value = '';
+            $('acc-inc-layanan').value = '';
+            $('acc-inc-note').value = '';
+            showToast('Pemasukan manual berhasil dicatat', 'success');
+            await refreshAccountingPage();
+            accountingState.activeTab = 'acc-pemasukan';
+            loadAccountingIncome();
+        } catch (e) {
+            console.error('Income submit error:', e);
+            showToast('Gagal menyimpan pemasukan: ' + e.message, 'error');
+        }
+    }
+    async function submitAccountingMutasiImport() {
+        var input = $('acc-mutasi-file');
+        if (!input.files || !input.files.length) {
+            showToast('Pilih file mutasi CSV/XLSX dulu', 'warning');
+            return;
+        }
+        try {
+            var formData = new FormData();
+            formData.append('file', input.files[0]);
+            var response = await accountingApi('/mutasi/import', { method: 'POST', body: formData });
+            showToast('Mutasi berhasil diimport: ' + response.inserted + ' baris', 'success');
+            input.value = '';
+            await refreshAccountingPage();
+            accountingState.activeTab = 'acc-mutasi';
+            loadAccountingMutasi();
+        } catch (e) {
+            console.error('Mutasi import error:', e);
+            showToast('Gagal import mutasi: ' + e.message, 'error');
+        }
+    }
+    async function linkAccountingMutasi(mutasiId) {
+        var pengeluaranId = window.prompt('Masukkan ID pengeluaran yang akan ditautkan ke mutasi #' + mutasiId);
+        if (!pengeluaranId) return;
+        try {
+            await accountingApi('/mutasi/' + mutasiId + '/link', {
+                method: 'PATCH',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ pengeluaran_id: parseInt(pengeluaranId, 10) })
+            });
+            showToast('Mutasi berhasil ditautkan', 'success');
+            await refreshAccountingPage();
+            accountingState.activeTab = 'acc-mutasi';
+            loadAccountingMutasi();
+        } catch (e) {
+            console.error('Mutasi link error:', e);
+            showToast('Gagal menautkan mutasi: ' + e.message, 'error');
+        }
+    }
+    async function deleteAccountingExpense(id) {
+        if (!window.confirm('Soft delete pengeluaran ini?')) return;
+        try {
+            await accountingApi('/pengeluaran/' + id, { method: 'DELETE' });
+            showToast('Pengeluaran dihapus', 'success');
+            await refreshAccountingPage();
+            accountingState.activeTab = 'acc-pengeluaran';
+            loadAccountingExpenses();
+        } catch (e) {
+            console.error('Expense delete error:', e);
+            showToast('Gagal menghapus pengeluaran: ' + e.message, 'error');
+        }
+    }
+    function exportAccountingReport(format) {
+        var period = accountingPeriod();
+        window.open(ACCOUNTING_API + '/laporan/export?bulan=' + period.bulan + '&tahun=' + period.tahun + '&format=' + format, '_blank');
+    }
+
     // ─── Settings ────────────────────────────────────────────────────
     async function loadSettings() { try { var h = await api('/health'); $('s-total-tx').textContent = h.transactions ? h.transactions.toLocaleString('id-ID') : '-'; } catch(e) {} }
 
@@ -1808,6 +2394,7 @@
             case 'orders': loadOrders(); break;
             case 'customers': loadCustomers(); break;
             case 'whatsapp': loadWhatsApp(); break;
+            case 'keuangan': refreshAccountingPage(); break;
             case 'settings': loadSettings(); break;
         }
     }
@@ -1833,6 +2420,7 @@
         }
     });
     ThemeManager.init();
+    initAccountingPage();
     // CRM: auto-navigate to WhatsApp tab if accessed via crm subdomain
     if (window.location.hostname === 'crm.sijibintaro.id') {
         navigateTo('whatsapp');
@@ -2066,6 +2654,23 @@ if ('serviceWorker' in navigator) {
       .catch(err => console.log('SW error:', err));
   });
 }
+
+// ── Auth/Session ──────────────────────────────────────────────────────────────
+async function doLogout() {
+    await fetch('/api/auth/logout', {method:'POST', credentials:'include'});
+    window.location.href = 'https://sijibintaro.id/login';
+}
+async function loadSessionUser() {
+    try {
+        const r = await fetch('/api/auth/me', {credentials:'include'});
+        if (r.ok) {
+            const d = await r.json();
+            const el = document.getElementById('session-user');
+            if (el) el.textContent = '👤 ' + d.username + ' (' + d.role + ')';
+        }
+    } catch(e) {}
+}
+loadSessionUser();
 </script>
 </body>
 </html>

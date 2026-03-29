@@ -24,6 +24,7 @@ from video_render_api import router as video_render_router
 from chatbot_analytics_api import router as chatbot_analytics_router
 from auth_api import router as auth_router
 from hr_api import router as hr_router
+from accounting_api import router as accounting_router
 
 app = FastAPI(title="SIJI Bintaro API", version="1.0.0")
 app.include_router(wa_router)
@@ -36,6 +37,7 @@ app.include_router(video_render_router)
 app.include_router(chatbot_analytics_router)
 app.include_router(auth_router)
 app.include_router(hr_router)
+app.include_router(accounting_router)
 
 # CORS middleware
 app.add_middleware(
