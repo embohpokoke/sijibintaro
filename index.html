@@ -56,7 +56,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <style>
 :root {
@@ -71,12 +71,14 @@
   --wa: #25d366;
   --r: 14px;
   --max: 1100px;
+  --font-display: 'Cormorant Garamond', Georgia, serif;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; overflow-x: hidden; }
 a { color: inherit; text-decoration: none; }
 img, video { display: block; max-width: 100%; }
+h1, h2, h3, h4, .section-title { font-family: var(--font-display); }
 
 /* ── NAV ─────────────────────────────────── */
 nav {
@@ -119,12 +121,12 @@ nav {
 .hero-inner { max-width: var(--max); margin: 0 auto; padding: 60px 20px; position: relative; z-index: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
 .hero-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(200,169,110,.15); border: 1px solid rgba(200,169,110,.3); border-radius: 20px; padding: 6px 14px; font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 20px; }
 .hero-badge .dot { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; animation: pulse 1.5s infinite; }
-.hero h1 { font-size: clamp(32px,5vw,54px); font-weight: 800; color: #fff; line-height: 1.1; margin-bottom: 16px; }
+.hero h1 { font-size: clamp(36px,5vw,56px); font-weight: 300; color: #fff; line-height: 1.15; margin-bottom: 12px; letter-spacing: -0.01em; }
 .hero h1 em { color: var(--accent); font-style: normal; }
 .hero p { font-size: 16px; color: rgba(255,255,255,.6); margin-bottom: 32px; max-width: 420px; }
 .hero-btns { display: flex; gap: 12px; flex-wrap: wrap; }
 .hero-stats { display: flex; gap: 32px; margin-top: 40px; }
-.stat-n { font-size: 26px; font-weight: 800; color: var(--accent); }
+.stat-n { font-size: 48px; font-weight: 300; color: var(--accent); font-family: var(--font-display); line-height: 1; }
 .stat-l { font-size: 11px; color: rgba(255,255,255,.4); margin-top: 2px; }
 
 /* Hero right: video showcase */
@@ -149,12 +151,40 @@ nav {
 .trust-item { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--primary); }
 
 /* ── SECTIONS ───────────────────────────── */
-.section { padding: 80px 0; }
+.section { padding: 100px 0; }
 .section-alt { background: var(--surface); }
 .container { max-width: var(--max); margin: 0 auto; padding: 0 20px; }
 .section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: var(--accent); font-weight: 700; margin-bottom: 10px; }
 .section-title { font-size: clamp(24px,4vw,38px); font-weight: 800; margin-bottom: 12px; line-height: 1.2; }
 .section-sub { font-size: 15px; color: var(--muted); max-width: 500px; }
+
+/* Gold decorative line under every h2 */
+h2::after { content: ''; display: block; width: 40px; height: 2px; background: var(--accent); margin: 12px auto 0; }
+
+/* Hero specialty sub-headline */
+.hero-specialty { font-weight: 700; letter-spacing: 0.15em; color: var(--accent); font-size: 14px; text-transform: uppercase; margin-bottom: 24px; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+
+/* Inline hero trust bar */
+.hero-trust { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,.55); margin-top: 20px; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+.hero-trust .ht-dot { color: var(--accent); }
+@media(max-width:600px){ .hero-trust { justify-content: center; } }
+
+/* Before-After Slider */
+.ba-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 24px; margin-top: 48px; }
+@media(max-width:768px){ .ba-grid { grid-template-columns: 1fr; max-width: 380px; margin: 48px auto 0; } }
+.ba-card { border-radius: 16px; overflow: hidden; box-shadow: 0 8px 40px rgba(0,0,0,.12); background: #fff; transition: transform .3s; }
+.ba-card:hover { transform: translateY(-4px); }
+.ba-slider { position: relative; user-select: none; cursor: ew-resize; aspect-ratio: 4/5; overflow: hidden; }
+.ba-after, .ba-before { position: absolute; inset: 0; }
+.ba-after img, .ba-before img { width: 100%; height: 100%; object-fit: cover; }
+.ba-before { overflow: hidden; }
+.ba-tag { position: absolute; top: 12px; font-size: 10px; font-weight: 700; color: #fff; background: rgba(0,0,0,.45); padding: 3px 8px; border-radius: 4px; letter-spacing: .05em; text-transform: uppercase; z-index: 3; pointer-events: none; font-family: 'Plus Jakarta Sans', sans-serif; }
+.ba-tag-l { left: 10px; }
+.ba-tag-r { right: 10px; }
+.ba-handle { position: absolute; top: 0; bottom: 0; transform: translateX(-50%); width: 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2; pointer-events: none; }
+.ba-line { position: absolute; inset: 0; background: rgba(255,255,255,.85); }
+.ba-btn { position: relative; width: 36px; height: 36px; border-radius: 50%; background: var(--accent); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; box-shadow: 0 2px 12px rgba(0,0,0,.3); }
+.ba-service-label { text-align: center; padding: 14px; font-weight: 600; font-size: 14px; background: #fff; margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; color: var(--primary); }
 
 /* ── VIDEO SHOWCASE ─────────────────────── */
 .videos-scroll { display: flex; gap: 14px; overflow-x: auto; padding: 4px 0 16px; scrollbar-width: none; }
@@ -177,11 +207,11 @@ nav {
 /* ── SERVICES ───────────────────────────── */
 .service-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 28px; }
 .stab { padding: 9px 18px; border-radius: 30px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1.5px solid var(--border); background: transparent; color: var(--muted); transition: all .2s; font-family: inherit; }
-.stab.active, .stab:hover { border-color: var(--accent); color: var(--primary); background: var(--accent-lt); }
+.stab.active, .stab:hover { border-color: var(--accent); color: var(--primary); background: var(--accent-lt); border-top: 3px solid var(--accent); }
 .spanel { display: none; }
 .spanel.active { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-.price-card { background: var(--bg); border: 1.5px solid var(--border); border-radius: 14px; padding: 20px; transition: all .2s; }
-.price-card:hover { border-color: var(--accent); background: var(--surface); }
+.price-card { background: var(--bg); border: 1.5px solid var(--border); border-radius: 16px; padding: 20px; transition: all .2s; box-shadow: 0 4px 20px rgba(0,0,0,.06); }
+.price-card:hover { border-color: var(--accent); background: var(--surface); box-shadow: 0 8px 40px rgba(0,0,0,.10); transform: translateY(-2px); }
 .price-card.feat { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px var(--accent-lt); }
 .price-card .pc-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
 .price-card .pc-desc { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
@@ -204,7 +234,7 @@ nav {
 
 /* ── WHY SIJI ───────────────────────────── */
 .why-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.why-item { display: flex; gap: 16px; padding: 20px; background: var(--bg); border-radius: 14px; border: 1px solid var(--border); }
+.why-item { display: flex; gap: 16px; padding: 20px; background: var(--bg); border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 4px 20px rgba(0,0,0,.05); transition: all .2s; }
 .why-icon { font-size: 28px; flex-shrink: 0; }
 .why-item h3 { font-size: 14px; font-weight: 700; margin-bottom: 5px; }
 .why-item p { font-size: 12px; color: var(--muted); line-height: 1.6; }
@@ -284,6 +314,7 @@ footer { background: var(--primary); border-top: 1px solid rgba(255,255,255,.06)
   .footer-grid { grid-template-columns: 1fr; }
   .cta-btns { flex-direction: column; align-items: center; }
   .footer-bottom { flex-direction: column; gap: 8px; text-align: center; }
+  .section { padding: 60px 0; }
 }
 </style>
 </head>
@@ -312,7 +343,8 @@ footer { background: var(--primary); border-top: 1px solid rgba(255,255,255,.06)
   <div class="hero-inner">
     <div class="hero-content">
       <div class="hero-badge"><span class="dot"></span> Melayani Bintaro & sekitarnya</div>
-      <h1>Premium Care<br>untuk Item<br><em>Terbaik Kamu</em></h1>
+      <h1>Perawatan Premium untuk Barang<br><em>Berharga Kamu</em></h1>
+      <p class="hero-specialty">Sepatu · Tas · Pakaian</p>
       <p>Spesialis laundry, sepatu, dan tas branded. Hasil terjamin, antar jemput gratis.</p>
       <div class="hero-btns">
         <a href="https://wa.me/6281288783088?text=Halo%20SIJI%2C%20mau%20order!" target="_blank" class="btn btn-wa">
@@ -320,6 +352,15 @@ footer { background: var(--primary); border-top: 1px solid rgba(255,255,255,.06)
           Pesan Sekarang
         </a>
         <a href="#layanan" class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,.3)">Lihat Layanan</a>
+      </div>
+      <div class="hero-trust">
+        <span>⭐ 4.9 Google</span>
+        <span class="ht-dot">·</span>
+        <span>2.000+ Pelanggan</span>
+        <span class="ht-dot">·</span>
+        <span>Sejak 2021</span>
+        <span class="ht-dot">·</span>
+        <span>Antar Jemput Gratis 3km</span>
       </div>
       <div class="hero-stats">
         <div><div class="stat-n">4.9★</div><div class="stat-l">Rating Google</div></div>
@@ -430,6 +471,49 @@ footer { background: var(--primary); border-top: 1px solid rgba(255,255,255,.06)
 
     <div style="text-align:center;margin-top:28px">
       <a href="https://wa.me/6281288783088?text=Halo%20SIJI%2C%20mau%20cek%20harga" class="btn btn-outline" target="_blank">Tanya harga lainnya →</a>
+    </div>
+  </div>
+</section>
+
+<!-- BEFORE-AFTER SLIDER -->
+<section class="section section-alt" id="hasil-nyata">
+  <div class="container">
+    <div style="text-align:center">
+      <div class="section-label">Hasil Kerja</div>
+      <h2 class="section-title" style="text-align:center">Hasil Nyata dari Tangan Kami</h2>
+      <p class="section-sub" style="margin:0 auto;text-align:center">Geser untuk melihat perbedaan sebelum dan sesudah</p>
+    </div>
+    <div class="ba-grid">
+      <div class="ba-card fade-up">
+        <div class="ba-slider">
+          <div class="ba-after"><img src="images/service-1.webp" alt="Shoes sesudah" loading="lazy"></div>
+          <div class="ba-before" style="width:50%"><img src="images/service-before-after.webp" alt="Shoes sebelum" loading="lazy"></div>
+          <span class="ba-tag ba-tag-l">Sebelum</span>
+          <span class="ba-tag ba-tag-r">Sesudah</span>
+          <div class="ba-handle" style="left:50%"><div class="ba-line"></div><div class="ba-btn">⇔</div></div>
+        </div>
+        <p class="ba-service-label">👟 Shoes Care</p>
+      </div>
+      <div class="ba-card fade-up">
+        <div class="ba-slider">
+          <div class="ba-after"><img src="images/service-leather-2.webp" alt="Tas sesudah" loading="lazy"></div>
+          <div class="ba-before" style="width:50%"><img src="images/service-leather.webp" alt="Tas sebelum" loading="lazy"></div>
+          <span class="ba-tag ba-tag-l">Sebelum</span>
+          <span class="ba-tag ba-tag-r">Sesudah</span>
+          <div class="ba-handle" style="left:50%"><div class="ba-line"></div><div class="ba-btn">⇔</div></div>
+        </div>
+        <p class="ba-service-label">👜 Leather Bag</p>
+      </div>
+      <div class="ba-card fade-up">
+        <div class="ba-slider">
+          <div class="ba-after"><img src="images/service-bag-product.webp" alt="Bag spa sesudah" loading="lazy"></div>
+          <div class="ba-before" style="width:50%"><img src="images/service-bag-process.webp" alt="Bag spa sebelum" loading="lazy"></div>
+          <span class="ba-tag ba-tag-l">Sebelum</span>
+          <span class="ba-tag ba-tag-r">Sesudah</span>
+          <div class="ba-handle" style="left:50%"><div class="ba-line"></div><div class="ba-btn">⇔</div></div>
+        </div>
+        <p class="ba-service-label">✨ Bag Spa</p>
+      </div>
     </div>
   </div>
 </section>
@@ -687,6 +771,26 @@ const fadeObserver = new IntersectionObserver(entries => {
 document.querySelectorAll('.fade-up').forEach(el => fadeObserver.observe(el));
 
 // ── PWA ──────────────────────────────────────────────────────
+
+// Before-After Slider drag/touch
+(function(){
+  document.querySelectorAll('.ba-slider').forEach(function(sl){
+    var dragging = false;
+    function move(x){
+      var r = sl.getBoundingClientRect();
+      var pct = Math.min(Math.max((x - r.left) / r.width * 100, 5), 95);
+      sl.querySelector('.ba-before').style.width = pct + '%';
+      sl.querySelector('.ba-handle').style.left = pct + '%';
+    }
+    sl.addEventListener('mousedown', function(e){ dragging = true; move(e.clientX); e.preventDefault(); });
+    window.addEventListener('mousemove', function(e){ if(dragging) move(e.clientX); });
+    window.addEventListener('mouseup', function(){ dragging = false; });
+    sl.addEventListener('touchstart', function(e){ dragging = true; move(e.touches[0].clientX); }, {passive:true});
+    sl.addEventListener('touchmove', function(e){ if(dragging) move(e.touches[0].clientX); }, {passive:true});
+    sl.addEventListener('touchend', function(){ dragging = false; });
+  });
+})();
+
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
 </script>
 </body>
