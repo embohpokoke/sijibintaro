@@ -558,7 +558,7 @@ def _get_services_collection_id() -> str | None:
         return SERVICES_COLLECTION_ID
     try:
         import httpx as _httpx
-        CHROMA_BASE = "http://localhost:32769/api/v2/tenants/default_tenant/databases/default_database"
+        CHROMA_BASE = "http://127.0.0.1:32769/api/v2/tenants/default_tenant/databases/default_database"
         r = _httpx.get(f"{CHROMA_BASE}/collections", timeout=5)
         for c in r.json():
             if c["name"] == COLLECTION_SERVICES:
@@ -666,7 +666,7 @@ def check_service_catalog(message: str) -> str | None:
 
     try:
         import httpx as _httpx
-        CHROMA_BASE = "http://localhost:32769/api/v2/tenants/default_tenant/databases/default_database"
+        CHROMA_BASE = "http://127.0.0.1:32769/api/v2/tenants/default_tenant/databases/default_database"
 
         # Normalize English terms → Indonesian sebelum embed
         normalized = _normalize_query_for_catalog(message)
@@ -675,7 +675,7 @@ def check_service_catalog(message: str) -> str | None:
 
         # Embed query
         emb_r = _httpx.post(
-            "http://localhost:11434/api/embeddings",
+            "http://127.0.0.1:11434/api/embeddings",
             json={"model": "nomic-embed-text", "prompt": normalized},
             timeout=10
         )

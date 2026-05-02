@@ -3,7 +3,7 @@ SIJI Data Migration: SQLite → PostgreSQL
 Migrates from:
   - Source A: siji_database.db (13,089 tx, Feb 2021 - Jan 2026)
   - Source B: siji_customers.db (2,176 customers + 332 tx Jan-Feb 2026)
-To: PostgreSQL siji_db on Docker (localhost:5432)
+To: PostgreSQL siji_db on Docker (127.0.0.1:5432)
 """
 
 import sqlite3

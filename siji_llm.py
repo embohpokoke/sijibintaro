@@ -8,7 +8,7 @@ import httpx
 import os
 from typing import Optional
 
-OLLAMA_BASE    = "http://localhost:11434"
+OLLAMA_BASE    = "http://127.0.0.1:11434"
 LLM_MODEL      = "gemma3:1b"
 OPENAI_MODEL   = "gpt-4o-mini"
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
