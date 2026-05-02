@@ -16,8 +16,8 @@ import threading
 from typing import Optional
 from rank_bm25 import BM25Okapi
 
-OLLAMA_BASE = "http://localhost:11434"
-CHROMA_BASE = "http://localhost:32769/api/v2/tenants/default_tenant/databases/default_database"
+OLLAMA_BASE = "http://127.0.0.1:11434"
+CHROMA_BASE = "http://127.0.0.1:32769/api/v2/tenants/default_tenant/databases/default_database"
 
 COLLECTION_QA       = "siji_qa_history"
 COLLECTION_PATTERNS = "siji_conv_patterns"

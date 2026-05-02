@@ -1,34 +1,49 @@
-ROOT_DIR := /var/www/sijibintaro
-SERVICE := sijibintaro-api
+.PHONY: setup dev build up down restart logs migrate nginx-install ssl-cert smoke deploy
 
-.PHONY: up down restart status logs smoke deploy migrate-accounting
+setup:
+	@if [ ! -f .env ]; then cp .env.example .env && echo "⚠️  Edit .env dulu!"; fi
+	@pip install -r requirements.txt
+	@echo "✅ Setup done"
+
+dev:
+	@uvicorn main:app --host 127.0.0.1 --port 8002 --reload
+
+build:
+	@echo "No build step for FastAPI"
 
 up:
-	@systemctl start $(SERVICE)
-	@echo "PASS $(SERVICE) started"
+	@systemctl start sijibintaro-api
+	@echo "✅ SIJI API started"
 
 down:
-	@systemctl stop $(SERVICE)
-	@echo "PASS $(SERVICE) stopped"
+	@systemctl stop sijibintaro-api
+	@echo "✅ SIJI API stopped"
 
 restart:
-	@systemctl restart $(SERVICE)
-	@echo "PASS $(SERVICE) restarted"
-
-status:
-	@systemctl status $(SERVICE) --no-pager
+	@systemctl restart sijibintaro-api
+	@echo "✅ SIJI API restarted"
 
 logs:
-	@journalctl -u $(SERVICE) -f
+	@journalctl -u sijibintaro-api -f
+
+migrate:
+	@psql $$DATABASE_URL -f migrations/001_init.sql
+	@echo "✅ Migration done"
+
+nginx-install:
+	@cp nginx/sijibintaro.conf /etc/nginx/conf.d/sijibintaro-id.conf
+	@nginx -t && systemctl reload nginx
+	@echo "✅ Nginx config installed"
+
+ssl-cert:
+	@certbot --nginx -d sijibintaro.id
+	@echo "✅ SSL cert issued"
 
 smoke:
 	@/root/scripts/smoke-test.sh sijibintaro
 
 deploy:
-	@git -C $(ROOT_DIR) pull --ff-only
-	@systemctl restart $(SERVICE)
+	@git pull
+	@systemctl restart sijibintaro-api
 	@sleep 3
 	@$(MAKE) smoke
-
-migrate-accounting:
-	@bash -lc 'set -a; [ -f /root/.wallet/sijibintaro-api.env ] && . /root/.wallet/sijibintaro-api.env; [ -f /root/.wallet/livininbintaro.env ] && . /root/.wallet/livininbintaro.env; set +a; cd $(ROOT_DIR) && if [ -n "$$DATABASE_URL" ]; then psql "$$DATABASE_URL" -f migrations/002_accounting.sql; else psql -h "$${PGHOST:-localhost}" -U "$${PGUSER:-siji}" -d "$${PGDATABASE:-livininbintaro}" -f migrations/002_accounting.sql; fi'
