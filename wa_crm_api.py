@@ -485,13 +485,20 @@ Berikan insight singkat (max 200 kata, bahasa Indonesia) tentang:
 Gunakan bullet points, ringkas dan actionable."""
 
         try:
-            payload = json.dumps({"model": LLM_MODEL, "prompt": prompt_text, "stream": False,
-                                  "options": {"temperature": 0.5, "num_predict": 500}}).encode()
-            req = urllib.request.Request(OLLAMA_URL, data=payload,
+            payload = json.dumps({
+                "model": LLM_MODEL,
+                "messages": [
+                    {"role": "system", "content": "Kamu adalah analis CRM untuk bisnis laundry SIJI Bintaro. Berikan insight singkat dalam bahasa Indonesia dengan bullet points."},
+                    {"role": "user", "content": prompt_text}
+                ],
+                "stream": False,
+                "options": {"temperature": 0.5, "num_predict": 300}
+            }).encode()
+            req = urllib.request.Request("http://127.0.0.1:11434/api/chat", data=payload,
                                         headers={"Content-Type": "application/json"})
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with urllib.request.urlopen(req, timeout=60) as resp:
                 result = json.loads(resp.read())
-                insight_text = result.get("response", "")
+                insight_text = result.get("message", {}).get("content", "")
         except Exception as e:
             insight_text = f"LLM tidak tersedia: {e}"
 
@@ -701,6 +708,93 @@ async def serve_media_by_timestamp(timestamp: str):
     # Return first match
     filepath = matches[0]
     return FileResponse(filepath, media_type="image/jpeg")
+
+
+# ─── Payment Proof Images for Reconciliation ───────────────────────────────────
+@router.get("/payment-images")
+async def list_payment_images(days: int = Query(default=14, ge=1, le=60), limit: int = Query(default=50, ge=1, le=200)):
+    """List recent WA image messages (payment proofs) with surrounding context.
+    Returns images sent by customers (not from me) within N days."""
+    import glob
+    conn = get_db()
+    try:
+        since = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%S")
+        # Get image messages from customers (not from bot/staff)
+        rows = conn.execute(
+            """SELECT m.timestamp, m.message_text, m.media_url, m.conversation_jid,
+                      c.phone, c.customer_name, c.contact_name, m.sender_name
+               FROM wa_messages m
+               JOIN wa_conversations c ON c.jid = m.conversation_jid
+               WHERE m.message_type = 'image'
+                 AND m.is_from_me = 0
+                 AND m.timestamp >= ?
+               ORDER BY m.timestamp DESC
+               LIMIT ?""",
+            (since, limit),
+        ).fetchall()
+
+        results = []
+        for r in rows:
+            ts = r["timestamp"]
+            # Find local file by timestamp
+            local_file = None
+            try:
+                dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                unix_ts = int(dt.timestamp())
+                for f in glob.glob(f"{GOWA_MEDIA_PATH}/*.jpe") + glob.glob(f"{GOWA_MEDIA_PATH}/*.jpg"):
+                    fname = os.path.basename(f)
+                    try:
+                        file_ts = int(fname.split("-")[0])
+                        if abs(file_ts - unix_ts) <= 5:
+                            local_file = os.path.basename(f)
+                            break
+                    except:
+                        continue
+            except:
+                pass
+
+            # Get surrounding messages (2 before, 2 after)
+            context_msgs = conn.execute(
+                """SELECT message_text, is_from_me, timestamp, message_type
+                   FROM wa_messages
+                   WHERE conversation_jid = ?
+                     AND timestamp BETWEEN ? AND ?
+                   ORDER BY timestamp""",
+                (
+                    r["conversation_jid"],
+                    (datetime.fromisoformat(ts.replace("Z", "+00:00")) - timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%M:%S"),
+                    (datetime.fromisoformat(ts.replace("Z", "+00:00")) + timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%M:%S"),
+                ),
+            ).fetchall()
+
+            context = []
+            for cm in context_msgs:
+                if cm["message_text"] and cm["message_text"] != r["message_text"]:
+                    context.append({
+                        "text": cm["message_text"],
+                        "is_me": bool(cm["is_from_me"]),
+                        "type": cm["message_type"],
+                        "time": cm["timestamp"],
+                    })
+
+            phone = r["phone"] or r["conversation_jid"].split("@")[0]
+            name = r["customer_name"] or r["contact_name"] or r["sender_name"] or phone
+
+            results.append({
+                "timestamp": ts,
+                "unix_timestamp": unix_ts if 'unix_ts' in dir() else None,
+                "phone": phone,
+                "customer_name": name,
+                "message_text": r["message_text"],
+                "media_url": r["media_url"],
+                "local_file": local_file,
+                "image_url": f"/api/dashboard/wa/media/by-timestamp/{ts}" if local_file else None,
+                "context": context[:6],  # max 6 context messages
+            })
+
+        return {"images": results, "count": len(results), "days": days}
+    finally:
+        conn.close()
 
 
 @router.get("/media/{filename}")

@@ -89,7 +89,7 @@ SKIP_AUTOREPLY_NUMBERS = [
 # === TEST MODE ===
 # Aktif: hanya TEST_NUMBERS yang dapat autoreply, customer lain dilewati
 # Nonaktifkan (GOWA_TEST_MODE = False) saat siap production
-GOWA_TEST_MODE = True
+GOWA_TEST_MODE = False  # Production mode — aktif 2026-03-20, open to all customers
 GOWA_TEST_NUMBERS = [
     "62811319003",    # Erik — testing sebagai pelanggan
     "628113442442",   # Ocha (nomor lain) — testing
@@ -105,6 +105,10 @@ ESCALATION_NUMBERS = [
 import time as _time
 _PROCESSED_MSG_IDS: dict = {}
 _DEDUP_TTL = 300  # 5 menit
+
+# Greeting tracker: track siapa sudah dapat Lebaran greeting di session ini
+# {sender: timestamp} — cukup 1x per sender per session (reset saat restart)
+_GREETED_SENDERS: set = set()
 
 def _is_duplicate(msg_id: str) -> bool:
     """Return True jika msg_id sudah diproses dalam 5 menit terakhir"""
@@ -835,6 +839,7 @@ KEYWORD_MAP = {
 GREETING_START = (2026, 3, 20)  # Ucapan Lebaran mulai 20 Maret
 HOLIDAY_START = (2026, 3, 21)  # SIJI tutup 21-23 Maret
 HOLIDAY_END   = (2026, 3, 23)
+GREETING_END   = (2026, 3, 24)  # Greeting tetap tampil sampai 24 Maret (hari buka kembali)
 
 HOLIDAY_GREETING = (
     "🌙 *Selamat Idul Fitri 1447H!*\n"
@@ -863,11 +868,18 @@ def is_holiday_mode() -> bool:
 
 
 def is_greeting_mode() -> bool:
-    """Check if should show Lebaran greeting (from 20 March 2026)"""
+    """Check if should show Lebaran greeting (20-24 March 2026, cut off at 17:00 WIB on 24th)"""
     from datetime import datetime
     now = datetime.now()
+    wib_hour = (now.hour + 7) % 24
     today = (now.year, now.month, now.day)
-    return today >= GREETING_START and today <= HOLIDAY_END
+    if today < GREETING_START:
+        return False
+    if today < GREETING_END:
+        return True
+    if today == GREETING_END:
+        return wib_hour < 17  # Stop greeting after 17:00 WIB on March 24
+    return False
 
 def match_keyword(message: str) -> str | None:
     """Match message to keyword category — checks in order, returns first match"""
@@ -1950,7 +1962,9 @@ async def gowa_webhook(request: Request):
                             reply_text = KEYWORD_REPLIES[cat]
                             reply_layer = f"keyword:{cat}"
 
-                    # Layer 4: RAG + LLM (qwen2.5:1.5b + karyawan Q&A history)
+                    # Layer 4: RAG + LLM (GPT-4o-mini primary, Ollama fallback)
+                    # Threshold: RRF score ≥ 0.025 (strong match from both vector + BM25)
+                    # RRF scale: max ~0.033 for rank-1 in both methods; 0.048+ with BM25 norm boost
                     _rag_score = 0.0
                     if not reply_text and not reply_layer and RAG_ENABLED:
                         try:
@@ -1960,7 +1974,7 @@ async def gowa_webhook(request: Request):
                             context["customer_segment"] = cust_ctx.get("segment", "Baru")
                             context["customer_tx_count"] = cust_ctx.get("total_transaksi", 0)
                             _rag_score = context["best_score"]
-                            if _rag_score >= 0.75:
+                            if _rag_score >= 0.025:
                                 llm_reply = await generate_reply_async(body_text, context)
                                 if llm_reply:
                                     reply_text = llm_reply
@@ -1997,8 +2011,13 @@ async def gowa_webhook(request: Request):
                     if reply_text and reply_layer and not reply_layer.startswith("rag_llm"):
                         _is_greeting = is_greeting_mode()
                         if _is_greeting and not reply_layer.startswith("holiday"):
-                            # Holiday mode — prepend Lebaran greeting
-                            reply_text = f"{HOLIDAY_GREETING}{reply_text}"
+                            # Holiday mode — prepend Lebaran greeting HANYA 1x per sender
+                            if sender not in _GREETED_SENDERS:
+                                reply_text = f"{HOLIDAY_GREETING}{reply_text}"
+                                _GREETED_SENDERS.add(sender)
+                                print(f"[AUTOREPLY] Lebaran greeting sent (1st time): {sender}")
+                            else:
+                                print(f"[AUTOREPLY] Lebaran greeting skip (already sent): {sender}")
                         elif not _is_greeting:
                             # Normal mode — personal greeting for known customers
                             greeting = build_greeting(cust_name, cust_ctx.get("segment", "Baru"))

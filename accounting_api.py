@@ -93,6 +93,11 @@ class MutasiLinkRequest(BaseModel):
     pengeluaran_id: int
 
 
+class MutasiReconRequest(BaseModel):
+    wa_media_path: Optional[str] = None
+    recon_notes: Optional[str] = None
+
+
 def _normalize_tipe_supplier(value: Optional[str]) -> str:
     allowed = {"online", "offline", "vendor", "individu", "lainnya"}
     return value if value in allowed else "lainnya"
@@ -390,7 +395,10 @@ def _get_mutasi_rows(conn, bulan: Optional[int] = None, tahun: Optional[int] = N
             penerima,
             no_rek_penerima,
             pengeluaran_id,
-            status_link
+            status_link,
+            wa_media_path,
+            recon_notes,
+            recon_at
         FROM mutasi_rekening
         WHERE {' AND '.join(where_parts)}
         ORDER BY tanggal DESC, id DESC
@@ -937,6 +945,89 @@ async def link_mutasi_ke_pengeluaran(
             (data.pengeluaran_id, mutasi_id),
         )
         return {"ok": True, "id": mutasi_id, "pengeluaran_id": data.pengeluaran_id}
+
+
+@router.get("/mutasi/unlinked-incoming")
+async def list_unlinked_incoming_mutasi(
+    days: int = Query(default=14, ge=1, le=90),
+    _: dict[str, Any] = Depends(require_session),
+):
+    """List unlinked incoming (kredit) mutasi — customer payments that need WA proof reconciliation."""
+    with get_db_dict() as conn:
+        since = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT
+                id, tanggal, no_urut, nominal, tipe,
+                keterangan, penerima, no_rek_penerima,
+                pengeluaran_id, status_link,
+                wa_media_path, recon_notes, recon_at
+            FROM mutasi_rekening
+            WHERE tipe = 'kredit'
+              AND status_link = 'unlinked'
+              AND tanggal >= %s
+            ORDER BY tanggal DESC, id DESC
+            """,
+            (since,),
+        )
+        rows = cur.fetchall()
+        cols = [d[0] for d in cur.description]
+        return {"items": [dict(zip(cols, row)) for row in rows], "count": len(rows), "days": days}
+
+
+@router.get("/mutasi/{mutasi_id}")
+async def get_mutasi_detail(
+    mutasi_id: int,
+    _: dict[str, Any] = Depends(require_session),
+):
+    with get_db_dict() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT
+                id, tanggal, no_urut, nominal, tipe,
+                keterangan, penerima, no_rek_penerima,
+                pengeluaran_id, status_link,
+                wa_media_path, recon_notes, recon_at
+            FROM mutasi_rekening
+            WHERE id = %s
+            """,
+            (mutasi_id,),
+        )
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Mutasi tidak ditemukan")
+        cols = [d[0] for d in cur.description]
+        return dict(zip(cols, row))
+
+
+@router.patch("/mutasi/{mutasi_id}/recon")
+async def recon_mutasi_with_wa(
+    mutasi_id: int,
+    data: MutasiReconRequest,
+    _: dict[str, Any] = Depends(require_session),
+):
+    """Reconcile a mutasi (incoming transfer) with a WA payment proof image.
+    If wa_media_path is null/empty, unlink the mutasi (set status back to unlinked)."""
+    with get_db_dict() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM mutasi_rekening WHERE id = %s", (mutasi_id,))
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail="Mutasi tidak ditemukan")
+        is_linking = bool(data.wa_media_path)
+        cur.execute(
+            """
+            UPDATE mutasi_rekening
+            SET wa_media_path = %s,
+                recon_notes = %s,
+                recon_at = CASE WHEN %s THEN NOW() ELSE NULL END,
+                status_link = CASE WHEN %s THEN 'linked' ELSE 'unlinked' END
+            WHERE id = %s
+            """,
+            (data.wa_media_path, data.recon_notes, is_linking, is_linking, mutasi_id),
+        )
+        return {"ok": True, "id": mutasi_id, "wa_media_path": data.wa_media_path, "status": "linked" if is_linking else "unlinked"}
 
 
 @router.get("/laporan/summary")

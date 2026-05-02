@@ -20,7 +20,7 @@ import calendar
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
-DB_URL = "postgresql://livin:L1v1n!B1nt4r0_2026@172.17.0.2:5432/livininbintaro"
+DB_URL = "postgresql://livin:L1v1n!B1nt4r0_2026@127.0.0.1:5432/livininbintaro"
 
 
 class DBConn:

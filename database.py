@@ -10,7 +10,7 @@ import psycopg2.pool
 from datetime import datetime, date
 
 # Configuration
-DATABASE_URL = "postgresql://livin:L1v1n!B1nt4r0_2026@localhost:5432/livininbintaro"
+DATABASE_URL = "postgresql://livin:L1v1n!B1nt4r0_2026@127.0.0.1:5432/livininbintaro"
 DB_SCHEMA = "siji_bintaro"
 
 # Connection pool

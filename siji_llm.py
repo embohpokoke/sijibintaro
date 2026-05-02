@@ -1,7 +1,7 @@
 """
 siji_llm.py — LLM reply generator untuk SIJI Bintaro
-Primary:  qwen2.5:1.5b via Ollama (local, zero cost)
-Fallback: gpt-4o-mini via OpenAI (~$0.50/month untuk ~1000 msg)
+Primary:  gpt-4o-mini via OpenAI (reliable, affordable)
+Fallback: qwen2.5:1.5b via Ollama (local, zero cost)
 Tone: karyawan SIJI (Unaesih, Rizky, Denisa) — dari data percakapan real
 """
 import httpx
@@ -9,7 +9,7 @@ import os
 from typing import Optional
 
 OLLAMA_BASE    = "http://localhost:11434"
-LLM_MODEL      = "qwen2.5:1.5b"
+LLM_MODEL      = "gemma3:1b"
 OPENAI_MODEL   = "gpt-4o-mini"
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 
@@ -45,6 +45,11 @@ Satuan:
 - Boneka besar: Rp100.000 | Helm: Rp80.000 | Koper: Rp190.000
 - Laundry satuan reguler: Rp40.000/pcs | Express 24 jam: Rp50.000 | 10 jam: Rp60.000
 - Topi: Rp65.000/pcs | Sleeping bag: Rp90.000
+
+MOMEN LEBARAN (20-24 Maret 2026):
+- Sertakan ucapan "Selamat Idul Fitri, mohon maaf lahir batin 🙏" HANYA JIKA konteks chat menunjukkan ini adalah pesan PERTAMA dari pelanggan ini (tidak ada riwayat pesan sebelumnya di konteks)
+- Kalau sudah ada riwayat chat sebelumnya → JANGAN ulangi ucapan Lebaran, langsung jawab pertanyaan
+- Tujuan: natural, tidak terkesan bot spam
 
 ATURAN BALAS:
 - Bahasa Indonesia informal, singkat, gaya chat WA — JANGAN kaku atau formal
@@ -138,17 +143,17 @@ def _generate_openai(messages: list) -> Optional[str]:
 
 
 def generate_reply(customer_message: str, context: dict) -> Optional[str]:
-    """Generate reply — Ollama primary, OpenAI fallback. Returns string or None."""
+    """Generate reply — GPT-4o-mini primary, Ollama fallback. Returns string or None."""
     messages = build_prompt_messages(customer_message, context)
 
-    # Primary: Ollama (local, zero cost)
-    reply = _generate_ollama(messages)
+    # Primary: GPT-4o-mini (reliable, affordable, quality)
+    reply = _generate_openai(messages)
     if reply:
         return reply
 
-    # Fallback: OpenAI GPT-4o-mini (~$0.50/bulan @ 1000 msg)
-    print("[LLM] Ollama failed, falling back to OpenAI...")
-    return _generate_openai(messages)
+    # Fallback: Ollama local (zero cost, mungkin lambat)
+    print("[LLM] OpenAI failed, falling back to Ollama...")
+    return _generate_ollama(messages)
 
 
 def warmup_model():
