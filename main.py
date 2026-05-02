@@ -7,6 +7,8 @@ import shutil
 import sqlite3
 import csv
 import io
+import asyncio
+import subprocess
 from datetime import datetime
 from typing import Optional, List
 import json
@@ -100,6 +102,55 @@ def save_cv_file(file: UploadFile) -> str:
     
     return file_path
 
+# ─── Real-time WA Notification Helpers ──────────────────────────────────────
+LAMARAN_NOTIFY_TARGETS = [
+    ("+62811319003", "Erik"),
+    ("+628118606999", "Ocha"),
+    ("+6281331993777", "OpenClaw SIJI"),
+]
+
+import httpx
+
+GOWA_BASE = "http://127.0.0.1:3002"
+GOWA_AUTH = ("siji", "SijiBintaro2026!")
+
+async def send_wa_notification(target: str, message: str):
+    """Send WhatsApp message via GOWA HTTP API (instant, non-blocking).
+    Messages are sent from SIJI main WA number (6281288783088).
+    """
+    try:
+        # Normalize phone: +628xxx → 628xxx
+        phone = target.lstrip("+")
+        async with httpx.AsyncClient(auth=GOWA_AUTH, timeout=30) as client:
+            resp = await client.post(
+                f"{GOWA_BASE}/send/message",
+                json={"phone": phone, "message": message},
+            )
+            if resp.status_code == 200:
+                print(f"[WA] Sent to {target}: {resp.json().get('code', 'OK')}")
+            else:
+                print(f"[WA] Failed to {target}: HTTP {resp.status_code} {resp.text[:200]}")
+    except Exception as e:
+        print(f"[WA] Exception sending to {target}: {e}")
+
+async def notify_lamaran_realtime(nama: str, whatsapp: str, posisi: str, domisili: str, pengalaman: str):
+    """Fire-and-forget notification for new job application."""
+    dom = domisili or "-"
+    peng = pengalaman or "-"
+    if len(peng) > 100:
+        peng = peng[:100] + "..."
+    msg = (
+        f"🔔 *Lamaran Baru Masuk!*\n\n"
+        f"👤 *Nama:* {nama}\n"
+        f"📱 *WA:* {whatsapp}\n"
+        f"📍 *Domisili:* {dom}\n"
+        f"💼 *Posisi:* {posisi}\n"
+        f"📝 *Pengalaman:* {peng}\n\n"
+        f"🔗 Cek: https://sijibintaro.id/admin"
+    )
+    for target, label in LAMARAN_NOTIFY_TARGETS:
+        await send_wa_notification(target, msg)
+
 # Public endpoints
 @app.post("/api/lamaran", response_model=Response)
 async def submit_job_application(
@@ -135,6 +186,12 @@ async def submit_job_application(
             result = cursor.fetchone()
             new_id = result['id'] if result else None
             conn.commit()
+        
+        # Trigger real-time WA notification (fire-and-forget)
+        asyncio.create_task(notify_lamaran_realtime(
+            nama.strip(), whatsapp.strip(), posisi.strip(),
+            domisili.strip() if domisili else "", pengalaman.strip() if pengalaman else ""
+        ))
             
         return Response(
             success=True,
