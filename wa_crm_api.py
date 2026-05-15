@@ -1,26 +1,51 @@
 """
 WA CRM API — SIJI Bintaro
 Endpoints for WhatsApp conversation management, analytics, and LLM insights.
-Database: /opt/siji-dashboard/siji_database.db (wa_conversations + wa_messages tables)
+Database: /opt/siji-dashboard/siji_database.db (wa_conversations + wa_messages — SQLite, synced from GOWA)
 """
 
-from fastapi import APIRouter, Query
-from fastapi.responses import StreamingResponse
-from typing import Optional
-import sqlite3
-import io
 import csv
-import re
+import io
 import json
-import urllib.request
+import os
+import glob
+import re
+import sqlite3
 from datetime import datetime, timedelta
+from typing import Optional
+
+import httpx
+from fastapi import APIRouter, Query, Request, HTTPException
+from fastapi.responses import FileResponse, StreamingResponse
+import jwt as pyjwt
 
 router = APIRouter(prefix="/api/dashboard/wa", tags=["whatsapp"])
 
 DB_PATH = "/opt/siji-dashboard/siji_database.db"
-OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
+OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
 LLM_MODEL = "minimax-m2.5:cloud"
+GOWA_MEDIA_PATH = "/opt/gowa/storages"
 
+_jwt_secret = os.environ.get("JWT_SECRET")
+if not _jwt_secret:
+    raise RuntimeError("JWT_SECRET env var is required but not set")
+JWT_SECRET: str = _jwt_secret
+COOKIE_NAME = "siji_session"
+
+
+# ─── Auth ─────────────────────────────────────────────────────────────────────
+
+def _require_auth(request: Request) -> dict:
+    token = request.cookies.get(COOKIE_NAME)
+    if not token:
+        raise HTTPException(status_code=401, detail="Login required")
+    try:
+        return pyjwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid session")
+
+
+# ─── DB ───────────────────────────────────────────────────────────────────────
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
@@ -44,10 +69,12 @@ def normalize_phone(phone) -> str:
 
 @router.get("/conversations")
 async def get_conversations(
+    request: Request,
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     type: str = Query("all", regex="^(all|customer|unknown)$"),
 ):
+    _require_auth(request)
     conn = get_db()
     try:
         offset = (page - 1) * limit
@@ -99,7 +126,12 @@ async def get_conversations(
                 "last_order": r["last_order"],
             })
 
-        return {"conversations": conversations, "total": total, "page": page, "pages": -(-total // limit)}
+        return {
+            "conversations": conversations,
+            "total": total,
+            "page": page,
+            "pages": -(-total // limit),
+        }
     finally:
         conn.close()
 
@@ -108,10 +140,12 @@ async def get_conversations(
 
 @router.get("/messages")
 async def get_messages(
+    request: Request,
     phone: str = Query(..., min_length=5),
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
 ):
+    _require_auth(request)
     conn = get_db()
     try:
         jid = phone + "@s.whatsapp.net" if "@" not in phone else phone
@@ -130,7 +164,6 @@ async def get_messages(
 
         messages = [dict(r) for r in rows]
 
-        # Customer info
         conv = conn.execute(
             "SELECT * FROM wa_conversations WHERE jid = ?", (jid,)
         ).fetchone()
@@ -157,7 +190,13 @@ async def get_messages(
                 "total_messages": conv["total_messages"],
             }
 
-        return {"messages": messages, "customer": customer, "total": total, "page": page, "pages": -(-total // limit)}
+        return {
+            "messages": messages,
+            "customer": customer,
+            "total": total,
+            "page": page,
+            "pages": -(-total // limit),
+        }
     finally:
         conn.close()
 
@@ -165,10 +204,13 @@ async def get_messages(
 # ─── Stats ────────────────────────────────────────────────────────────────────
 
 @router.get("/stats")
-async def get_stats():
+async def get_stats(request: Request):
+    _require_auth(request)
     conn = get_db()
     try:
-        total_conv = conn.execute("SELECT COUNT(*) FROM wa_conversations WHERE is_group = 0").fetchone()[0]
+        total_conv = conn.execute(
+            "SELECT COUNT(*) FROM wa_conversations WHERE is_group = 0"
+        ).fetchone()[0]
         total_msg = conn.execute("SELECT COUNT(*) FROM wa_messages").fetchone()[0]
         today = datetime.now().strftime("%Y-%m-%d")
         total_today = conn.execute(
@@ -178,16 +220,20 @@ async def get_stats():
             "SELECT SUM(unread_count) FROM wa_conversations"
         ).fetchone()[0] or 0
 
-        # Top contacted
         top = conn.execute("""
             SELECT c.phone, c.customer_name, c.contact_name, c.total_messages
             FROM wa_conversations c WHERE c.is_group = 0
             ORDER BY c.total_messages DESC LIMIT 10
         """).fetchall()
-        top_contacted = [{"phone": r["phone"], "name": r["customer_name"] or r["contact_name"] or r["phone"],
-                          "message_count": r["total_messages"]} for r in top]
+        top_contacted = [
+            {
+                "phone": r["phone"],
+                "name": r["customer_name"] or r["contact_name"] or r["phone"],
+                "message_count": r["total_messages"],
+            }
+            for r in top
+        ]
 
-        # Messages by day (last 30 days)
         rows = conn.execute("""
             SELECT DATE(timestamp) as day, COUNT(*) as count,
                    SUM(CASE WHEN is_from_me = 0 THEN 1 ELSE 0 END) as incoming,
@@ -196,8 +242,10 @@ async def get_stats():
             WHERE timestamp >= DATE('now', '-30 days')
             GROUP BY DATE(timestamp) ORDER BY day
         """).fetchall()
-        messages_by_day = [{"date": r["day"], "total": r["count"],
-                            "incoming": r["incoming"], "outgoing": r["outgoing"]} for r in rows]
+        messages_by_day = [
+            {"date": r["day"], "total": r["count"], "incoming": r["incoming"], "outgoing": r["outgoing"]}
+            for r in rows
+        ]
 
         return {
             "total_conversations": total_conv,
@@ -215,9 +263,11 @@ async def get_stats():
 
 @router.get("/search")
 async def search_messages(
+    request: Request,
     q: str = Query(..., min_length=2, max_length=100),
     limit: int = Query(50, ge=1, le=100),
 ):
+    _require_auth(request)
     conn = get_db()
     try:
         pattern = f"%{q}%"
@@ -231,19 +281,24 @@ async def search_messages(
             ORDER BY m.timestamp DESC LIMIT ?
         """, (pattern, limit)).fetchall()
 
-        results = [{
-            "message_id": r["message_id"],
-            "jid": r["conversation_jid"],
-            "phone": r["phone"],
-            "name": r["customer_name"] or r["contact_name"] or r["phone"],
-            "sender": r["sender_name"],
-            "text": r["message_text"],
-            "type": r["message_type"],
-            "timestamp": r["timestamp"],
-            "is_from_me": r["is_from_me"],
-        } for r in rows]
-
-        return {"results": results, "count": len(results), "query": q}
+        return {
+            "results": [
+                {
+                    "message_id": r["message_id"],
+                    "jid": r["conversation_jid"],
+                    "phone": r["phone"],
+                    "name": r["customer_name"] or r["contact_name"] or r["phone"],
+                    "sender": r["sender_name"],
+                    "text": r["message_text"],
+                    "type": r["message_type"],
+                    "timestamp": r["timestamp"],
+                    "is_from_me": r["is_from_me"],
+                }
+                for r in rows
+            ],
+            "count": len(rows),
+            "query": q,
+        }
     finally:
         conn.close()
 
@@ -252,9 +307,11 @@ async def search_messages(
 
 @router.get("/export")
 async def export_chat(
+    request: Request,
     phone: str = Query(..., min_length=5),
-    format: str = Query("csv", regex="^csv$"),
+    format: str = Query("csv", regex="^(csv|json)$"),
 ):
+    _require_auth(request)
     conn = get_db()
     try:
         jid = phone + "@s.whatsapp.net" if "@" not in phone else phone
@@ -264,13 +321,24 @@ async def export_chat(
             ORDER BY timestamp ASC
         """, (jid,)).fetchall()
 
+        if format == "json":
+            data = [dict(r) for r in rows]
+            filename = f"wa_chat_{phone}_{datetime.now().strftime('%Y%m%d')}.json"
+            return StreamingResponse(
+                io.BytesIO(json.dumps(data, ensure_ascii=False).encode("utf-8")),
+                media_type="application/json",
+                headers={"Content-Disposition": f"attachment; filename={filename}"},
+            )
+
         output = io.StringIO()
         writer = csv.writer(output)
         writer.writerow(["Timestamp", "Sender", "Name", "Message", "Type", "Media", "FromMe"])
         for r in rows:
-            writer.writerow([r["timestamp"], r["sender_jid"], r["sender_name"],
-                             r["message_text"], r["message_type"], r["media_url"] or "",
-                             "Yes" if r["is_from_me"] else "No"])
+            writer.writerow([
+                r["timestamp"], r["sender_jid"], r["sender_name"],
+                r["message_text"], r["message_type"], r["media_url"] or "",
+                "Yes" if r["is_from_me"] else "No",
+            ])
 
         output.seek(0)
         filename = f"wa_chat_{phone}_{datetime.now().strftime('%Y%m%d')}.csv"
@@ -286,20 +354,24 @@ async def export_chat(
 # ─── Analytics ────────────────────────────────────────────────────────────────
 
 @router.get("/analytics")
-async def get_analytics():
+async def get_analytics(request: Request):
+    _require_auth(request)
     conn = get_db()
     try:
         now = datetime.now()
-        d30 = (now - timedelta(days=30)).strftime("%Y-%m-%dT00:00:00Z")
+        d30 = (now - timedelta(days=30)).strftime("%Y-%m-%dT00:00:00")
 
-        # Volume
+        # Volume per day
         vol_rows = conn.execute("""
             SELECT DATE(timestamp) as day,
                    SUM(CASE WHEN is_from_me = 0 THEN 1 ELSE 0 END) as incoming,
                    SUM(CASE WHEN is_from_me = 1 THEN 1 ELSE 0 END) as outgoing
             FROM wa_messages WHERE timestamp >= ? GROUP BY DATE(timestamp) ORDER BY day
         """, (d30,)).fetchall()
-        messages_by_day = [{"date": r["day"], "incoming": r["incoming"], "outgoing": r["outgoing"]} for r in vol_rows]
+        messages_by_day = [
+            {"date": r["day"], "incoming": r["incoming"], "outgoing": r["outgoing"]}
+            for r in vol_rows
+        ]
 
         total_30d = conn.execute(
             "SELECT COUNT(*) FROM wa_messages WHERE timestamp >= ?", (d30,)
@@ -314,11 +386,10 @@ async def get_analytics():
         peak_hours = [{"hour": r["hour"], "count": r["count"]} for r in peak]
         busiest = max(peak_hours, key=lambda x: x["count"])["hour"] if peak_hours else 0
 
-        # Customers
+        # Contact counts
         total_contacted = conn.execute(
             "SELECT COUNT(*) FROM wa_conversations WHERE is_group = 0"
         ).fetchone()[0]
-
         new_30d = conn.execute(
             "SELECT COUNT(*) FROM wa_conversations WHERE created_at >= ? AND is_group = 0", (d30,)
         ).fetchone()[0]
@@ -329,11 +400,16 @@ async def get_analytics():
             WHERE m.timestamp >= ? AND c.is_group = 0
             GROUP BY c.jid ORDER BY msg_count DESC LIMIT 10
         """, (d30,)).fetchall()
-        most_active_list = [{"phone": r["phone"],
-                             "name": r["customer_name"] or r["contact_name"] or r["phone"],
-                             "message_count": r["msg_count"]} for r in most_active]
+        most_active_list = [
+            {
+                "phone": r["phone"],
+                "name": r["customer_name"] or r["contact_name"] or r["phone"],
+                "message_count": r["msg_count"],
+            }
+            for r in most_active
+        ]
 
-        # Silent customers: have WA contact but 0 orders in last 60 days
+        # Silent customers (WA contact, no orders last 60 days)
         silent = conn.execute("""
             SELECT c.phone, c.customer_name, c.contact_name, c.last_message_time
             FROM wa_conversations c
@@ -350,87 +426,92 @@ async def get_analytics():
             days = 0
             if r["last_message_time"]:
                 try:
-                    last = datetime.fromisoformat(r["last_message_time"].replace("Z", "+00:00"))
-                    days = (now - last.replace(tzinfo=None)).days
+                    last = datetime.fromisoformat(r["last_message_time"].replace("Z", ""))
+                    days = (now - last).days
                 except Exception:
                     pass
-            silent_list.append({"phone": r["phone"],
-                                "name": r["customer_name"] or r["contact_name"] or r["phone"],
-                                "last_contact": r["last_message_time"], "days_silent": days})
+            silent_list.append({
+                "phone": r["phone"],
+                "name": r["customer_name"] or r["contact_name"] or r["phone"],
+                "last_contact": r["last_message_time"],
+                "days_silent": days,
+            })
 
-        # Topics (keyword-based)
+        # Topic keyword counts
         def count_topic(keywords):
             conds = " OR ".join(f"LOWER(message_text) LIKE '%{kw}%'" for kw in keywords)
             return conn.execute(
-                f"SELECT COUNT(*) FROM wa_messages WHERE is_from_me = 0 AND timestamp >= ? AND ({conds})", (d30,)
+                f"SELECT COUNT(*) FROM wa_messages WHERE is_from_me = 0 AND timestamp >= ? AND ({conds})",
+                (d30,),
             ).fetchone()[0]
 
         topics = {
-            "inquiry": count_topic(["tanya", "berapa", "harga", "bisa", "info", "price"]),
+            "inquiry":   count_topic(["tanya", "berapa", "harga", "bisa", "info", "price"]),
             "complaint": count_topic(["lama", "belum", "kapan", "complaint", "complain", "kecewa"]),
-            "order": count_topic(["order", "laundry", "cuci", "ambil", "antar", "jemput", "kirim"]),
-            "feedback": count_topic(["bagus", "terima kasih", "puas", "mantap", "makasih", "thanks"]),
+            "order":     count_topic(["order", "laundry", "cuci", "ambil", "antar", "jemput", "kirim"]),
+            "feedback":  count_topic(["bagus", "terima kasih", "puas", "mantap", "makasih", "thanks"]),
         }
 
-        # Response time (avg time between incoming and next outgoing in same conversation)
-        rt_rows = conn.execute("""
-            SELECT conversation_jid, timestamp, is_from_me
-            FROM wa_messages WHERE timestamp >= ? AND conversation_jid LIKE '%@s.whatsapp.net'
-            ORDER BY conversation_jid, timestamp
-        """, (d30,)).fetchall()
+        # Response time via SQL window functions — no Python loop
+        rt_row = conn.execute("""
+            WITH pairs AS (
+                SELECT
+                    timestamp AS in_ts,
+                    LEAD(timestamp) OVER (PARTITION BY conversation_jid ORDER BY timestamp) AS out_ts,
+                    is_from_me,
+                    LEAD(is_from_me) OVER (PARTITION BY conversation_jid ORDER BY timestamp) AS next_from_me
+                FROM wa_messages
+                WHERE timestamp >= ?
+                  AND conversation_jid LIKE '%@s.whatsapp.net'
+            ),
+            valid AS (
+                SELECT
+                    (JULIANDAY(out_ts) - JULIANDAY(in_ts)) * 1440.0 AS diff_min
+                FROM pairs
+                WHERE is_from_me = 0 AND next_from_me = 1
+                  AND out_ts IS NOT NULL
+                  AND (JULIANDAY(out_ts) - JULIANDAY(in_ts)) * 1440.0 BETWEEN 0 AND 1440
+            )
+            SELECT
+                ROUND(AVG(diff_min), 1) as avg_minutes,
+                COUNT(*) as sample_count
+            FROM valid
+        """, (d30,)).fetchone()
 
-        response_times = []
-        last_incoming = {}
-        for r in rt_rows:
-            jid = r["conversation_jid"]
-            ts = r["timestamp"]
-            if not r["is_from_me"]:
-                last_incoming[jid] = ts
-            elif jid in last_incoming:
-                try:
-                    t_in = datetime.fromisoformat(last_incoming[jid].replace("Z", "+00:00")).replace(tzinfo=None)
-                    t_out = datetime.fromisoformat(ts.replace("Z", "+00:00")).replace(tzinfo=None)
-                    diff = (t_out - t_in).total_seconds() / 60
-                    if 0 < diff < 1440:  # within 24h
-                        response_times.append(diff)
-                except Exception:
-                    pass
-                del last_incoming[jid]
+        avg_rt = rt_row["avg_minutes"] or 0
+        sample_count = rt_row["sample_count"] or 0
 
-        avg_rt = round(sum(response_times) / len(response_times), 1) if response_times else 0
-        sorted_rt = sorted(response_times)
-        median_rt = round(sorted_rt[len(sorted_rt) // 2], 1) if sorted_rt else 0
-
-        # RT by day (last 7 days)
-        rt_by_day = []
-        for i in range(6, -1, -1):
-            day = (now - timedelta(days=i)).strftime("%Y-%m-%d")
-            day_rts = []
-            day_rows = conn.execute("""
-                SELECT conversation_jid, timestamp, is_from_me
-                FROM wa_messages WHERE DATE(timestamp) = ? AND conversation_jid LIKE '%@s.whatsapp.net'
-                ORDER BY conversation_jid, timestamp
-            """, (day,)).fetchall()
-            li = {}
-            for r in day_rows:
-                j, ts = r["conversation_jid"], r["timestamp"]
-                if not r["is_from_me"]:
-                    li[j] = ts
-                elif j in li:
-                    try:
-                        t1 = datetime.fromisoformat(li[j].replace("Z", "+00:00")).replace(tzinfo=None)
-                        t2 = datetime.fromisoformat(ts.replace("Z", "+00:00")).replace(tzinfo=None)
-                        d = (t2 - t1).total_seconds() / 60
-                        if 0 < d < 1440:
-                            day_rts.append(d)
-                    except Exception:
-                        pass
-                    del li[j]
-            avg = round(sum(day_rts) / len(day_rts), 1) if day_rts else 0
-            rt_by_day.append({"date": day, "avg_minutes": avg})
+        # RT trend last 7 days
+        rt_by_day = conn.execute("""
+            WITH pairs AS (
+                SELECT
+                    DATE(timestamp) AS day,
+                    timestamp AS in_ts,
+                    LEAD(timestamp) OVER (PARTITION BY conversation_jid ORDER BY timestamp) AS out_ts,
+                    is_from_me,
+                    LEAD(is_from_me) OVER (PARTITION BY conversation_jid ORDER BY timestamp) AS next_from_me
+                FROM wa_messages
+                WHERE timestamp >= DATE('now', '-7 days')
+                  AND conversation_jid LIKE '%@s.whatsapp.net'
+            )
+            SELECT
+                day,
+                ROUND(AVG((JULIANDAY(out_ts) - JULIANDAY(in_ts)) * 1440.0), 1) as avg_minutes
+            FROM pairs
+            WHERE is_from_me = 0 AND next_from_me = 1
+              AND out_ts IS NOT NULL
+              AND (JULIANDAY(out_ts) - JULIANDAY(in_ts)) * 1440.0 BETWEEN 0 AND 1440
+            GROUP BY day
+            ORDER BY day
+        """).fetchall()
+        trend_7d = [{"date": r["day"], "avg_minutes": r["avg_minutes"] or 0} for r in rt_by_day]
 
         return {
-            "response_time": {"avg_minutes": avg_rt, "median_minutes": median_rt, "trend_7d": rt_by_day},
+            "response_time": {
+                "avg_minutes": avg_rt,
+                "sample_count": sample_count,
+                "trend_7d": trend_7d,
+            },
             "volume": {
                 "total_messages_30d": total_30d,
                 "messages_by_day": messages_by_day,
@@ -449,83 +530,103 @@ async def get_analytics():
         conn.close()
 
 
-# ─── LLM Insights ────────────────────────────────────────────────────────────
+# ─── LLM Insights ─────────────────────────────────────────────────────────────
 
 @router.get("/insights")
-async def get_wa_insights():
+async def get_wa_insights(request: Request):
+    _require_auth(request)
     conn = get_db()
     try:
-        d30 = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%dT00:00:00Z")
-        total = conn.execute("SELECT COUNT(*) FROM wa_messages WHERE timestamp >= ?", (d30,)).fetchone()[0]
-        incoming = conn.execute("SELECT COUNT(*) FROM wa_messages WHERE timestamp >= ? AND is_from_me = 0", (d30,)).fetchone()[0]
+        d30 = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%dT00:00:00")
+        total = conn.execute(
+            "SELECT COUNT(*) FROM wa_messages WHERE timestamp >= ?", (d30,)
+        ).fetchone()[0]
+        incoming = conn.execute(
+            "SELECT COUNT(*) FROM wa_messages WHERE timestamp >= ? AND is_from_me = 0", (d30,)
+        ).fetchone()[0]
         outgoing = total - incoming
-        convs = conn.execute("SELECT COUNT(*) FROM wa_conversations WHERE is_group = 0").fetchone()[0]
+        convs = conn.execute(
+            "SELECT COUNT(*) FROM wa_conversations WHERE is_group = 0"
+        ).fetchone()[0]
 
-        # Simple topic counts
         def cnt(kws):
             c = " OR ".join(f"LOWER(message_text) LIKE '%{k}%'" for k in kws)
-            return conn.execute(f"SELECT COUNT(*) FROM wa_messages WHERE is_from_me=0 AND timestamp>=? AND ({c})", (d30,)).fetchone()[0]
+            return conn.execute(
+                f"SELECT COUNT(*) FROM wa_messages WHERE is_from_me=0 AND timestamp>=? AND ({c})", (d30,)
+            ).fetchone()[0]
 
-        topics = {"harga/inquiry": cnt(["harga", "berapa", "bisa", "tanya"]),
-                  "order/laundry": cnt(["order", "cuci", "laundry", "ambil", "antar"]),
-                  "keluhan": cnt(["lama", "belum", "kapan", "kecewa"]),
-                  "positif": cnt(["bagus", "terima kasih", "puas", "mantap", "makasih"])}
+        topics = {
+            "harga/inquiry": cnt(["harga", "berapa", "bisa", "tanya"]),
+            "order/laundry": cnt(["order", "cuci", "laundry", "ambil", "antar"]),
+            "keluhan":        cnt(["lama", "belum", "kapan", "kecewa"]),
+            "positif":        cnt(["bagus", "terima kasih", "puas", "mantap", "makasih"]),
+        }
 
-        prompt_text = f"""Kamu adalah analis CRM untuk bisnis laundry SIJI Bintaro.
-Berdasarkan data WhatsApp 30 hari terakhir:
-- Total pesan: {total} ({incoming} masuk, {outgoing} keluar)
-- Total kontak: {convs}
-- Topic breakdown: {json.dumps(topics)}
-
-Berikan insight singkat (max 200 kata, bahasa Indonesia) tentang:
-1. Kualitas respons customer service
-2. Pola pertanyaan pelanggan yang bisa di-improve
-3. Rekomendasi actionable untuk minggu depan
-
-Gunakan bullet points, ringkas dan actionable."""
+        prompt_text = (
+            f"Kamu adalah analis CRM untuk bisnis laundry SIJI Bintaro.\n"
+            f"Berdasarkan data WhatsApp 30 hari terakhir:\n"
+            f"- Total pesan: {total} ({incoming} masuk, {outgoing} keluar)\n"
+            f"- Total kontak: {convs}\n"
+            f"- Topic breakdown: {json.dumps(topics)}\n\n"
+            f"Berikan insight singkat (max 200 kata, bahasa Indonesia) tentang:\n"
+            f"1. Kualitas respons customer service\n"
+            f"2. Pola pertanyaan pelanggan yang bisa di-improve\n"
+            f"3. Rekomendasi actionable untuk minggu depan\n\n"
+            f"Gunakan bullet points, ringkas dan actionable."
+        )
 
         try:
-            payload = json.dumps({
-                "model": LLM_MODEL,
-                "messages": [
-                    {"role": "system", "content": "Kamu adalah analis CRM untuk bisnis laundry SIJI Bintaro. Berikan insight singkat dalam bahasa Indonesia dengan bullet points."},
-                    {"role": "user", "content": prompt_text}
-                ],
-                "stream": False,
-                "options": {"temperature": 0.5, "num_predict": 300}
-            }).encode()
-            req = urllib.request.Request("http://127.0.0.1:11434/api/chat", data=payload,
-                                        headers={"Content-Type": "application/json"})
-            with urllib.request.urlopen(req, timeout=60) as resp:
-                result = json.loads(resp.read())
+            async with httpx.AsyncClient(timeout=60) as client:
+                resp = await client.post(
+                    OLLAMA_URL,
+                    json={
+                        "model": LLM_MODEL,
+                        "messages": [
+                            {
+                                "role": "system",
+                                "content": "Kamu adalah analis CRM untuk bisnis laundry SIJI Bintaro. Berikan insight singkat dalam bahasa Indonesia dengan bullet points.",
+                            },
+                            {"role": "user", "content": prompt_text},
+                        ],
+                        "stream": False,
+                        "options": {"temperature": 0.5, "num_predict": 300},
+                    },
+                )
+                result = resp.json()
                 insight_text = result.get("message", {}).get("content", "")
         except Exception as e:
             insight_text = f"LLM tidak tersedia: {e}"
 
         return {
             "insight": insight_text,
-            "data_summary": {"total_messages": total, "incoming": incoming, "outgoing": outgoing,
-                             "conversations": convs, "topics": topics},
+            "data_summary": {
+                "total_messages": total,
+                "incoming": incoming,
+                "outgoing": outgoing,
+                "conversations": convs,
+                "topics": topics,
+            },
         }
     finally:
         conn.close()
 
 
-# ─── Unified Customer Profiles (v_customer_profiles) ─────────────────────────
+# ─── Unified Customer Profiles ────────────────────────────────────────────────
 
 @router.get("/customers/profiles")
 async def get_customer_profiles(
+    request: Request,
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
     segment: str = Query("all", regex="^(all|VIP|Reguler|Baru)$"),
     search: str = Query(""),
     has_wa: bool = Query(False),
-    sort_by: str = Query("total_transaksi", regex="^(total_transaksi|total_belanja|last_transaksi|nama_transaksi)$"),
+    sort_by: str = Query(
+        "total_transaksi",
+        regex="^(total_transaksi|total_belanja|last_transaksi|nama_transaksi)$",
+    ),
 ):
-    """
-    Unified customer list dari transaksi + WA.
-    Source: v_customer_profiles (transactions LEFT JOIN wa_conversations).
-    """
+    _require_auth(request)
     conn = get_db()
     try:
         offset = (page - 1) * limit
@@ -543,7 +644,9 @@ async def get_customer_profiles(
 
         where = "WHERE " + " AND ".join(conditions) if conditions else ""
 
-        total = conn.execute(f"SELECT COUNT(*) FROM v_customer_profiles {where}", params).fetchone()[0]
+        total = conn.execute(
+            f"SELECT COUNT(*) FROM v_customer_profiles {where}", params
+        ).fetchone()[0]
 
         rows = conn.execute(f"""
             SELECT phone, nama_wa, nama_transaksi, alamat,
@@ -555,9 +658,8 @@ async def get_customer_profiles(
             LIMIT ? OFFSET ?
         """, params + [limit, offset]).fetchall()
 
-        customers = []
-        for r in rows:
-            customers.append({
+        customers = [
+            {
                 "phone": r["phone"],
                 "nama": r["nama_wa"] or r["nama_transaksi"],
                 "nama_transaksi": r["nama_transaksi"],
@@ -573,12 +675,15 @@ async def get_customer_profiles(
                 "last_pesan_wa": (r["last_pesan_wa"] or "")[:80],
                 "ada_wa": bool(r["ada_wa"]),
                 "wa_link": f"https://wa.me/{r['phone']}" if r["phone"] else None,
-            })
+            }
+            for r in rows
+        ]
 
         segment_summary = {}
         for seg in ["VIP", "Reguler", "Baru"]:
-            n = conn.execute("SELECT COUNT(*) FROM v_customer_profiles WHERE segment = ?", (seg,)).fetchone()[0]
-            segment_summary[seg] = n
+            segment_summary[seg] = conn.execute(
+                "SELECT COUNT(*) FROM v_customer_profiles WHERE segment = ?", (seg,)
+            ).fetchone()[0]
 
         return {
             "customers": customers,
@@ -586,17 +691,17 @@ async def get_customer_profiles(
             "page": page,
             "pages": -(-total // limit),
             "segment_summary": segment_summary,
-            "wa_linked": conn.execute("SELECT COUNT(*) FROM v_customer_profiles WHERE ada_wa = 1").fetchone()[0],
+            "wa_linked": conn.execute(
+                "SELECT COUNT(*) FROM v_customer_profiles WHERE ada_wa = 1"
+            ).fetchone()[0],
         }
     finally:
         conn.close()
 
 
 @router.get("/customers/profile/{phone}")
-async def get_customer_profile(phone: str):
-    """
-    Detail profil satu customer: transaksi + WA + histori layanan.
-    """
+async def get_customer_profile(phone: str, request: Request):
+    _require_auth(request)
     conn = get_db()
     try:
         row = conn.execute("""
@@ -610,7 +715,6 @@ async def get_customer_profile(phone: str):
         if not row:
             return {"found": False, "phone": phone}
 
-        # Layanan yang pernah digunakan
         services = conn.execute("""
             SELECT td.nama_layanan, COUNT(*) as freq,
                    ROUND(AVG(td.total_item), 0) as avg_harga
@@ -621,7 +725,6 @@ async def get_customer_profile(phone: str):
             ORDER BY freq DESC LIMIT 10
         """, (phone,)).fetchall()
 
-        # 5 transaksi terakhir
         recent_tx = conn.execute("""
             SELECT no_nota, date_of_transaction, total_tagihan,
                    nama_layanan, progress_status, pembayaran
@@ -645,53 +748,51 @@ async def get_customer_profile(phone: str):
             "total_pesan_wa": row["total_pesan_wa"],
             "ada_wa": bool(row["ada_wa"]),
             "wa_link": f"https://wa.me/{phone}",
-            "favorite_services": [{"nama": s["nama_layanan"], "freq": s["freq"], "avg_harga": s["avg_harga"]} for s in services],
-            "recent_transactions": [{
-                "no_nota": t["no_nota"],
-                "tanggal": t["date_of_transaction"],
-                "total": t["total_tagihan"],
-                "layanan": t["nama_layanan"],
-                "status": t["progress_status"],
-                "pembayaran": t["pembayaran"],
-            } for t in recent_tx],
+            "favorite_services": [
+                {"nama": s["nama_layanan"], "freq": s["freq"], "avg_harga": s["avg_harga"]}
+                for s in services
+            ],
+            "recent_transactions": [
+                {
+                    "no_nota": t["no_nota"],
+                    "tanggal": t["date_of_transaction"],
+                    "total": t["total_tagihan"],
+                    "layanan": t["nama_layanan"],
+                    "status": t["progress_status"],
+                    "pembayaran": t["pembayaran"],
+                }
+                for t in recent_tx
+            ],
         }
     finally:
         conn.close()
 
 
+# ─── Media ────────────────────────────────────────────────────────────────────
 
 @router.get("/media/list")
-async def list_recent_media(limit: int = 50):
-    """List recent media files"""
-    import glob
+async def list_recent_media(request: Request, limit: int = 50):
+    _require_auth(request)
     files = glob.glob(f"{GOWA_MEDIA_PATH}/*.jpe") + glob.glob(f"{GOWA_MEDIA_PATH}/*.jpg")
     files.sort(key=os.path.getmtime, reverse=True)
-    return [{"name": os.path.basename(f), "size": os.path.getsize(f)} for f in files[:limit]]
+    return [
+        {"name": os.path.basename(f), "size": os.path.getsize(f)}
+        for f in files[:limit]
+    ]
 
-# ─── Media Serving ────────────────────────────────────────────────────────────
-from fastapi.responses import FileResponse
-import os
-import glob
-
-GOWA_MEDIA_PATH = "/opt/gowa/storages"
 
 @router.get("/media/by-timestamp/{timestamp}")
-async def serve_media_by_timestamp(timestamp: str):
-    """Find and serve media by message timestamp. 
-    Timestamp format: 2026-03-12T10:54:08Z or unix timestamp."""
-    import datetime
-    
+async def serve_media_by_timestamp(timestamp: str, request: Request):
+    _require_auth(request)
     try:
-        # Parse ISO timestamp to unix
         if "T" in timestamp:
-            dt = datetime.datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+            dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
             unix_ts = int(dt.timestamp())
         else:
             unix_ts = int(timestamp)
-    except:
-        return {"error": "Invalid timestamp"}
-    
-    # Find files within 5 seconds of timestamp
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid timestamp")
+
     matches = []
     for f in glob.glob(f"{GOWA_MEDIA_PATH}/*.jpe"):
         fname = os.path.basename(f)
@@ -699,27 +800,25 @@ async def serve_media_by_timestamp(timestamp: str):
             file_ts = int(fname.split("-")[0])
             if abs(file_ts - unix_ts) <= 5:
                 matches.append(f)
-        except:
+        except Exception:
             continue
-    
+
     if not matches:
-        return {"error": "No media found", "searched_ts": unix_ts}
-    
-    # Return first match
-    filepath = matches[0]
-    return FileResponse(filepath, media_type="image/jpeg")
+        raise HTTPException(status_code=404, detail="No media found")
+
+    return FileResponse(matches[0], media_type="image/jpeg")
 
 
-# ─── Payment Proof Images for Reconciliation ───────────────────────────────────
 @router.get("/payment-images")
-async def list_payment_images(days: int = Query(default=14, ge=1, le=60), limit: int = Query(default=50, ge=1, le=200)):
-    """List recent WA image messages (payment proofs) with surrounding context.
-    Returns images sent by customers (not from me) within N days."""
-    import glob
+async def list_payment_images(
+    request: Request,
+    days: int = Query(default=14, ge=1, le=60),
+    limit: int = Query(default=50, ge=1, le=200),
+):
+    _require_auth(request)
     conn = get_db()
     try:
         since = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%S")
-        # Get image messages from customers (not from bot/staff)
         rows = conn.execute(
             """SELECT m.timestamp, m.message_text, m.media_url, m.conversation_jid,
                       c.phone, c.customer_name, c.contact_name, m.sender_name
@@ -736,60 +835,58 @@ async def list_payment_images(days: int = Query(default=14, ge=1, le=60), limit:
         results = []
         for r in rows:
             ts = r["timestamp"]
-            # Find local file by timestamp
             local_file = None
+            unix_ts = None
             try:
-                dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                dt = datetime.fromisoformat(ts.replace("Z", ""))
                 unix_ts = int(dt.timestamp())
                 for f in glob.glob(f"{GOWA_MEDIA_PATH}/*.jpe") + glob.glob(f"{GOWA_MEDIA_PATH}/*.jpg"):
                     fname = os.path.basename(f)
                     try:
-                        file_ts = int(fname.split("-")[0])
-                        if abs(file_ts - unix_ts) <= 5:
+                        if abs(int(fname.split("-")[0]) - unix_ts) <= 5:
                             local_file = os.path.basename(f)
                             break
-                    except:
+                    except Exception:
                         continue
-            except:
+            except Exception:
                 pass
 
-            # Get surrounding messages (2 before, 2 after)
-            context_msgs = conn.execute(
-                """SELECT message_text, is_from_me, timestamp, message_type
-                   FROM wa_messages
-                   WHERE conversation_jid = ?
-                     AND timestamp BETWEEN ? AND ?
-                   ORDER BY timestamp""",
-                (
-                    r["conversation_jid"],
-                    (datetime.fromisoformat(ts.replace("Z", "+00:00")) - timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%M:%S"),
-                    (datetime.fromisoformat(ts.replace("Z", "+00:00")) + timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%M:%S"),
-                ),
-            ).fetchall()
-
-            context = []
-            for cm in context_msgs:
-                if cm["message_text"] and cm["message_text"] != r["message_text"]:
-                    context.append({
-                        "text": cm["message_text"],
-                        "is_me": bool(cm["is_from_me"]),
-                        "type": cm["message_type"],
-                        "time": cm["timestamp"],
-                    })
+            context_msgs = []
+            if unix_ts:
+                try:
+                    dt = datetime.utcfromtimestamp(unix_ts)
+                    before = (dt - timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%M:%S")
+                    after  = (dt + timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%M:%S")
+                    ctx_rows = conn.execute("""
+                        SELECT message_text, is_from_me, timestamp, message_type
+                        FROM wa_messages
+                        WHERE conversation_jid = ? AND timestamp BETWEEN ? AND ?
+                        ORDER BY timestamp
+                    """, (r["conversation_jid"], before, after)).fetchall()
+                    for cm in ctx_rows:
+                        if cm["message_text"] and cm["message_text"] != r["message_text"]:
+                            context_msgs.append({
+                                "text": cm["message_text"],
+                                "is_me": bool(cm["is_from_me"]),
+                                "type": cm["message_type"],
+                                "time": cm["timestamp"],
+                            })
+                except Exception:
+                    pass
 
             phone = r["phone"] or r["conversation_jid"].split("@")[0]
             name = r["customer_name"] or r["contact_name"] or r["sender_name"] or phone
 
             results.append({
                 "timestamp": ts,
-                "unix_timestamp": unix_ts if 'unix_ts' in dir() else None,
+                "unix_timestamp": unix_ts,
                 "phone": phone,
                 "customer_name": name,
                 "message_text": r["message_text"],
                 "media_url": r["media_url"],
                 "local_file": local_file,
                 "image_url": f"/api/dashboard/wa/media/by-timestamp/{ts}" if local_file else None,
-                "context": context[:6],  # max 6 context messages
+                "context": context_msgs[:6],
             })
 
         return {"images": results, "count": len(results), "days": days}
@@ -798,21 +895,20 @@ async def list_payment_images(days: int = Query(default=14, ge=1, le=60), limit:
 
 
 @router.get("/media/{filename}")
-async def serve_media(filename: str):
-    """Serve media files from GOWA storage"""
+async def serve_media(filename: str, request: Request):
+    _require_auth(request)
     allowed_ext = (".jpe", ".jpg", ".jpeg", ".png", ".gif", ".webp", ".mp4", ".pdf")
     if not filename.lower().endswith(allowed_ext):
-        return {"error": "Invalid file type"}
-    
+        raise HTTPException(status_code=400, detail="Invalid file type")
+
     filepath = os.path.join(GOWA_MEDIA_PATH, filename)
-    if not os.path.exists(filepath):
-        return {"error": "File not found"}
-    
+    if not os.path.isfile(filepath):
+        raise HTTPException(status_code=404, detail="File not found")
+
     ext = os.path.splitext(filename)[1].lower()
     content_types = {
         ".jpe": "image/jpeg", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
         ".png": "image/png", ".gif": "image/gif", ".webp": "image/webp",
-        ".mp4": "video/mp4", ".pdf": "application/pdf"
+        ".mp4": "video/mp4", ".pdf": "application/pdf",
     }
-    
     return FileResponse(filepath, media_type=content_types.get(ext, "application/octet-stream"))

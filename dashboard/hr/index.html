@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIJI — Calon Karyawan</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/images/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>(function(){var t=localStorage.getItem('siji-theme');if(!t)t=window.matchMedia('(prefers-color-scheme:light)').matches?'light':'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<style>
+:root{
+  --gold:#c8920d;--gold-deep:#a07508;--gold-light:#ffc965;
+  --sidebar-w:240px;--sidebar-bg:#0d0800;--sidebar-border:#1a1000;
+  --sidebar-text:#A0A0A0;--sidebar-text-active:#ffc965;
+  --sidebar-active-bg:rgba(255,201,101,0.12);
+  --radius-sm:6px;--radius-md:12px;--radius-full:9999px;
+  --shadow-card:0 2px 12px rgba(0,0,0,0.08);
+  --font:'Inter',-apple-system,sans-serif;--t:all .2s ease;
+  color-scheme:light;
+  --bg:#f5f0e8;--surface:#FFF;--surface-2:#ede8dc;
+  --text:#1A1A1A;--text-2:#6B6B6B;--text-3:#9E9E9E;
+  --text-metric:#a07508;--border:#d4c8b0;--border-2:#e0d8c8;
+  --success:#2D7A4F;--success-bg:#E8F5EE;
+  --danger:#C0392B;--danger-bg:#FDECEA;
+  --warning:#c8920d;--warning-bg:#fdf3d8;
+  --info:#1A6FA8;--info-bg:#E3F0FB;
+}
+[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#140d00;--surface:#1e1400;--surface-2:#261a00;
+  --text:#F0EDE8;--text-2:#A0A0A0;--text-3:#6B6B6B;
+  --text-metric:#ffc965;--border:#3a2800;--border-2:#2e1e00;
+  --success:#4CAF7D;--success-bg:rgba(76,175,125,0.12);
+  --danger:#E55A4E;--danger-bg:rgba(229,90,78,0.12);
+  --warning:#ffc965;--warning-bg:rgba(255,201,101,0.12);
+  --info:#4BA3D9;--info-bg:rgba(75,163,217,0.12);
+  --shadow-card:0 2px 12px rgba(0,0,0,0.4);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:var(--text);overflow-x:hidden;line-height:1.5;transition:background .3s,color .3s}
+a{text-decoration:none;color:inherit}
+
+/* LAYOUT */
+.app{display:flex;min-height:100vh}
+.sidebar{width:var(--sidebar-w);background:var(--sidebar-bg);border-right:1px solid var(--sidebar-border);position:fixed;top:0;left:0;height:100vh;display:flex;flex-direction:column;z-index:100;transition:transform .3s}
+.sidebar-logo{padding:18px 16px 12px;border-bottom:1px solid var(--sidebar-border);display:flex;align-items:center;gap:10px}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,#D4A017,#B8860B);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.logo-text{font-size:15px;font-weight:700;color:#F5C842}
+.logo-sub{font-size:10px;color:var(--sidebar-text)}
+.sidebar-nav{flex:1;padding:10px 8px;overflow-y:auto}
+.nav-label{font-size:10px;font-weight:600;color:var(--sidebar-text);text-transform:uppercase;letter-spacing:1px;padding:8px 8px 4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--radius-sm);color:var(--sidebar-text);font-size:13px;font-weight:500;cursor:pointer;transition:var(--t);margin-bottom:1px}
+.nav-item:hover{background:rgba(255,255,255,0.05);color:#fff}
+.nav-item.active{background:var(--sidebar-active-bg);color:var(--sidebar-text-active)}
+.nav-item .icon{font-size:14px;width:18px;text-align:center;flex-shrink:0}
+.sidebar-footer{padding:10px 8px;border-top:1px solid var(--sidebar-border)}
+.main{flex:1;margin-left:var(--sidebar-w);display:flex;flex-direction:column;min-height:100vh}
+.topbar{position:sticky;top:0;z-index:50;background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;height:54px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.topbar-title{font-size:15px;font-weight:600}
+.content{padding:20px;flex:1}
+
+/* STATS */
+.stats-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 18px;flex:1;min-width:100px;position:relative;cursor:pointer;transition:var(--t)}
+.stat-card:hover{border-color:var(--gold)}
+.stat-card.active-filter{border-color:var(--gold);background:var(--warning-bg)}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--card-color,var(--gold));border-radius:var(--radius-md) var(--radius-md) 0 0}
+.stat-label{font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.stat-value{font-size:24px;font-weight:700;color:var(--text-metric);line-height:1}
+.stat-sub{font-size:11px;color:var(--text-3);margin-top:2px}
+
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.search-wrap{position:relative;flex:1;min-width:180px}
+.search-wrap input{width:100%;padding:8px 12px 8px 34px;border:1px solid var(--border);border-radius:var(--radius-full);background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font);outline:none;transition:border-color .2s}
+.search-wrap input:focus{border-color:var(--gold)}
+.search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text-3);font-size:14px}
+.filter-tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tab{padding:6px 12px;border-radius:var(--radius-full);border:1px solid var(--border);background:transparent;color:var(--text-2);font-size:12px;font-weight:500;cursor:pointer;transition:var(--t);font-family:var(--font);white-space:nowrap}
+.tab:hover{border-color:var(--gold);color:var(--gold)}
+.tab.active{background:var(--gold);border-color:var(--gold);color:#fff}
+.tab .cnt{background:rgba(255,255,255,0.25);border-radius:10px;padding:0 5px;margin-left:4px;font-size:11px}
+.tab.active .cnt{background:rgba(0,0,0,0.15)}
+.btn-new{padding:7px 14px;border-radius:var(--radius-full);background:var(--gold);border:none;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);transition:var(--t);white-space:nowrap}
+.btn-new:hover{background:var(--gold-deep)}
+
+/* TABLE */
+.table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:10px 14px;color:var(--text-3);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--surface)}
+td{padding:12px 14px;border-bottom:1px solid var(--border-2);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surface-2);cursor:pointer}
+.empty-row{text-align:center;color:var(--text-3);padding:32px!important}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:var(--radius-full);font-size:11px;font-weight:600;white-space:nowrap}
+.b-baru{background:var(--info-bg);color:var(--info)}
+.b-imported{background:var(--surface-2);color:var(--text-3)}
+.b-dihubungi{background:var(--warning-bg);color:var(--warning)}
+.b-interview{background:rgba(142,68,173,0.12);color:#7D3C98}
+.b-diterima{background:var(--success-bg);color:var(--success)}
+.b-ditolak,.b-arsip,.b-tidak_aktif{background:var(--danger-bg);color:var(--danger)}
+.b-review{background:var(--info-bg);color:var(--info)}
+.b-callback{background:rgba(212,160,23,0.15);color:var(--gold-deep);font-size:10px}
+
+/* AVATAR */
+.avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-deep));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;text-transform:uppercase}
+
+/* ACTIONS */
+.action-btn{padding:4px 8px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-2);font-size:11px;cursor:pointer;transition:var(--t);font-family:var(--font)}
+.action-btn:hover{border-color:var(--gold);color:var(--gold)}
+.action-btn.danger:hover{border-color:var(--danger);color:var(--danger)}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;padding:16px}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:var(--radius-md);width:100%;max-width:560px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
+.modal-head{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-title{font-size:15px;font-weight:600}
+.modal-close{background:none;border:none;cursor:pointer;color:var(--text-3);font-size:20px;padding:2px 6px;border-radius:4px;line-height:1}
+.modal-close:hover{color:var(--text);background:var(--surface-2)}
+.modal-body{padding:20px;overflow-y:auto;flex:1}
+.modal-foot{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;flex-shrink:0}
+
+/* DETAIL */
+.detail-row{display:flex;gap:8px;margin-bottom:10px;font-size:13px}
+.detail-label{width:130px;flex-shrink:0;color:var(--text-3);font-weight:500}
+.detail-val{flex:1;word-break:break-word}
+.timeline{border-left:2px solid var(--border);margin:16px 0 8px 8px;padding-left:14px}
+.tl-item{margin-bottom:10px;position:relative}
+.tl-item::before{content:'';position:absolute;left:-19px;top:5px;width:8px;height:8px;border-radius:50%;background:var(--border);border:2px solid var(--surface)}
+.tl-item.done::before{background:var(--gold)}
+.tl-label{font-size:12px;font-weight:600;color:var(--text-2)}
+.tl-date{font-size:11px;color:var(--text-3)}
+.notes-area{width:100%;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);color:var(--text);font-size:13px;font-family:var(--font);resize:vertical;min-height:70px;outline:none}
+.notes-area:focus{border-color:var(--gold)}
+.status-select{padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font);outline:none;cursor:pointer}
+.status-select:focus{border-color:var(--gold)}
+.modal-btn{padding:8px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font);transition:var(--t)}
+.modal-btn:hover{border-color:var(--gold);color:var(--gold)}
+.modal-btn.primary{background:var(--gold);border-color:var(--gold);color:#fff}
+.modal-btn.primary:hover{background:var(--gold-deep)}
+.modal-btn.wa{background:#25D366;border-color:#25D366;color:#fff}
+.modal-btn.wa:hover{background:#1da851}
+.modal-btn.danger{border-color:var(--danger);color:var(--danger)}
+.modal-btn.danger:hover{background:var(--danger-bg)}
+
+/* MISC */
+.spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .6s linear infinite;margin:40px auto;display:block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.theme-toggle{width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:transparent;cursor:pointer;font-size:14px;color:var(--text-2);display:flex;align-items:center;justify-content:center;transition:var(--t)}
+.theme-toggle:hover{border-color:var(--gold)}
+.hamburger{display:none;background:none;border:none;font-size:20px;cursor:pointer;color:var(--text);padding:4px}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99}
+.sidebar-overlay.open{display:block}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px 16px;font-size:13px;font-weight:500;z-index:999;box-shadow:var(--shadow-card);transform:translateY(20px);opacity:0;transition:all .3s;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{border-left:3px solid var(--success);color:var(--success)}
+.toast.error{border-left:3px solid var(--danger);color:var(--danger)}
+
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}
+  .hamburger{display:flex}
+  .content{padding:14px}
+  .stat-card{min-width:80px}
+  .filter-tabs{display:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">👥</div>
+      <div><div class="logo-text">HR Rekrutmen</div><div class="logo-sub">Calon Karyawan</div></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Pipeline</div>
+      <div class="nav-item active" data-tab="semua" onclick="setTab('semua');closeSidebar()"><span class="icon">📋</span> Semua Pelamar</div>
+      <div class="nav-item" data-tab="baru" onclick="setTab('baru');closeSidebar()"><span class="icon">🆕</span> Baru</div>
+      <div class="nav-item" data-tab="dihubungi" onclick="setTab('dihubungi');closeSidebar()"><span class="icon">📞</span> Sudah Dihubungi</div>
+      <div class="nav-item" data-tab="interview" onclick="setTab('interview');closeSidebar()"><span class="icon">🤝</span> Interview</div>
+      <div class="nav-item" data-tab="diterima" onclick="setTab('diterima');closeSidebar()"><span class="icon">✅</span> Diterima</div>
+      <div class="nav-item" data-tab="arsip" onclick="setTab('arsip');closeSidebar()"><span class="icon">📦</span> Arsip / Opportunity</div>
+      <div class="nav-label" style="margin-top:8px">Menu</div>
+      <a class="nav-item" href="https://dashboard.sijibintaro.id/"><span class="icon">🏠</span> Dashboard Utama</a>
+      <a class="nav-item" href="https://dashboard.sijibintaro.id/chatbot/"><span class="icon">🤖</span> Chatbot Analytics</a>
+      <a class="nav-item" href="https://sijibintaro.id/gowa/" target="_blank"><span class="icon">📱</span> GOWA Panel</a>
+      <a class="nav-item" href="https://sijibintaro.id/karir" target="_blank"><span class="icon">📝</span> Form Karir (Publik)</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="nav-item" style="font-size:11px;color:var(--sidebar-text)" onclick="doLogout()">
+        <span class="icon">🚪</span> Logout
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="hamburger" onclick="toggleSidebar()">☰</button>
+        <div class="topbar-title">👥 Calon Karyawan</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="btn-new" onclick="openAddModal()">+ Tambah Manual</button>
+        <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- STATS -->
+      <div class="stats-row" id="statsRow">
+        <div class="spinner"></div>
+      </div>
+
+      <!-- TOOLBAR -->
+      <div class="toolbar">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchInput" placeholder="Cari nama, WA, posisi..." oninput="debounceLoad()">
+        </div>
+        <div class="filter-tabs" id="filterTabs">
+          <button class="tab active" onclick="setTab('semua')">Semua</button>
+          <button class="tab" onclick="setTab('baru')">Baru</button>
+          <button class="tab" onclick="setTab('dihubungi')">Dihubungi</button>
+          <button class="tab" onclick="setTab('interview')">Interview</button>
+          <button class="tab" onclick="setTab('diterima')">Diterima</button>
+          <button class="tab" onclick="setTab('arsip')">Arsip</button>
+        </div>
+      </div>
+
+      <!-- TABLE -->
+      <div class="table-card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:200px">Pelamar</th>
+                <th>Posisi</th>
+                <th>Domisili</th>
+                <th>Masuk</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <tr><td colspan="6" class="empty-row"><div class="spinner"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="overlay" id="detailOverlay">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-head">
+      <div class="modal-title" id="detailTitle">Detail Pelamar</div>
+      <button class="modal-close" onclick="closeModal('detailOverlay')">×</button>
+    </div>
+    <div class="modal-body" id="detailBody">Loading...</div>
+    <div class="modal-foot" id="detailFoot"></div>
+  </div>
+</div>
+
+<!-- WA MODAL -->
+<div class="overlay" id="waOverlay">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-head">
+      <div class="modal-title">💬 Kirim WA ke Pelamar</div>
+      <button class="modal-close" onclick="closeModal('waOverlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="waMeta" style="font-size:13px;color:var(--text-2);margin-bottom:12px"></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px" id="waTemplates"></div>
+      <textarea class="notes-area" id="waMsg" style="min-height:100px" placeholder="Tulis pesan..."></textarea>
+    </div>
+    <div class="modal-foot">
+      <button class="modal-btn wa" onclick="sendWA()">📤 Kirim WhatsApp</button>
+      <button class="modal-btn" onclick="closeModal('waOverlay')">Batal</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD MODAL -->
+<div class="overlay" id="addOverlay">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head">
+      <div class="modal-title">+ Tambah Pelamar Manual</div>
+      <button class="modal-close" onclick="closeModal('addOverlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-g"><label style="font-size:12px;font-weight:600;color:var(--text-2);display:block;margin-bottom:5px">NAMA *</label><input id="add-nama" class="notes-area" style="resize:none;min-height:auto;padding:9px 12px" placeholder="Nama lengkap"></div>
+      <div class="form-g" style="margin-top:10px"><label style="font-size:12px;font-weight:600;color:var(--text-2);display:block;margin-bottom:5px">WHATSAPP *</label><input id="add-wa" class="notes-area" style="resize:none;min-height:auto;padding:9px 12px" placeholder="08xx-xxxx-xxxx"></div>
+      <div class="form-g" style="margin-top:10px"><label style="font-size:12px;font-weight:600;color:var(--text-2);display:block;margin-bottom:5px">POSISI *</label>
+        <select id="add-posisi" class="status-select" style="width:100%">
+          <option>Operator Laundry</option><option>Tenaga Setrika</option><option>Kurir Pickup/Delivery</option><option>Kasir / Admin</option><option>Cuci Sepatu</option><option>Staff Produksi</option><option>Posisi Lainnya</option>
+        </select>
+      </div>
+      <div class="form-g" style="margin-top:10px"><label style="font-size:12px;font-weight:600;color:var(--text-2);display:block;margin-bottom:5px">DOMISILI</label><input id="add-dom" class="notes-area" style="resize:none;min-height:auto;padding:9px 12px" placeholder="Kelurahan, Kecamatan"></div>
+      <div class="form-g" style="margin-top:10px"><label style="font-size:12px;font-weight:600;color:var(--text-2);display:block;margin-bottom:5px">PENGALAMAN</label><textarea id="add-exp" class="notes-area" placeholder="Pengalaman kerja..."></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="modal-btn primary" onclick="submitAdd()">Simpan</button>
+      <button class="modal-btn" onclick="closeModal('addOverlay')">Batal</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '/api/hr';
+let currentTab = 'semua';
+let stats = {};
+let currentWAId = null;
+let currentWALam = {};
+let debounceTimer = null;
+let currentPage = 1;
+const PAGE_SIZE = 50;
+
+// ─── Auth ───────────────────────────────────────────────────────────────────
+async function doLogout() {
+  await fetch('/api/auth/logout', {method:'POST', credentials:'include'});
+  location.href = 'https://sijibintaro.id/login?next=' + encodeURIComponent(location.href);
+}
+
+// ─── Theme ───────────────────────────────────────────────────────────────────
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('siji-theme', next);
+  document.querySelector('.theme-toggle').textContent = next === 'dark' ? '☀️' : '🌙';
+}
+document.querySelector('.theme-toggle').textContent =
+  document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+
+// ─── Sidebar ─────────────────────────────────────────────────────────────────
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sidebarOverlay').classList.toggle('open')}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('open')}
+
+// ─── Toast ───────────────────────────────────────────────────────────────────
+function toast(msg, type='success') {
+  const el = document.getElementById('toast');
+  el.textContent = (type==='success'?'✓ ':'✗ ') + msg;
+  el.className = 'toast show ' + type;
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ─── Stats ───────────────────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const r = await fetch(API + '/lamaran/stats', {credentials:'include'});
+    stats = await r.json();
+    renderStats();
+    renderTabs();
+  } catch(e) {}
+}
+
+function renderStats() {
+  const items = [
+    {label:'Total',value:stats.total||0,color:'var(--gold)',tab:'semua'},
+    {label:'Baru',value:(stats.baru||0)+(stats.imported||0)+(stats.review||0),color:'var(--info)',tab:'baru'},
+    {label:'Dihubungi',value:stats.dihubungi||0,color:'var(--warning)',tab:'dihubungi'},
+    {label:'Interview',value:stats.interview||0,color:'#7D3C98',tab:'interview'},
+    {label:'Diterima',value:stats.diterima||0,color:'var(--success)',tab:'diterima'},
+    {label:'Arsip',value:stats.arsip_total||0,color:'var(--text-3)',tab:'arsip',sub:(stats.callback_pool||0)+' callback'},
+  ];
+  document.getElementById('statsRow').innerHTML = items.map(it => `
+    <div class="stat-card ${currentTab===it.tab?'active-filter':''}" style="--card-color:${it.color}" onclick="setTab('${it.tab}')">
+      <div class="stat-label">${it.label}</div>
+      <div class="stat-value">${it.value}</div>
+      ${it.sub?`<div class="stat-sub">${it.sub}</div>`:''}
+    </div>`).join('');
+}
+
+function renderTabs() {
+  const tabs = [
+    {id:'semua',label:'Semua',cnt:stats.total||0},
+    {id:'baru',label:'Baru',cnt:(stats.baru||0)+(stats.imported||0)+(stats.review||0)},
+    {id:'dihubungi',label:'Dihubungi',cnt:stats.dihubungi||0},
+    {id:'interview',label:'Interview',cnt:stats.interview||0},
+    {id:'diterima',label:'Diterima',cnt:stats.diterima||0},
+    {id:'arsip',label:'Arsip',cnt:stats.arsip_total||0},
+  ];
+  document.getElementById('filterTabs').innerHTML = tabs.map(t =>
+    `<button class="tab ${currentTab===t.id?'active':''}" onclick="setTab('${t.id}')">
+      ${t.label}<span class="cnt">${t.cnt}</span>
+    </button>`).join('');
+}
+
+// ─── Tab ─────────────────────────────────────────────────────────────────────
+function setTab(tab) {
+  currentTab = tab;
+  currentPage = 1;
+  // Use data-tab attribute so nav item order doesn't matter
+  document.querySelectorAll('.sidebar .nav-item[data-tab]').forEach(el => {
+    el.classList.toggle('active', el.dataset.tab === tab);
+  });
+  renderStats(); renderTabs();
+  loadTable();
+}
+
+// ─── Table ───────────────────────────────────────────────────────────────────
+async function loadTable() {
+  const search = document.getElementById('searchInput').value;
+  const url = `${API}/lamaran?status=${currentTab}&search=${encodeURIComponent(search)}&page=${currentPage}&limit=${PAGE_SIZE}`;
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '<tr><td colspan="6" class="empty-row"><div class="spinner"></div></td></tr>';
+  try {
+    const r = await fetch(url, {credentials:'include'});
+    const data = await r.json();
+    if (!data.data || !data.data.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-row" style="color:var(--text-3)">Tidak ada data</td></tr>';
+      renderPager(0, 0);
+      return;
+    }
+    tbody.innerHTML = data.data.map(lam => {
+      const ini = (lam.nama||'?').slice(0,2).toUpperCase();
+      const waLink = `https://wa.me/${formatWA(lam.whatsapp)}`;
+      const tanggal = lam.created_at ? lam.created_at.slice(0,10) : '—';
+      const cbBadge = lam.callback_interest ? '<span class="badge b-callback">📞 callback</span> ' : '';
+      return `<tr onclick="openDetail(${lam.id})">
+        <td>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="avatar">${ini}</div>
+            <div>
+              <div style="font-weight:600;font-size:13px">${lam.nama}</div>
+              <div style="font-size:11px;color:var(--text-3)">${lam.whatsapp}</div>
+            </div>
+          </div>
+        </td>
+        <td style="font-size:13px">${lam.posisi||'—'}</td>
+        <td style="font-size:12px;color:var(--text-2);max-width:160px"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${lam.domisili||'—'}</div></td>
+        <td style="font-size:12px;color:var(--text-3);white-space:nowrap">${tanggal}</td>
+        <td>${cbBadge}<span class="badge b-${lam.status}">${statusLabel(lam.status)}</span></td>
+        <td onclick="event.stopPropagation()">
+          <div style="display:flex;gap:4px;flex-wrap:wrap">
+            <a href="${waLink}" target="_blank" class="action-btn" title="Chat WA">💬</a>
+            <button class="action-btn" onclick="openWA(${lam.id},'${esc(lam.nama)}','${esc(lam.whatsapp)}','${esc(lam.posisi||'')}')">📤</button>
+            <button class="action-btn" onclick="openDetail(${lam.id})">✏️</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+    renderPager(data.total, data.pages);
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-row">Gagal memuat data</td></tr>';
+  }
+}
+
+function renderPager(total, pages) {
+  let el = document.getElementById('pagerRow');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'pagerRow';
+    el.style.cssText = 'display:flex;align-items:center;gap:8px;padding:12px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--text-3)';
+    document.querySelector('.table-card').appendChild(el);
+  }
+  if (pages <= 1) { el.innerHTML = `<span>${total} entri</span>`; return; }
+  el.innerHTML = `
+    <span style="flex:1">${total} entri</span>
+    <button class="action-btn" onclick="goPage(${currentPage-1})" ${currentPage<=1?'disabled':''}>‹ Prev</button>
+    <span>Hal ${currentPage} / ${pages}</span>
+    <button class="action-btn" onclick="goPage(${currentPage+1})" ${currentPage>=pages?'disabled':''}>Next ›</button>
+  `;
+}
+
+function goPage(p) { currentPage = p; loadTable(); }
+
+// ─── Detail Modal ─────────────────────────────────────────────────────────────
+async function openDetail(id) {
+  document.getElementById('detailTitle').textContent = 'Detail Pelamar';
+  document.getElementById('detailBody').innerHTML = '<div class="spinner"></div>';
+  document.getElementById('detailFoot').innerHTML = '';
+  document.getElementById('detailOverlay').classList.add('open');
+  try {
+    const r = await fetch(`${API}/lamaran/${id}`, {credentials:'include'});
+    const lam = await r.json();
+    document.getElementById('detailTitle').textContent = lam.nama;
+
+    const tlItems = [
+      {label:'Lamaran Masuk',date:lam.created_at,done:true},
+      {label:'Dihubungi',date:lam.tgl_dihubungi,done:!!lam.tgl_dihubungi},
+      {label:'Interview',date:lam.tgl_interview,done:!!lam.tgl_interview},
+      {label:'Keputusan',date:lam.tgl_update,done:['diterima','ditolak','arsip'].includes(lam.status)},
+    ];
+
+    document.getElementById('detailBody').innerHTML = `
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+        <span class="badge b-${lam.status}">${statusLabel(lam.status)}</span>
+        ${lam.callback_interest?'<span class="badge b-callback">📞 Potential Callback</span>':''}
+        ${lam.sumber?`<span style="font-size:11px;color:var(--text-3)">${lam.sumber}</span>`:''}
+      </div>
+      <div class="detail-row"><div class="detail-label">WhatsApp</div><div class="detail-val"><a href="https://wa.me/${formatWA(lam.whatsapp)}" style="color:var(--gold)" target="_blank">${lam.whatsapp}</a></div></div>
+      <div class="detail-row"><div class="detail-label">Posisi</div><div class="detail-val">${lam.posisi||'—'}</div></div>
+      <div class="detail-row"><div class="detail-label">Domisili</div><div class="detail-val">${lam.domisili||'—'}</div></div>
+      <div class="detail-row"><div class="detail-label">Pengalaman</div><div class="detail-val" style="white-space:pre-wrap;font-size:12px">${lam.pengalaman||'—'}</div></div>
+      ${lam.cv_path?`<div class="detail-row"><div class="detail-label">CV</div><div class="detail-val"><a href="${lam.cv_path}" target="_blank" style="color:var(--gold)">📎 Lihat CV</a></div></div>`:''}
+
+      <div style="margin:16px 0;border-top:1px solid var(--border)"></div>
+      <div style="font-size:12px;font-weight:600;color:var(--text-3);margin-bottom:8px">TIMELINE</div>
+      <div class="timeline">
+        ${tlItems.map(t=>`<div class="tl-item ${t.done?'done':''}">
+          <div class="tl-label">${t.label}</div>
+          <div class="tl-date">${t.date?t.date.slice(0,16):'Belum'}</div>
+        </div>`).join('')}
+      </div>
+
+      <div style="margin:16px 0;border-top:1px solid var(--border)"></div>
+      <div style="font-size:12px;font-weight:600;color:var(--text-3);margin-bottom:8px">UPDATE STATUS</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <select class="status-select" id="newStatus" onchange="quickStatus(${id},this.value)">
+          <option value="">-- Ganti status --</option>
+          <option value="baru">🆕 Baru</option>
+          <option value="dihubungi">📞 Dihubungi</option>
+          <option value="interview">🤝 Interview</option>
+          <option value="diterima">✅ Diterima</option>
+          <option value="ditolak">❌ Ditolak</option>
+          <option value="arsip">📦 Arsip</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="cbInterest" ${lam.callback_interest?'checked':''} onchange="toggleCallback(${id},this.checked)">
+          Potential Callback
+        </label>
+      </div>
+
+      <div style="font-size:12px;font-weight:600;color:var(--text-3);margin-bottom:6px">CATATAN</div>
+      <textarea class="notes-area" id="notesArea" placeholder="Tambah catatan...">${lam.notes||''}</textarea>
+    `;
+
+    document.getElementById('detailFoot').innerHTML = `
+      <button class="modal-btn primary" onclick="saveNotes(${id})">💾 Simpan Catatan</button>
+      <button class="modal-btn wa" onclick="openWA(${id},'${esc(lam.nama)}','${esc(lam.whatsapp)}','${esc(lam.posisi||'')}')">💬 Kirim WA</button>
+      <button class="modal-btn danger" onclick="archiveLam(${id},${lam.callback_interest?'true':'false'})">📦 Arsip</button>
+    `;
+  } catch(e) {
+    document.getElementById('detailBody').innerHTML = '<div style="color:var(--danger)">Gagal memuat data</div>';
+  }
+}
+
+async function quickStatus(id, status) {
+  if (!status) return;
+  await patchLam(id, {status});
+  toast('Status diupdate: ' + statusLabel(status));
+  loadTable(); loadStats();
+  setTimeout(() => openDetail(id), 400);
+}
+
+async function toggleCallback(id, val) {
+  await patchLam(id, {callback_interest: val});
+  toast(val ? 'Ditandai potential callback' : 'Callback dihapus');
+  loadStats();
+}
+
+async function saveNotes(id) {
+  const notes = document.getElementById('notesArea').value;
+  await patchLam(id, {notes});
+  toast('Catatan disimpan');
+}
+
+async function archiveLam(id, currentCallback) {
+  if (!confirm('Arsip pelamar ini? Tindakan ini tidak bisa dibatalkan.')) return;
+  const cb = currentCallback || confirm('Tandai sebagai potential callback?');
+  await fetch(`${API}/lamaran/${id}/archive?callback=${cb}`, {method:'DELETE', credentials:'include'});
+  toast('Pelamar diarsip');
+  closeModal('detailOverlay');
+  loadTable(); loadStats();
+}
+
+async function patchLam(id, body) {
+  await fetch(`${API}/lamaran/${id}`, {
+    method:'PATCH', credentials:'include',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+}
+
+// ─── WA Modal ────────────────────────────────────────────────────────────────
+const WA_TEMPLATES = [
+  {label:'Follow Up', msg: 'Halo {nama}, terima kasih sudah melamar ke SIJI Bintaro sebagai {posisi}. Kami tertarik untuk mengenal lebih jauh. Apakah Anda masih berminat? 🙏'},
+  {label:'Panggil Interview', msg: 'Halo {nama}, kami mengundang Anda untuk interview posisi {posisi} di SIJI Bintaro. Kapan Anda bisa hadir? 📅'},
+  {label:'Diterima', msg: 'Selamat {nama}! Anda diterima bekerja di SIJI Bintaro posisi {posisi}. Mohon konfirmasi kapan bisa mulai bekerja. 🎉'},
+  {label:'Tidak Lanjut', msg: 'Halo {nama}, terima kasih atas lamaran Anda di SIJI Bintaro. Untuk saat ini posisi {posisi} belum tersedia. Kami simpan data Anda dan akan menghubungi jika ada kesempatan. Terima kasih 🙏'},
+  {label:'Callback Opportunity', msg: 'Halo {nama}! SIJI Bintaro sedang membuka posisi baru yang mungkin sesuai dengan profil Anda. Apakah Anda masih berminat bergabung bersama kami? 😊'},
+];
+function openWA(id, nama, wa, posisi) {
+  currentWAId = id;
+  currentWALam = {id, nama, wa, posisi: posisi || '—'};
+  document.getElementById('waMeta').innerHTML = `Kirim ke: <strong>${nama}</strong> · ${wa}`;
+  document.getElementById('waTemplates').innerHTML = WA_TEMPLATES.map(t =>
+    `<button class="tab" onclick="useTemplate('${t.label}')" style="font-size:11px">${t.label}</button>`
+  ).join('');
+  document.getElementById('waMsg').value = '';
+  document.getElementById('waOverlay').classList.add('open');
+}
+
+function useTemplate(label) {
+  const tpl = WA_TEMPLATES.find(t => t.label === label);
+  if (!tpl) return;
+  document.getElementById('waMsg').value = tpl.msg
+    .replace(/{nama}/g, currentWALam.nama || 'Kak')
+    .replace(/{posisi}/g, currentWALam.posisi || '—');
+}
+
+async function sendWA() {
+  const msg = document.getElementById('waMsg').value.trim();
+  if (!msg) { toast('Tulis pesan dulu', 'error'); return; }
+  try {
+    const r = await fetch(`${API}/lamaran/${currentWAId}/send-wa`, {
+      method:'POST', credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({message: msg})
+    });
+    const d = await r.json();
+    if (d.ok) {
+      toast('Pesan WA terkirim');
+      closeModal('waOverlay');
+      loadTable(); loadStats();
+    } else {
+      toast('Gagal kirim: ' + JSON.stringify(d.detail), 'error');
+    }
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+  }
+}
+
+// ─── Add Manual ──────────────────────────────────────────────────────────────
+function openAddModal() {
+  ['add-nama','add-wa','add-dom','add-exp'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('addOverlay').classList.add('open');
+}
+
+async function submitAdd() {
+  const nama = document.getElementById('add-nama').value.trim();
+  const wa = document.getElementById('add-wa').value.trim();
+  const posisi = document.getElementById('add-posisi').value;
+  if (!nama || !wa) { toast('Nama dan WA wajib diisi', 'error'); return; }
+  const fd = new FormData();
+  fd.append('nama', nama); fd.append('whatsapp', wa); fd.append('posisi', posisi);
+  const dom = document.getElementById('add-dom').value.trim();
+  const exp = document.getElementById('add-exp').value.trim();
+  if (dom) fd.append('domisili', dom);
+  if (exp) fd.append('pengalaman', exp);
+  try {
+    const r = await fetch('/api/lamaran', {method:'POST', body:fd});
+    const d = await r.json();
+    if (d.success) {
+      toast('Pelamar ditambahkan');
+      closeModal('addOverlay');
+      loadTable(); loadStats();
+    } else {
+      toast('Gagal: ' + (d.detail||d.message), 'error');
+    }
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+  }
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function formatWA(wa) {
+  if (!wa) return '';
+  wa = wa.replace(/[^0-9]/g,'');
+  return wa.startsWith('0') ? '62' + wa.slice(1) : wa;
+}
+function esc(s) { return (s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+function statusLabel(s) {
+  const map = {baru:'🆕 Baru',imported:'📥 Import',review:'👀 Review',dihubungi:'📞 Dihubungi',interview:'🤝 Interview',diterima:'✅ Diterima',ditolak:'❌ Ditolak',arsip:'📦 Arsip',tidak_aktif:'💤 Tidak Aktif'};
+  return map[s] || s;
+}
+function debounceLoad() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(loadTable, 350);
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+async function init() {
+  await loadStats();
+  await loadTable();
+}
+init();
+</script>
+</body>
+</html>

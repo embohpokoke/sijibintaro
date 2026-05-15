@@ -91,10 +91,11 @@ def save_cv_file(file: UploadFile) -> str:
     if file_size > 5 * 1024 * 1024:  # 5MB
         raise HTTPException(status_code=400, detail="File size too large. Maximum 5MB allowed.")
     
-    # Generate unique filename
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"{timestamp}_{file.filename}"
-    file_path = os.path.join(CV_UPLOAD_DIR, filename)
+    # Generate safe unique filename — discard original name to prevent path traversal
+    import uuid
+    safe_name = f"{uuid.uuid4().hex}{file_ext}"
+    file_path = os.path.join(CV_UPLOAD_DIR, safe_name)
+    filename = safe_name
     
     # Save file
     with open(file_path, "wb") as buffer:
@@ -173,19 +174,30 @@ async def submit_job_application(
         cv_path = None
         if cv and cv.filename:
             cv_path = save_cv_file(cv)
-        
-        # Insert to database
-        with get_db() as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT INTO lamaran (nama, whatsapp, domisili, posisi, pengalaman, cv_path)
-                VALUES (?, ?, ?, ?, ?, ?)
+
+        # Insert to PostgreSQL siji_bintaro.lamaran (authoritative store for HR pipeline)
+        import asyncpg as _asyncpg
+        _pg_url = os.getenv(
+            "SIJI_DB_URL",
+            "postgresql://livin:L1v1n!B1nt4r0_2026@127.0.0.1:5432/livininbintaro",
+        )
+        pg_conn = await _asyncpg.connect(_pg_url)
+        try:
+            new_id = await pg_conn.fetchval("""
+                INSERT INTO siji_bintaro.lamaran
+                    (nama, whatsapp, domisili, posisi, pengalaman, cv_path, sumber, status)
+                VALUES ($1, $2, $3, $4, $5, $6, 'form_karir', 'baru')
                 RETURNING id
-            """, (nama.strip(), whatsapp.strip(), domisili.strip() if domisili else None, 
-                 posisi.strip(), pengalaman.strip() if pengalaman else None, cv_path))
-            result = cursor.fetchone()
-            new_id = result['id'] if result else None
-            conn.commit()
+            """,
+                nama.strip(),
+                whatsapp.strip(),
+                domisili.strip() if domisili else None,
+                posisi.strip(),
+                pengalaman.strip() if pengalaman else None,
+                cv_path,
+            )
+        finally:
+            await pg_conn.close()
         
         # Trigger real-time WA notification (fire-and-forget)
         asyncio.create_task(notify_lamaran_realtime(

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bergabung dengan SIJI Bintaro</title>
+<meta name="description" content="Kirim lamaran kerja ke SIJI Bintaro Laundry. Posisi tersedia: Operator Laundry, Kurir Pickup, Kasir/Admin, Setrika.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--gold:#D4A017;--gold-deep:#B8860B;--font:'Inter',-apple-system,sans-serif}
+body{font-family:var(--font);background:#F8F7F4;color:#1A1A1A;min-height:100vh;padding:0}
+
+.hero{background:linear-gradient(135deg,#111 0%,#1C1410 100%);color:#fff;padding:48px 20px 40px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(ellipse at center,rgba(212,160,23,0.08) 0%,transparent 60%);pointer-events:none}
+.hero-logo{font-size:40px;margin-bottom:12px}
+.hero-brand{font-size:24px;font-weight:700;color:var(--gold);letter-spacing:-.5px}
+.hero-tag{font-size:13px;color:#888;margin-top:4px;margin-bottom:20px}
+.hero-title{font-size:28px;font-weight:700;line-height:1.2;margin-bottom:8px}
+.hero-sub{font-size:15px;color:#aaa;max-width:440px;margin:0 auto}
+
+.positions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:20px 20px 0}
+.pos-chip{background:rgba(212,160,23,0.12);border:1px solid rgba(212,160,23,0.3);color:var(--gold);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500}
+
+.container{max-width:560px;margin:0 auto;padding:32px 20px 60px}
+
+.card{background:#fff;border-radius:16px;padding:28px;box-shadow:0 2px 20px rgba(0,0,0,0.08);border:1px solid #E8E5E0}
+.card-title{font-size:17px;font-weight:700;margin-bottom:4px}
+.card-sub{font-size:13px;color:#888;margin-bottom:24px}
+
+.form-group{margin-bottom:18px}
+label{display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:6px;letter-spacing:.3px}
+label .req{color:#D4A017}
+input,select,textarea{width:100%;padding:11px 13px;border:1.5px solid #DDD;border-radius:8px;font-size:14px;font-family:var(--font);outline:none;transition:border-color .2s,box-shadow .2s;background:#fff;color:#1A1A1A;-webkit-appearance:none}
+input:focus,select:focus,textarea:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(212,160,23,0.1)}
+textarea{resize:vertical;min-height:90px;line-height:1.5}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+
+.file-wrap{border:2px dashed #DDD;border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s;position:relative}
+.file-wrap:hover,.file-wrap.drag{border-color:var(--gold);background:rgba(212,160,23,0.03)}
+.file-wrap input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.file-icon{font-size:28px;margin-bottom:6px}
+.file-label{font-size:13px;color:#666}
+.file-name{font-size:12px;color:var(--gold);margin-top:4px;font-weight:500}
+
+.btn{width:100%;padding:14px;background:linear-gradient(135deg,#D4A017,#B8860B);border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:600;font-family:var(--font);cursor:pointer;transition:opacity .2s;margin-top:4px;letter-spacing:.2px}
+.btn:hover{opacity:.9}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.success{display:none;text-align:center;padding:32px 20px}
+.success-icon{font-size:52px;margin-bottom:12px}
+.success-title{font-size:20px;font-weight:700;margin-bottom:8px}
+.success-sub{font-size:14px;color:#666;line-height:1.6;max-width:360px;margin:0 auto}
+.success-wa{display:inline-flex;align-items:center;gap:8px;margin-top:20px;background:#25D366;color:#fff;padding:10px 20px;border-radius:20px;font-weight:600;text-decoration:none;font-size:13px}
+
+.error-msg{background:#FDE8E6;border:1px solid #f5c6c3;border-radius:8px;padding:10px 12px;margin-top:12px;font-size:13px;color:#C0392B;display:none}
+
+.note{font-size:12px;color:#999;text-align:center;margin-top:16px;line-height:1.5}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-logo">🧺</div>
+  <div class="hero-brand">SIJI Bintaro</div>
+  <div class="hero-tag">Laundry Kiloan & Satuan · Bintaro Jaya</div>
+  <div class="hero-title">Bergabung Bersama Kami</div>
+  <div class="hero-sub">Kami sedang mencari karyawan yang rajin, jujur, dan semangat kerja.</div>
+  <div class="positions">
+    <span class="pos-chip">Operator Laundry</span>
+    <span class="pos-chip">Kurir Pickup/Delivery</span>
+    <span class="pos-chip">Kasir / Admin</span>
+    <span class="pos-chip">Tenaga Setrika</span>
+    <span class="pos-chip">Cuci Sepatu</span>
+  </div>
+</div>
+
+<div class="container">
+  <div class="card" id="formCard">
+    <div class="card-title">Form Lamaran Kerja</div>
+    <div class="card-sub">Isi form di bawah, kami akan hubungi via WhatsApp</div>
+
+    <form id="lamaranForm" onsubmit="submitLamaran(event)">
+      <div class="form-group">
+        <label>NAMA LENGKAP <span class="req">*</span></label>
+        <input type="text" name="nama" placeholder="Nama sesuai KTP" required autocomplete="name">
+      </div>
+      <div class="form-group">
+        <label>NOMOR WHATSAPP <span class="req">*</span></label>
+        <input type="tel" name="whatsapp" placeholder="08xx-xxxx-xxxx" required autocomplete="tel">
+      </div>
+      <div class="form-group">
+        <label>POSISI YANG DILAMAR <span class="req">*</span></label>
+        <select name="posisi" required>
+          <option value="">-- Pilih posisi --</option>
+          <option>Operator Laundry</option>
+          <option>Tenaga Setrika</option>
+          <option>Kurir Pickup/Delivery</option>
+          <option>Kasir / Admin</option>
+          <option>Cuci Sepatu</option>
+          <option>Staff Produksi</option>
+          <option>Posisi Lainnya</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>DOMISILI / ALAMAT</label>
+        <input type="text" name="domisili" placeholder="Kelurahan, Kecamatan, Kota" autocomplete="street-address">
+      </div>
+      <div class="form-group">
+        <label>PENGALAMAN KERJA</label>
+        <textarea name="pengalaman" placeholder="Ceritakan pengalaman kerja kamu (jika ada). Boleh kosong jika belum punya pengalaman."></textarea>
+      </div>
+      <div class="form-group">
+        <label>UPLOAD CV <span style="color:#aaa;font-weight:400">(opsional · PDF/JPG max 5MB)</span></label>
+        <div class="file-wrap" id="fileWrap">
+          <input type="file" name="cv" accept=".pdf,.jpg,.jpeg,.png" onchange="showFileName(this)">
+          <div class="file-icon">📎</div>
+          <div class="file-label">Tap untuk pilih file CV</div>
+          <div class="file-name" id="fileName"></div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn" id="submitBtn">Kirim Lamaran</button>
+      <div class="error-msg" id="errorMsg"></div>
+    </form>
+  </div>
+
+  <div class="success" id="successCard">
+    <div class="success-icon">🎉</div>
+    <div class="success-title">Lamaran Terkirim!</div>
+    <div class="success-sub">
+      Terima kasih sudah melamar di SIJI Bintaro.<br>
+      Tim kami akan menghubungi kamu via WhatsApp dalam 1–3 hari kerja.
+    </div>
+    <a href="https://wa.me/6281288783088" class="success-wa" target="_blank">
+      💬 Chat SIJI Bintaro
+    </a>
+  </div>
+
+  <p class="note">Info lebih lanjut: WA <a href="https://wa.me/6281288783088" style="color:var(--gold)">0812-8878-3088</a></p>
+</div>
+
+<script>
+let _submitted = false;
+
+function showFileName(input) {
+  const el = document.getElementById('fileName');
+  el.textContent = input.files[0] ? '✓ ' + input.files[0].name : '';
+}
+
+async function submitLamaran(e) {
+  e.preventDefault();
+  if (_submitted) return; // guard double-submit
+  const btn = document.getElementById('submitBtn');
+  const err = document.getElementById('errorMsg');
+  err.style.display = 'none';
+  _submitted = true;
+  btn.disabled = true;
+  btn.textContent = 'Mengirim...';
+
+  const form = document.getElementById('lamaranForm');
+  const data = new FormData(form);
+
+  try {
+    const res = await fetch('/api/lamaran', {method:'POST', body: data});
+    const json = await res.json();
+    if (res.ok && json.success) {
+      document.getElementById('formCard').style.display = 'none';
+      document.getElementById('successCard').style.display = 'block';
+    } else {
+      throw new Error(json.detail || json.message || 'Gagal mengirim lamaran');
+    }
+  } catch (ex) {
+    err.textContent = ex.message;
+    err.style.display = 'block';
+    _submitted = false;
+    btn.disabled = false;
+    btn.textContent = 'Kirim Lamaran';
+  }
+}
+</script>
+</body>
+</html>
