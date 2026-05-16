@@ -5,7 +5,7 @@ import io
 import os
 import re
 from calendar import monthrange
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
@@ -20,7 +20,7 @@ from product_mapping import classify_product
 
 router = APIRouter(prefix="/api/accounting", tags=["accounting"])
 
-MEDIA_STRUK_DIR = "/var/www/sijibintaro/media/struk"
+MEDIA_STRUK_DIR = "/opt/sijibintaro/media/struk"
 
 
 def require_session(request: Request) -> dict[str, Any]:
@@ -535,13 +535,11 @@ def _build_report_payload(conn, bulan: int, tahun: int) -> dict[str, Any]:
 
 @router.get("/kategori")
 async def list_kategori(
-    include_children: bool = True,
     _: dict[str, Any] = Depends(require_session),
 ):
+    """Return flat category list for dropdown population + tree for nested display."""
     with get_db_dict() as conn:
         rows = _get_kategori_flat(conn)
-    if not include_children:
-        return rows
     parent_map: dict[int, dict[str, Any]] = {}
     tree: list[dict[str, Any]] = []
     for row in rows:
@@ -552,7 +550,7 @@ async def list_kategori(
     for row in rows:
         if row["parent_id"] is not None and row["parent_id"] in parent_map:
             parent_map[row["parent_id"]]["children"].append(parent_map[row["id"]])
-    return tree
+    return {"categories": rows, "tree": tree}
 
 
 @router.post("/kategori")
@@ -584,11 +582,7 @@ async def tambah_kategori(
         return cur.fetchone()
 
 
-@router.get("/supplier")
-async def list_supplier(
-    q: Optional[str] = None,
-    _: dict[str, Any] = Depends(require_session),
-):
+def _fetch_suppliers(q: Optional[str] = None) -> list[dict[str, Any]]:
     params: list[Any] = []
     where = "aktif = true"
     if q:
@@ -608,6 +602,15 @@ async def list_supplier(
         return cur.fetchall()
 
 
+@router.get("/supplier")
+async def list_supplier(
+    q: Optional[str] = None,
+    _: dict[str, Any] = Depends(require_session),
+):
+    items = _fetch_suppliers(q=q)
+    return {"suppliers": items}
+
+
 @router.get("/supplier/search")
 async def search_supplier(
     q: str,
@@ -615,7 +618,7 @@ async def search_supplier(
 ):
     if not q.strip():
         raise HTTPException(status_code=400, detail="q wajib diisi")
-    return await list_supplier(q=q)
+    return _fetch_suppliers(q=q)
 
 
 @router.post("/supplier")
@@ -1028,6 +1031,36 @@ async def recon_mutasi_with_wa(
             (data.wa_media_path, data.recon_notes, is_linking, is_linking, mutasi_id),
         )
         return {"ok": True, "id": mutasi_id, "wa_media_path": data.wa_media_path, "status": "linked" if is_linking else "unlinked"}
+
+
+@router.get("/overview")
+async def accounting_overview(
+    bulan: Optional[int] = None,
+    tahun: Optional[int] = None,
+    _: dict[str, Any] = Depends(require_session),
+):
+    """Summary endpoint consumed by the Keuangan dashboard page."""
+    today = date.today()
+    bulan = bulan or today.month
+    tahun = tahun or today.year
+    with get_db_dict() as conn:
+        s = _build_summary(conn, bulan, tahun)
+    return {
+        "total_pemasukan": s["total_pemasukan"],
+        "total_pengeluaran": s["total_pengeluaran"],
+        "net_profit": s["net_profit"],
+        "unlinked_mutasi": s["unlinked_mutasi"],
+        "breakdown_expense": [
+            {"kategori": item["label"], "total": item["nominal"]}
+            for item in s["breakdown_pengeluaran"]
+        ],
+        "breakdown_income": [
+            {"kategori": item["label"], "total": item["nominal"]}
+            for item in s["breakdown_pemasukan"]
+        ],
+        "periode": s["periode"],
+        "periode_label": s["periode_label"],
+    }
 
 
 @router.get("/laporan/summary")

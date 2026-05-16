@@ -1820,7 +1820,7 @@ function renderAccountingExpenses(items) {
     if (!items || items.length === 0) { tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">Belum ada data</div></div></td></tr>'; return; }
     tbody.innerHTML = items.map(function(item) {
         var statusClass = item.status === 'verified' ? 'bg-green-50 text-green-600' : item.status === 'duplicate' ? 'bg-red-50 text-red-600' : 'bg-orange-50 text-orange-600';
-        return '<tr><td class="px-2 py-2">' + fmtDate(item.tanggal) + '</td><td class="px-2 py-2">' + escHtml(item.deskripsi || '-') + '</td><td class="px-2 py-2">' + escHtml(item.kategori || '-') + '</td><td class="px-2 py-2">' + escHtml(item.supplier || '-') + '</td><td class="px-2 py-2">' + escHtml(item.metode_bayar || '-') + '</td><td class="px-2 py-2 text-gold font-semibold">' + rp(item.nominal) + '</td><td class="px-2 py-2">' + escHtml(item.dicatat_oleh || '-') + '</td><td class="px-2 py-2"><button class="text-error text-xs font-bold" onclick="deleteAccountingExpense('+item.id+')">Hapus</button></td></tr>';
+        return '<tr><td class="px-2 py-2">' + fmtDate(item.tanggal) + '</td><td class="px-2 py-2">' + escHtml(item.deskripsi || '-') + '</td><td class="px-2 py-2">' + escHtml(item.kategori_label || '-') + '</td><td class="px-2 py-2">' + escHtml(item.supplier_nama || '-') + '</td><td class="px-2 py-2">' + escHtml(item.metode_bayar || '-') + '</td><td class="px-2 py-2 text-gold font-semibold">' + rp(item.nominal) + '</td><td class="px-2 py-2">' + escHtml(item.dicatat_oleh || '-') + '</td><td class="px-2 py-2"><button class="text-error text-xs font-bold" onclick="deleteAccountingExpense('+item.id+')">Hapus</button></td></tr>';
     }).join('');
 }
 async function loadAccountingIncome() {
@@ -1863,6 +1863,7 @@ async function submitAccountingExpense() {
         if (!payload.deskripsi || payload.nominal <= 0) { showToast('Deskripsi dan nominal wajib diisi'); return; }
         await accountingApi('/pengeluaran', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
         $('acc-exp-nominal').value = ''; $('acc-exp-desc').value = ''; $('acc-exp-referensi').value = ''; $('acc-exp-note').value = ''; $('acc-exp-supplier').value = '';
+        accountingState.suppliers = [];
         showToast('Pengeluaran berhasil dicatat');
         await refreshAccountingPage(); accountingState.activeTab = 'acc-pengeluaran'; loadAccountingExpenses();
     } catch (e) { console.error('Expense submit error:', e); showToast('Gagal menyimpan: ' + e.message); }
