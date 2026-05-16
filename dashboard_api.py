@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException, Query
 from cache_decorator import cached
 from pydantic import BaseModel
 from typing import Optional
+import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import json
@@ -20,7 +21,10 @@ import calendar
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
-DB_URL = "postgresql://livin:L1v1n!B1nt4r0_2026@127.0.0.1:5432/livininbintaro"
+DB_URL = os.environ.get(
+    "SIJI_DB_URL",
+    "postgresql://livin:L1v1n!B1nt4r0_2026@127.0.0.1:5432/livininbintaro",
+)
 
 
 class DBConn:
@@ -1054,7 +1058,7 @@ async def health_check():
 
 from fastapi.responses import PlainTextResponse
 
-DOCS_DIR = "/var/www/sijibintaro/dashboard"
+DOCS_DIR = "/opt/sijibintaro/dashboard"
 
 @router.get("/docs/{filename}", response_class=PlainTextResponse)
 async def get_doc(filename: str):
