@@ -711,10 +711,20 @@
                     <h1 class="font-display text-2xl md:text-[28px] font-bold text-on-surface mb-1 tracking-tight">Keuangan</h1>
                     <p class="text-on-surface-variant font-sans">Accounting & financial reports</p>
                 </div>
-                <div class="flex items-center gap-2">
-                    <select id="acc-month" class="border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white outline-none" aria-label="Pilih bulan"></select>
-                    <select id="acc-year" class="border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white outline-none" aria-label="Pilih tahun"></select>
-                    <button class="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold hover:bg-slate-50" onclick="refreshAccountingPage()">Refresh</button>
+                <div class="flex items-center gap-3">
+                    <div class="date-picker" id="dp-keu">
+                        <div class="dp-modes flex gap-0 rounded-lg overflow-hidden border border-slate-200">
+                            <div class="dp-mode active px-3 py-1.5 bg-surface text-gold text-xs font-medium cursor-pointer border-r border-slate-200" data-mode="month" role="button" tabindex="0">Bulanan</div>
+                            <div class="dp-mode px-3 py-1.5 bg-surface text-slate-500 text-xs font-medium cursor-pointer" data-mode="year" role="button" tabindex="0">Tahunan</div>
+                        </div>
+                        <div class="dp-controls flex items-center gap-1 mt-2">
+                            <select class="dp-month text-xs border border-slate-200 rounded-md px-2 py-1 bg-white" aria-label="Select month"></select>
+                            <select class="dp-year text-xs border border-slate-200 rounded-md px-2 py-1 bg-white" style="display:none" aria-label="Select year"></select>
+                            <input type="date" class="dp-from text-xs border border-slate-200 rounded-md px-2 py-1 bg-white" style="display:none" aria-label="Start date">
+                            <span class="dp-sep text-xs text-slate-400" style="display:none">s/d</span>
+                            <input type="date" class="dp-to text-xs border border-slate-200 rounded-md px-2 py-1 bg-white" style="display:none" aria-label="End date">
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -1743,15 +1753,11 @@ function fmtWaTime(ts) {
 }
 
 // ─── Accounting / Keuangan ───────────────────────────────────────
+var dpKeu = null;
 function initAccountingPage() {
-    var now = new Date();
-    var monthSel = $('acc-month'), yearSel = $('acc-year');
-    if (!monthSel || !yearSel) return;
-    if (monthSel.options.length > 0) return; // already initialized
-    for (var m=1; m<=12; m++) { var opt=document.createElement('option'); opt.value=m; opt.textContent=monthName(m); if (m===now.getMonth()+1) opt.selected=true; monthSel.appendChild(opt); }
-    for (var y=2021; y<=now.getFullYear()+1; y++) { var opt=document.createElement('option'); opt.value=y; opt.textContent=y; if (y===now.getFullYear()) opt.selected=true; yearSel.appendChild(opt); }
-    monthSel.addEventListener('change', function() { refreshAccountingPage(); });
-    yearSel.addEventListener('change', function() { refreshAccountingPage(); });
+    if (!dpKeu) {
+        dpKeu = new DatePicker('dp-keu', function() { refreshAccountingPage(); });
+    }
     document.querySelectorAll('#acc-tabs .tab-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
             document.querySelectorAll('#acc-tabs .tab-btn').forEach(function(b){b.classList.remove('active'); b.classList.remove('bg-gold'); b.classList.remove('text-white'); b.classList.add('text-slate-500');});
@@ -1770,24 +1776,31 @@ function initAccountingPage() {
 }
 function accountingPeriod() {
     var now = new Date();
-    var bulan = parseInt($('acc-month').value, 10);
-    var tahun = parseInt($('acc-year').value, 10);
-    if (!bulan || isNaN(bulan)) bulan = now.getMonth() + 1;
-    if (!tahun || isNaN(tahun)) tahun = now.getFullYear();
-    return { bulan: bulan, tahun: tahun };
+    if (typeof dpKeu !== 'undefined' && dpKeu) {
+        if (dpKeu.mode === 'year') {
+            return { bulan: null, tahun: parseInt(dpKeu.yearSel.value, 10) || now.getFullYear(), mode: 'year' };
+        }
+        var val = dpKeu.monthSel.value; // "2026-05"
+        if (val) {
+            var parts = val.split('-');
+            return { bulan: parseInt(parts[1], 10), tahun: parseInt(parts[0], 10), mode: 'month' };
+        }
+    }
+    return { bulan: now.getMonth() + 1, tahun: now.getFullYear(), mode: 'month' };
 }
 async function refreshAccountingPage() {
     if (!accountingState.initialized) { accountingState.initialized = true; initAccountingPage(); }
     var period = accountingPeriod();
+    var qParams = period.bulan ? 'bulan=' + period.bulan + '&tahun=' + period.tahun : 'tahun=' + period.tahun;
     try {
-        var overview = await accountingApi('/overview?bulan=' + period.bulan + '&tahun=' + period.tahun);
+        var overview = await accountingApi('/overview?' + qParams);
         $('acc-total-income').textContent = rp(overview.total_pemasukan || 0);
         $('acc-total-expense').textContent = rp(overview.total_pengeluaran || 0);
         $('acc-net-profit').textContent = rp(overview.net_profit || 0);
         var netColor = overview.net_profit >= 0 ? 'text-success' : 'text-error';
         $('acc-net-profit').className = 'text-2xl font-bold font-display ' + netColor;
         $('acc-unlinked-mutasi').textContent = (overview.unlinked_mutasi || 0);
-        $('acc-report-period').textContent = monthName(period.bulan) + ' ' + period.tahun;
+        $('acc-report-period').textContent = overview.periode_label || (period.bulan ? monthName(period.bulan) + ' ' + period.tahun : String(period.tahun));
         $('acc-report-income').textContent = rp(overview.total_pemasukan || 0);
         $('acc-report-expense').textContent = rp(overview.total_pengeluaran || 0);
         $('acc-report-net').textContent = rp(overview.net_profit || 0);
@@ -1819,7 +1832,8 @@ async function loadAccountingSuppliers() {
 }
 async function loadAccountingExpenses() {
     var period = accountingPeriod();
-    try { var data = await accountingApi('/pengeluaran?bulan=' + period.bulan + '&tahun=' + period.tahun); renderAccountingExpenses(data.items || []); } catch (e) { console.error('Expenses error:', e); }
+    var q = period.bulan ? 'bulan=' + period.bulan + '&tahun=' + period.tahun : 'tahun=' + period.tahun;
+    try { var data = await accountingApi('/pengeluaran?' + q); renderAccountingExpenses(data.items || []); } catch (e) { console.error('Expenses error:', e); }
 }
 function renderAccountingExpenses(items) {
     var tbody = $('acc-exp-table');
@@ -1831,7 +1845,8 @@ function renderAccountingExpenses(items) {
 }
 async function loadAccountingIncome() {
     var period = accountingPeriod();
-    try { var data = await accountingApi('/pemasukan?bulan=' + period.bulan + '&tahun=' + period.tahun); renderAccountingIncome(data.items || []); } catch (e) { console.error('Income error:', e); }
+    var q = period.bulan ? 'bulan=' + period.bulan + '&tahun=' + period.tahun : 'tahun=' + period.tahun;
+    try { var data = await accountingApi('/pemasukan?' + q); renderAccountingIncome(data.items || []); } catch (e) { console.error('Income error:', e); }
 }
 function renderAccountingIncome(items) {
     var tbody = $('acc-inc-table');
@@ -1843,7 +1858,8 @@ function renderAccountingIncome(items) {
 }
 async function loadAccountingMutasi() {
     var period = accountingPeriod();
-    var data = await accountingApi('/mutasi?bulan=' + period.bulan + '&tahun=' + period.tahun + '&status_link=');
+    var q = period.bulan ? 'bulan=' + period.bulan + '&tahun=' + period.tahun : 'tahun=' + period.tahun;
+    var data = await accountingApi('/mutasi?' + q + '&status_link=');
     var tbody = $('acc-mutasi-table');
     if (!data.items || data.items.length === 0) { tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">Belum ada mutasi</div></div></td></tr>'; return; }
     tbody.innerHTML = data.items.map(function(item) {
@@ -1913,7 +1929,8 @@ async function deleteAccountingExpense(id) {
 }
 function exportAccountingReport(format) {
     var period = accountingPeriod();
-    window.open(ACCOUNTING_API + '/laporan/export?bulan=' + period.bulan + '&tahun=' + period.tahun + '&format=' + format, '_blank');
+    var q = period.bulan ? 'bulan=' + period.bulan + '&tahun=' + period.tahun : 'tahun=' + period.tahun;
+    window.open(ACCOUNTING_API + '/laporan/export?' + q + '&format=' + format, '_blank');
 }
 
 // ─── Settings ────────────────────────────────────────────────────
@@ -2099,7 +2116,6 @@ window.addEventListener('resize', function() {
     if (window.innerWidth > 768) { closeSidebar(); closeMoreSheet(); }
 });
 ThemeManager.init();
-initAccountingPage();
 if (window.location.hostname === 'crm.sijibintaro.id') {
     navigateTo('whatsapp');
 } else {
