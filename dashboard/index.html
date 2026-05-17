@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-title" content="SIJI Bintaro">
     <link rel="apple-touch-icon" href="/images/icon-192.png">
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=Hanken+Grotesk:wght@600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script>
@@ -222,6 +222,39 @@
             .wa-layout { min-height: auto; }
             .wa-chat-messages { max-height: 60vh; }
         }
+
+/* ═══ WhatsApp Module M3 Redesign ═══ */
+#pg-whatsapp { font-family: 'Inter', sans-serif; }
+#pg-whatsapp h1, #pg-whatsapp h2, #pg-whatsapp h3, #pg-whatsapp h4 { font-family: 'Hanken Grotesk', sans-serif; }
+.wa-layout-m3 { display: grid; grid-template-columns: 300px 1fr 280px; border-radius: 1.5rem; overflow: hidden; border: 1px solid #d0c5af; background: white; height: calc(100vh - 23rem); min-height: 520px; }
+.wa-panel-left { border-right: 1px solid #d0c5af; display: flex; flex-direction: column; background: white; overflow: hidden; }
+.wa-panel-right { border-left: 1px solid #d0c5af; overflow-y: auto; background: white; }
+.wa-conv-list-wrap { flex: 1; overflow-y: auto; }
+.wa-conv-item-m3 { display: flex; gap: .75rem; padding: 1rem; cursor: pointer; transition: all .15s; border-bottom: 1px solid #f0ece3; position: relative; align-items: flex-start; }
+.wa-conv-item-m3:hover { background: #eef4ff; }
+.wa-conv-item-m3.active { border-left: 3px solid #735c00; background: #eef4ff; padding-left: calc(1rem - 3px); }
+.wa-avatar-m3 { width: 40px; height: 40px; border-radius: 50%; background: #e5efff; display: flex; align-items: center; justify-content: center; font-size: .72rem; font-weight: 700; color: #545e76; flex-shrink: 0; }
+.wa-avatar-m3.customer { background: #d4af37; color: #554300; }
+.wa-bubble-m3-received { background: white; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(0,0,0,0.04); color: #001d36; align-self: flex-start; border-radius: 1rem 1rem 1rem 4px; padding: .75rem 1rem; max-width: 75%; font-size: .82rem; line-height: 1.55; word-break: break-word; }
+.wa-bubble-m3-sent { background: #dcf8c6; color: #1c1d1f; align-self: flex-end; border-radius: 1rem 1rem 4px 1rem; padding: .75rem 1rem; max-width: 75%; font-size: .82rem; line-height: 1.55; word-break: break-word; }
+.wa-bubble-m3-sent.bot { background: #dbeafe; }
+.wa-bubble-time-m3 { font-size: .62rem; opacity: .65; margin-top: .3rem; text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: .25rem; }
+.wa-messages-m3 { flex: 1; overflow-y: auto; padding: 1.5rem; display: flex; flex-direction: column; gap: .5rem; background: #fafafa; background-image: radial-gradient(#d4af3711 1px, transparent 1px); background-size: 24px 24px; }
+.wa-date-sep-m3 { display: flex; justify-content: center; margin: .5rem 0; }
+.wa-date-sep-m3 span { background: #eef4ff; color: #545e76; font-size: .63rem; font-weight: 700; padding: .2rem .75rem; border-radius: 9999px; letter-spacing: .05em; text-transform: uppercase; }
+.wa-reply-bar-m3 { display: flex; align-items: flex-end; gap: .75rem; padding: 1rem 1.25rem; border-top: 1px solid #d0c5af; background: white; flex-shrink: 0; }
+.wa-reply-input-m3 { flex: 1; background: #eef4ff; border: 1px solid #d0c5af; border-radius: 1rem; padding: .6rem .9rem; font-size: .85rem; resize: none; outline: none; max-height: 5rem; overflow-y: auto; font-family: inherit; transition: border-color .15s; min-height: 2.5rem; }
+.wa-reply-input-m3:focus { border-color: #735c00; }
+.wa-send-btn-m3 { width: 44px; height: 44px; border-radius: .75rem; background: #735c00; color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; flex-shrink: 0; }
+.wa-send-btn-m3:hover { background: #554300; transform: scale(1.05); }
+.wa-chat-header-m3 { display: flex; align-items: center; justify-content: space-between; padding: .875rem 1.25rem; border-bottom: 1px solid #d0c5af; background: white; flex-shrink: 0; }
+.wa-chat-back-m3 { display: none; background: none; border: none; cursor: pointer; padding: .2rem; color: #545e76; }
+.wa-kpi-m3 { background: white; border-radius: .75rem; padding: 1.25rem; border: 1px solid #d0c5af; box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
+.wa-analytics-grid-m3 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+.wa-sidebar-stat-m3 { background: #eef4ff; border-radius: .75rem; padding: 1rem; border: 1px solid rgba(208,197,175,0.4); }
+.wa-empty-m3 { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #9e9e9e; font-size: .85rem; gap: .5rem; text-align: center; padding: 2rem; }
+@media (max-width: 1280px) { .wa-layout-m3 { grid-template-columns: 280px 1fr; } .wa-panel-right { display: none; } }
+@media (max-width: 768px) { .wa-layout-m3 { grid-template-columns: 1fr; height: auto; } .wa-panel-left { height: 50vh; } .wa-chat-back-m3 { display: block; } .wa-layout-m3.chat-open .wa-panel-left { display: none; } .wa-analytics-grid-m3 { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body class="bg-background text-on-surface antialiased">
@@ -603,101 +636,140 @@
 
         <!-- ═══ WhatsApp Page ═══ -->
         <div class="page" id="pg-whatsapp">
-            <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+            <!-- Header -->
+            <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-6">
                 <div>
-                    <h1 class="font-display text-2xl md:text-[28px] font-bold text-on-surface mb-1 tracking-tight">WhatsApp</h1>
-                    <p class="text-on-surface-variant font-sans">CRM conversations & analytics</p>
+                    <h1 style="font-family:'Hanken Grotesk',sans-serif;" class="text-2xl md:text-[28px] font-bold mb-1 tracking-tight" style="color:#001d36">WhatsApp CRM</h1>
+                    <p class="text-sm" style="color:#545e76">GOWA conversations, analytics & AI insights</p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <input type="text" id="wa-search-input" class="border border-slate-200 rounded-full px-4 py-2 text-sm bg-white focus:ring-2 focus:ring-gold/20 outline-none w-48" placeholder="Cari pesan...">
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-sm" style="color:#545e76">search</span>
+                        <input type="text" id="wa-search-input" class="pl-9 pr-4 py-2 text-sm rounded-full outline-none w-56 transition-all" style="border:1px solid #d0c5af;background:#eef4ff;font-family:'Inter',sans-serif" placeholder="Cari pesan atau nama...">
+                    </div>
                 </div>
-            </div>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-                <div class="bg-white rounded-3xl p-5 shadow-card border border-slate-100">
-                    <div class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold mb-2">Total Chats</div>
-                    <div class="text-2xl font-bold text-gold font-display" id="wa-total-chats">-</div>
-                </div>
-                <div class="bg-white rounded-3xl p-5 shadow-card border border-slate-100">
-                    <div class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold mb-2">Pesan Hari Ini</div>
-                    <div class="text-2xl font-bold text-gold font-display" id="wa-today-msgs">-</div>
-                </div>
-                <div class="bg-white rounded-3xl p-5 shadow-card border border-slate-100">
-                    <div class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold mb-2">Avg Response</div>
-                    <div class="text-2xl font-bold text-gold font-display" id="wa-avg-rt">-</div>
-                    <div class="text-xs text-slate-400 mt-1" id="wa-avg-rt-sub"></div>
-                </div>
-                <div class="bg-white rounded-3xl p-5 shadow-card border border-slate-100">
-                    <div class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold mb-2">Total Pesan</div>
-                    <div class="text-2xl font-bold text-gold font-display" id="wa-total-msgs">-</div>
-                </div>
-            </div>
-            <div class="flex gap-1 mb-4 bg-white rounded-xl p-1 border border-slate-100 w-fit">
-                <button class="wa-tab-btn active px-4 py-2 rounded-lg text-xs font-semibold bg-gold text-white transition-all" data-wa-tab="conversations">Conversations</button>
-                <button class="wa-tab-btn px-4 py-2 rounded-lg text-xs font-semibold text-slate-500 hover:bg-slate-50 transition-all" data-wa-tab="analytics">Analytics</button>
-                <button class="wa-tab-btn px-4 py-2 rounded-lg text-xs font-semibold text-slate-500 hover:bg-slate-50 transition-all" data-wa-tab="insights">AI Insight</button>
             </div>
 
-            <div class="wa-tab-content active" id="wa-tab-conversations">
-                <div class="flex gap-2 mb-4" id="wa-filter-chips">
-                    <button class="px-4 py-1.5 rounded-full bg-gold text-white text-xs font-bold chip active" data-wa-filter="all">Semua</button>
-                    <button class="px-4 py-1.5 rounded-full bg-white text-slate-600 text-xs font-medium border border-slate-200 hover:border-gold/40 chip" data-wa-filter="customer">Pelanggan</button>
-                    <button class="px-4 py-1.5 rounded-full bg-white text-slate-600 text-xs font-medium border border-slate-200 hover:border-gold/40 chip" data-wa-filter="unknown">Unknown</button>
+            <!-- KPI Cards -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                <div class="wa-kpi-m3">
+                    <div class="text-[11px] uppercase tracking-wider font-bold mb-2" style="color:#545e76">Total Chats</div>
+                    <div class="text-2xl font-bold" style="color:#735c00;font-family:'Hanken Grotesk',sans-serif" id="wa-total-chats">-</div>
                 </div>
-                <div class="wa-layout" id="wa-layout">
-                    <div class="wa-left">
-                        <div class="wa-conv-list" id="wa-conv-list"><div class="loading"><div class="spinner"></div> Memuat...</div></div>
-                        <div class="p-2" id="wa-conv-pagination"></div>
+                <div class="wa-kpi-m3">
+                    <div class="text-[11px] uppercase tracking-wider font-bold mb-2" style="color:#545e76">Pesan Hari Ini</div>
+                    <div class="text-2xl font-bold" style="color:#735c00;font-family:'Hanken Grotesk',sans-serif" id="wa-today-msgs">-</div>
+                </div>
+                <div class="wa-kpi-m3">
+                    <div class="text-[11px] uppercase tracking-wider font-bold mb-2" style="color:#545e76">Avg Response</div>
+                    <div class="text-2xl font-bold" style="color:#735c00;font-family:'Hanken Grotesk',sans-serif" id="wa-avg-rt">-</div>
+                    <div class="text-xs mt-1" style="color:#9e9e9e" id="wa-avg-rt-sub"></div>
+                </div>
+                <div class="wa-kpi-m3">
+                    <div class="text-[11px] uppercase tracking-wider font-bold mb-2" style="color:#545e76">Total Pesan</div>
+                    <div class="text-2xl font-bold" style="color:#735c00;font-family:'Hanken Grotesk',sans-serif" id="wa-total-msgs">-</div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex gap-1 mb-5 p-1 rounded-xl w-fit" style="background:#eef4ff;border:1px solid #d0c5af">
+                <button class="wa-tab-btn active wa-tab-m3-btn" data-wa-tab="conversations" style="padding:.5rem 1rem;font-size:.78rem;font-weight:700;border-radius:.5rem;cursor:pointer;border:none;background:#d4af37;color:#554300;transition:all .15s;white-space:nowrap;font-family:'Inter',sans-serif">Conversations</button>
+                <button class="wa-tab-btn wa-tab-m3-btn" data-wa-tab="analytics" style="padding:.5rem 1rem;font-size:.78rem;font-weight:700;border-radius:.5rem;cursor:pointer;border:none;background:transparent;color:#545e76;transition:all .15s;white-space:nowrap;font-family:'Inter',sans-serif">Analytics</button>
+                <button class="wa-tab-btn wa-tab-m3-btn" data-wa-tab="insights" style="padding:.5rem 1rem;font-size:.78rem;font-weight:700;border-radius:.5rem;cursor:pointer;border:none;background:transparent;color:#545e76;transition:all .15s;white-space:nowrap;font-family:'Inter',sans-serif">AI Insight</button>
+            </div>
+
+            <!-- Tab: Conversations -->
+            <div class="wa-tab-content active" id="wa-tab-conversations">
+                <!-- Filter chips -->
+                <div class="flex gap-2 mb-4" id="wa-filter-chips">
+                    <button class="chip active" data-wa-filter="all" style="padding:.375rem 1rem;border-radius:9999px;font-size:.73rem;font-weight:700;border:none;cursor:pointer;background:#735c00;color:white;transition:all .15s;font-family:'Inter',sans-serif">Semua</button>
+                    <button class="chip" data-wa-filter="customer" style="padding:.375rem 1rem;border-radius:9999px;font-size:.73rem;font-weight:700;border:1px solid #d0c5af;cursor:pointer;background:#e5efff;color:#545e76;transition:all .15s;font-family:'Inter',sans-serif">Pelanggan</button>
+                    <button class="chip" data-wa-filter="unknown" style="padding:.375rem 1rem;border-radius:9999px;font-size:.73rem;font-weight:700;border:1px solid #d0c5af;cursor:pointer;background:#e5efff;color:#545e76;transition:all .15s;font-family:'Inter',sans-serif">Unknown</button>
+                </div>
+
+                <!-- 3-column chat layout -->
+                <div class="wa-layout-m3" id="wa-layout">
+                    <!-- Left: Conversation List -->
+                    <div class="wa-panel-left">
+                        <div class="p-4 flex items-center justify-between" style="border-bottom:1px solid #d0c5af">
+                            <h2 style="font-family:'Hanken Grotesk',sans-serif;font-size:1.1rem;font-weight:700;color:#001d36">Inbox</h2>
+                            <span id="wa-inbox-count" class="text-xs font-bold px-2 py-0.5 rounded-full" style="background:#e5efff;color:#545e76"></span>
+                        </div>
+                        <div class="wa-conv-list-wrap" id="wa-conv-list"><div class="loading"><div class="spinner"></div> Memuat...</div></div>
+                        <div class="p-2 flex items-center justify-center gap-2" id="wa-conv-pagination" style="border-top:1px solid #f0ece3"></div>
                     </div>
-                    <div class="wa-right">
-                        <div class="wa-chat-area" id="wa-chat-area">
-                            <div class="wa-chat-empty">Pilih conversation untuk melihat chat</div>
+
+                    <!-- Center: Chat Area -->
+                    <div style="display:flex;flex-direction:column;height:100%;" id="wa-chat-area">
+                        <div class="wa-empty-m3">
+                            <span class="material-symbols-outlined" style="font-size:2.5rem;color:#d0c5af">chat_bubble_outline</span>
+                            <div style="font-family:'Hanken Grotesk',sans-serif;font-weight:600;color:#545e76">Pilih conversation</div>
+                            <div style="font-size:.78rem;color:#9e9e9e">Klik nama dari daftar untuk membuka chat</div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Customer Profile Sidebar -->
+                    <div class="wa-panel-right" id="wa-customer-sidebar">
+                        <div class="wa-empty-m3" style="min-height:200px">
+                            <span class="material-symbols-outlined" style="font-size:2rem;color:#d0c5af">person_outline</span>
+                            <div style="font-size:.78rem;color:#9e9e9e;text-align:center">Profil pelanggan akan muncul di sini</div>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- Tab: Analytics -->
             <div class="wa-tab-content" id="wa-tab-analytics">
-                <div class="wa-analytics-grid">
-                    <div class="bg-white rounded-[32px] shadow-[0px_10px_30px_rgba(0,0,0,0.04)] border border-slate-100 p-6">
-                        <div class="font-display font-bold text-sm mb-4">Volume Pesan (30 Hari)</div>
+                <div class="wa-analytics-grid-m3">
+                    <div class="wa-kpi-m3">
+                        <div style="font-family:'Hanken Grotesk',sans-serif;font-weight:700;font-size:.85rem;margin-bottom:1rem">Volume Pesan (30 Hari)</div>
                         <div class="relative h-[280px]"><canvas id="wa-chart-volume" role="img" aria-label="Message volume"></canvas></div>
                     </div>
-                    <div class="bg-white rounded-[32px] shadow-[0px_10px_30px_rgba(0,0,0,0.04)] border border-slate-100 p-6">
-                        <div class="font-display font-bold text-sm mb-4">Jam Sibuk</div>
+                    <div class="wa-kpi-m3">
+                        <div style="font-family:'Hanken Grotesk',sans-serif;font-weight:700;font-size:.85rem;margin-bottom:1rem">Jam Sibuk</div>
                         <div class="relative h-[280px]"><canvas id="wa-chart-peak" role="img" aria-label="Peak hours"></canvas></div>
                     </div>
                 </div>
-                <div class="wa-analytics-grid">
-                    <div class="bg-white rounded-[32px] shadow-[0px_10px_30px_rgba(0,0,0,0.04)] border border-slate-100 p-6">
-                        <div class="font-display font-bold text-sm mb-4">Response Time (7 Hari)</div>
+                <div class="wa-analytics-grid-m3">
+                    <div class="wa-kpi-m3">
+                        <div style="font-family:'Hanken Grotesk',sans-serif;font-weight:700;font-size:.85rem;margin-bottom:1rem">Response Time (7 Hari)</div>
                         <div class="relative h-[280px]"><canvas id="wa-chart-rt" role="img" aria-label="Response time"></canvas></div>
                     </div>
-                    <div class="bg-white rounded-[32px] shadow-[0px_10px_30px_rgba(0,0,0,0.04)] border border-slate-100 p-6">
-                        <div class="font-display font-bold text-sm mb-4">Topic Breakdown</div>
+                    <div class="wa-kpi-m3">
+                        <div style="font-family:'Hanken Grotesk',sans-serif;font-weight:700;font-size:.85rem;margin-bottom:1rem">Topic Breakdown</div>
                         <div class="relative h-[280px] max-w-[320px] mx-auto"><canvas id="wa-chart-topics" role="img" aria-label="Topics"></canvas></div>
                     </div>
                 </div>
-                <div class="bg-white rounded-[32px] shadow-[0px_10px_30px_rgba(0,0,0,0.04)] border border-slate-100 p-6 mb-6">
-                    <div class="font-display font-bold text-sm mb-4">Pelanggan Paling Aktif (30 Hari)</div>
+                <div class="wa-kpi-m3 mb-4">
+                    <div style="font-family:'Hanken Grotesk',sans-serif;font-weight:700;font-size:.85rem;margin-bottom:1rem">Pelanggan Paling Aktif (30 Hari)</div>
                     <div class="overflow-x-auto">
-                        <table class="w-full text-sm"><thead><tr><th class="text-left py-3 px-2 text-xs font-bold text-slate-400 uppercase tracking-wider">Nama</th><th class="text-left py-3 px-2 text-xs font-bold text-slate-400 uppercase tracking-wider">Phone</th><th class="text-left py-3 px-2 text-xs font-bold text-slate-400 uppercase tracking-wider">Pesan</th></tr></thead><tbody id="wa-active-table"></tbody></table>
+                        <table class="w-full text-sm"><thead><tr><th class="text-left py-3 px-2 text-xs font-bold uppercase tracking-wider" style="color:#545e76">Nama</th><th class="text-left py-3 px-2 text-xs font-bold uppercase tracking-wider" style="color:#545e76">Phone</th><th class="text-left py-3 px-2 text-xs font-bold uppercase tracking-wider" style="color:#545e76">Pesan</th></tr></thead><tbody id="wa-active-table"></tbody></table>
                     </div>
                 </div>
-                <div class="bg-white rounded-[32px] shadow-[0px_10px_30px_rgba(0,0,0,0.04)] border border-slate-100 p-6">
-                    <div class="font-display font-bold text-sm mb-4">Silent Customers (60+ Hari Tanpa Order)</div>
+                <div class="wa-kpi-m3">
+                    <div style="font-family:'Hanken Grotesk',sans-serif;font-weight:700;font-size:.85rem;margin-bottom:1rem">Silent Customers (60+ Hari Tanpa Order)</div>
                     <div class="overflow-x-auto">
-                        <table class="w-full text-sm"><thead><tr><th class="text-left py-3 px-2 text-xs font-bold text-slate-400 uppercase tracking-wider">Nama</th><th class="text-left py-3 px-2 text-xs font-bold text-slate-400 uppercase tracking-wider">Phone</th><th class="text-left py-3 px-2 text-xs font-bold text-slate-400 uppercase tracking-wider">Terakhir Chat</th><th class="text-left py-3 px-2 text-xs font-bold text-slate-400 uppercase tracking-wider">Hari</th></tr></thead><tbody id="wa-silent-table"></tbody></table>
+                        <table class="w-full text-sm"><thead><tr><th class="text-left py-3 px-2 text-xs font-bold uppercase tracking-wider" style="color:#545e76">Nama</th><th class="text-left py-3 px-2 text-xs font-bold uppercase tracking-wider" style="color:#545e76">Phone</th><th class="text-left py-3 px-2 text-xs font-bold uppercase tracking-wider" style="color:#545e76">Terakhir Chat</th><th class="text-left py-3 px-2 text-xs font-bold uppercase tracking-wider" style="color:#545e76">Hari</th></tr></thead><tbody id="wa-silent-table"></tbody></table>
                     </div>
                 </div>
             </div>
 
+            <!-- Tab: AI Insight -->
             <div class="wa-tab-content" id="wa-tab-insights">
-                <div class="bg-white rounded-[32px] shadow-[0px_10px_30px_rgba(0,0,0,0.04)] border border-slate-100 p-6 mb-6">
-                    <div class="font-display font-bold text-sm mb-4">WA CRM Insight (AI)</div>
+                <div class="wa-kpi-m3 mb-4">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:#735c00;color:white">
+                            <span class="material-symbols-outlined" style="font-size:1.2rem">auto_awesome</span>
+                        </div>
+                        <div>
+                            <div class="text-[11px] font-bold uppercase tracking-wider" style="color:#735c00">AI Summary Report</div>
+                            <div style="font-family:'Hanken Grotesk',sans-serif;font-weight:700;font-size:1rem;color:#001d36">WA CRM Insight</div>
+                        </div>
+                    </div>
                     <div id="wa-insight-box"><div class="loading"><div class="spinner"></div> Memuat insight dari AI...</div></div>
                 </div>
-                <div class="bg-white rounded-[32px] shadow-[0px_10px_30px_rgba(0,0,0,0.04)] border border-slate-100 p-6">
-                    <div class="font-display font-bold text-sm mb-4">Data Summary</div>
+                <div class="wa-kpi-m3">
+                    <div style="font-family:'Hanken Grotesk',sans-serif;font-weight:700;font-size:.85rem;margin-bottom:1rem">Data Summary</div>
                     <div id="wa-insight-summary"></div>
                 </div>
             </div>
@@ -1572,9 +1644,9 @@ function showAreaDetail(idx) {
 var waState = { filter:'all', page:1, selectedPhone:null, analyticsLoaded:false, insightsLoaded:false };
 document.querySelectorAll('.wa-tab-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
-        document.querySelectorAll('.wa-tab-btn').forEach(function(b){b.classList.remove('active'); b.classList.remove('bg-gold'); b.classList.remove('text-white'); b.classList.add('text-slate-500');});
+        document.querySelectorAll('.wa-tab-btn').forEach(function(b){b.classList.remove('active'); b.style.background='transparent'; b.style.color='#545e76';});
         document.querySelectorAll('.wa-tab-content').forEach(function(c){c.classList.remove('active')});
-        btn.classList.add('active'); btn.classList.add('bg-gold'); btn.classList.add('text-white'); btn.classList.remove('text-slate-500');
+        btn.classList.add('active'); btn.style.background='#d4af37'; btn.style.color='#554300';
         var tab = btn.dataset.waTab;
         var el = $('wa-tab-'+tab); if (el) el.classList.add('active');
         if (tab==='analytics' && !waState.analyticsLoaded) loadWaAnalytics();
@@ -1583,8 +1655,8 @@ document.querySelectorAll('.wa-tab-btn').forEach(function(btn) {
 });
 document.querySelectorAll('#wa-filter-chips .chip').forEach(function(chip) {
     chip.addEventListener('click', function() {
-        document.querySelectorAll('#wa-filter-chips .chip').forEach(function(c){c.classList.remove('active'); c.classList.remove('bg-gold'); c.classList.remove('text-white'); c.classList.add('bg-white'); c.classList.add('text-slate-600');});
-        chip.classList.add('active'); chip.classList.add('bg-gold'); chip.classList.add('text-white'); chip.classList.remove('bg-white'); chip.classList.remove('text-slate-600');
+        document.querySelectorAll('#wa-filter-chips .chip').forEach(function(c){c.classList.remove('active'); c.style.background='#e5efff'; c.style.color='#545e76'; c.style.border='1px solid #d0c5af';});
+        chip.classList.add('active'); chip.style.background='#735c00'; chip.style.color='white'; chip.style.border='none';
         waState.filter = chip.dataset.waFilter;
         waState.page = 1;
         loadWaConversations();
@@ -1618,9 +1690,10 @@ async function loadWaConversations() {
             var time = c.last_message_time ? fmtWaTime(c.last_message_time) : '';
             var badge = c.total_orders>0 ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-gold/10 text-gold">'+c.total_orders+' order</span>' : '';
             var active = c.phone===waState.selectedPhone ? ' active' : '';
-            html += '<div class="wa-conv-item'+active+'" data-phone="'+c.phone+'" onclick="openWaChat(\''+c.phone+'\',\''+escHtml(c.display_name)+'\')"><div class="wa-conv-avatar'+isCust+'">'+initials+'</div><div class="wa-conv-info"><div class="wa-conv-name">'+escHtml(c.display_name)+'</div><div class="wa-conv-msg">'+escHtml(c.last_message)+'</div>'+badge+'</div><div class="wa-conv-meta"><span class="wa-conv-time">'+time+'</span>'+(c.total_messages>0?'<span style="font-size:.6rem;color:#9e9e9e">'+c.total_messages+' msg</span>':'')+'</div></div>';
+            html += '<div class="wa-conv-item-m3'+active+'" data-phone="'+c.phone+'" onclick="openWaChat(\''+c.phone+'\',\''+escHtml(c.display_name)+'\')"><div class="wa-avatar-m3'+isCust+'">'+initials+'</div><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:.83rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#001d36">'+escHtml(c.display_name)+'</div><div style="font-size:.73rem;color:#9e9e9e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px">'+escHtml(c.last_message)+'</div>'+(c.total_orders>0?'<span style="display:inline-flex;align-items:center;padding:.1rem .5rem;border-radius:9999px;font-size:.65rem;font-weight:700;background:#e5efff;color:#735c00;margin-top:.25rem">'+c.total_orders+' order</span>':'')+'</div><div style="text-align:right;flex-shrink:0"><span style="font-size:.63rem;color:#9e9e9e">'+time+'</span>'+(c.total_messages>0?'<br><span style="font-size:.6rem;color:#c0bdb5">'+c.total_messages+' msg</span>':'')+'</div></div>';
         }
         list.innerHTML = html;
+        var countEl = $('wa-inbox-count'); if (countEl) countEl.textContent = data.total || data.conversations.length;
         var pag = $('wa-conv-pagination');
         if (data.pages>1) { pag.innerHTML='<button class="px-3 py-1 rounded-lg border border-slate-200 text-xs '+(waState.page<=1?'opacity-40 cursor-not-allowed':'cursor-pointer hover:border-gold hover:text-gold')+'" '+(waState.page<=1?'disabled':'')+' onclick="waState.page--;loadWaConversations()">Prev</button><span class="text-xs text-slate-400">'+data.page+' / '+data.pages+'</span><button class="px-3 py-1 rounded-lg border border-slate-200 text-xs '+(waState.page>=data.pages?'opacity-40 cursor-not-allowed':'cursor-pointer hover:border-gold hover:text-gold')+'" '+(waState.page>=data.pages?'disabled':'')+' onclick="waState.page++;loadWaConversations()">Next</button>'; }
         else { pag.innerHTML=''; }
@@ -1630,9 +1703,10 @@ async function openWaChat(phone, name) {
     waState.selectedPhone = phone;
     var layout = $('wa-layout'); if (layout) layout.classList.add('chat-open');
     document.body.classList.add('wa-chat-active');
-    document.querySelectorAll('.wa-conv-item').forEach(function(el) { el.classList.toggle('active', el.dataset.phone===phone); });
+    document.querySelectorAll('.wa-conv-item-m3').forEach(function(el) { el.classList.toggle('active', el.dataset.phone===phone); });
     var area = $('wa-chat-area');
-    area.innerHTML = '<div class="wa-chat-header"><div class="wa-chat-header-info"><button class="wa-chat-back" onclick="closeWaChat()"><span class="material-symbols-outlined">arrow_back</span></button><div class="wa-conv-avatar customer" style="width:32px;height:32px;font-size:.7rem">'+(name||'?').substring(0,2).toUpperCase()+'</div><div><div class="wa-chat-header-name">'+escHtml(name)+'</div><div class="wa-chat-header-phone">'+phone+'</div></div></div><div class="wa-chat-header-actions"><button onclick="viewWaCustomer(\''+phone+'\')">Profile</button><button onclick="exportWaChat(\''+phone+'\')">Export CSV</button></div></div><div class="wa-chat-messages" id="wa-chat-msgs"><div class="loading"><div class="spinner"></div></div></div><div class="wa-reply-bar"><input class="wa-reply-input" id="wa-reply-input" aria-label="Type message" type="text" placeholder="Ketik pesan..." onkeydown="if(event.key===\'Enter\')sendWaReply()"><button class="wa-reply-send" onclick="sendWaReply()" title="Kirim"><span class="material-symbols-outlined text-lg">send</span></button></div>';
+    var initials2 = (name||'?').substring(0,2).toUpperCase();
+    area.innerHTML = '<div class="wa-chat-header-m3"><div style="display:flex;align-items:center;gap:.625rem"><button class="wa-chat-back-m3" onclick="closeWaChat()"><span class="material-symbols-outlined">arrow_back</span></button><div class="wa-avatar-m3 customer" style="width:36px;height:36px;font-size:.7rem;flex-shrink:0">'+initials2+'</div><div><div style="font-weight:700;font-size:.88rem;font-family:\'Hanken Grotesk\',sans-serif;color:#001d36" class="wa-chat-header-name">'+escHtml(name)+'</div><div style="font-size:.7rem;color:#545e76" class="wa-chat-header-phone">'+phone+'</div></div></div><div style="display:flex;gap:.375rem"><button onclick="viewWaCustomer(\''+phone+'\')" style="font-size:.72rem;padding:.3rem .75rem;border-radius:.5rem;border:1px solid #d0c5af;background:white;cursor:pointer;color:#545e76;font-family:\'Inter\',sans-serif;font-weight:600">Profile</button><button onclick="exportWaChat(\''+phone+'\')" style="font-size:.72rem;padding:.3rem .75rem;border-radius:.5rem;border:1px solid #d0c5af;background:white;cursor:pointer;color:#545e76;font-family:\'Inter\',sans-serif;font-weight:600">Export CSV</button></div></div><div class="wa-messages-m3" id="wa-chat-msgs"><div class="loading"><div class="spinner"></div></div></div><div class="wa-reply-bar-m3"><textarea class="wa-reply-input-m3" id="wa-reply-input" aria-label="Type message" placeholder="Ketik pesan..." rows="1" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();sendWaReply()}"></textarea><button class="wa-send-btn-m3" onclick="sendWaReply()" title="Kirim"><span class="material-symbols-outlined" style="font-size:1.25rem">send</span></button></div>';
     try {
         var data = await api('/wa/messages?phone='+phone+'&limit=100');
         var msgs = data.messages || [];
@@ -1642,7 +1716,7 @@ async function openWaChat(phone, name) {
         for (var i=0; i<msgs.length; i++) {
             var m = msgs[i];
             var msgDate = m.timestamp ? m.timestamp.substring(0,10) : '';
-            if (msgDate !== lastDate) { html += '<div style="text-align:center;padding:.5rem 0"><span style="background:#f5f0e8;color:#9e9e9e;font-size:.68rem;padding:.2rem .75rem;border-radius:9999px">'+fmtDate(msgDate)+'</span></div>'; lastDate = msgDate; }
+            if (msgDate !== lastDate) { html += '<div class="wa-date-sep-m3"><span>'+fmtDate(msgDate)+'</span></div>'; lastDate = msgDate; }
             var isBot = m.is_from_me && !!m.is_bot;
             var cls = m.is_from_me ? ('outgoing ' + (isBot ? 'bot' : 'human')) : 'incoming';
             var text = m.message_text || '';
@@ -1658,14 +1732,22 @@ async function openWaChat(phone, name) {
                     mediaTag = '<div class="wa-bubble-media">['+m.message_type+']</div>';
                 }
             }
-            html += '<div class="wa-bubble '+cls+'">'+mediaTag+'<div>'+escHtml(text)+'</div><div class="wa-bubble-time">'+senderTag+time+'</div></div>';
+            var bubbleCls = m.is_from_me ? ('wa-bubble-m3-sent' + (isBot ? ' bot' : '')) : 'wa-bubble-m3-received';
+            html += '<div class="'+bubbleCls+'">'+mediaTag+(text?'<div style="white-space:pre-line">'+escHtml(text)+'</div>':'')+'<div class="wa-bubble-time-m3">'+senderTag+'<span>'+time+'</span>'+(m.is_from_me?'<span class="material-symbols-outlined" style="font-size:.7rem;opacity:.6">done_all</span>':'')+'</div></div>';
         }
         container.innerHTML = html;
         container.scrollTop = container.scrollHeight;
-        if (data.customer && data.customer.total_orders > 0) {
+        var sidebar = $('wa-customer-sidebar');
+        if (sidebar) {
+            var c = data.customer || {};
+            var cName = c.customer_name || name;
+            var cInitials = (cName||'?').substring(0,2).toUpperCase();
+            sidebar.innerHTML = '<div style="padding:1.5rem;display:flex;flex-direction:column;gap:1rem"><div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:.75rem"><div class="wa-avatar-m3 customer" style="width:56px;height:56px;font-size:1.1rem;border-radius:.75rem">'+cInitials+'</div><div><div style="font-family:\'Hanken Grotesk\',sans-serif;font-weight:700;font-size:1rem;color:#001d36">'+escHtml(cName)+'</div><div style="font-size:.73rem;color:#545e76;margin-top:.2rem">'+phone+'</div>'+(c.total_orders>0?'<span style="display:inline-block;margin-top:.5rem;padding:.2rem .75rem;border-radius:9999px;font-size:.7rem;font-weight:700;background:#d4af37;color:#554300">'+c.total_orders+' orders</span>':'')+'</div></div><div style="height:1px;background:#f0ece3"></div><div class="text-[11px] font-bold uppercase tracking-wider" style="color:#545e76;letter-spacing:.05em">QUICK ANALYTICS</div><div class="wa-sidebar-stat-m3"><div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#545e76;margin-bottom:.3rem">TOTAL ORDERS</div><div style="font-family:\'Hanken Grotesk\',sans-serif;font-size:1.75rem;font-weight:700;color:#735c00">'+(c.total_orders||0)+'</div></div><div class="wa-sidebar-stat-m3"><div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#545e76;margin-bottom:.3rem">TOTAL SPENT</div><div style="font-family:\'Hanken Grotesk\',sans-serif;font-size:1.4rem;font-weight:700;color:#001d36">'+(c.total_revenue?rpShort(c.total_revenue):'-')+'</div></div><button onclick="viewWaCustomer(\''+phone+'\')" style="width:100%;padding:.625rem;border-radius:.625rem;font-size:.8rem;font-weight:700;font-family:\'Inter\',sans-serif;background:#735c00;color:white;border:none;cursor:pointer;transition:all .15s">Lihat Profil Lengkap</button></div>';
+        }
+        var infoEl = area.querySelector('.wa-chat-header-phone');
+        if (infoEl && data.customer && data.customer.total_orders > 0) {
             var c = data.customer;
-            var infoEl = area.querySelector('.wa-chat-header-phone');
-            if (infoEl) infoEl.textContent = phone+' | '+c.total_orders+' orders | '+rpShort(c.total_revenue);
+            infoEl.textContent = phone+' | '+c.total_orders+' orders | '+rpShort(c.total_revenue);
         }
     } catch(e) { $('wa-chat-msgs').innerHTML='<div class="wa-chat-empty text-error">Gagal memuat pesan</div>'; console.error('WA messages error:', e); }
 }
@@ -1673,6 +1755,8 @@ function closeWaChat() {
     var layout = $('wa-layout'); if (layout) layout.classList.remove('chat-open');
     document.body.classList.remove('wa-chat-active');
     waState.selectedPhone = null;
+    var sidebar = $('wa-customer-sidebar');
+    if (sidebar) sidebar.innerHTML = '<div class="wa-empty-m3" style="min-height:200px"><span class="material-symbols-outlined" style="font-size:2rem;color:#d0c5af">person_outline</span><div style="font-size:.78rem;color:#9e9e9e;text-align:center">Profil pelanggan akan muncul di sini</div></div>';
 }
 function sendWaReply() {
     var input = $('wa-reply-input'); if (!input) return;
@@ -1693,7 +1777,7 @@ async function loadWaSearch(query) {
         for (var i=0; i<data.results.length; i++) {
             var r = data.results[i];
             var time = r.timestamp ? fmtWaTime(r.timestamp) : '';
-            html += '<div class="wa-conv-item" data-phone="'+r.phone+'" onclick="openWaChat(\''+r.phone+'\',\''+escHtml(r.name)+'\')"><div class="wa-conv-avatar">'+(r.name||'?').substring(0,2).toUpperCase()+'</div><div class="wa-conv-info"><div class="wa-conv-name">'+escHtml(r.name)+'</div><div class="wa-conv-msg">'+highlightText(escHtml(r.text),query)+'</div></div><div class="wa-conv-meta"><span class="wa-conv-time">'+time+'</span></div></div>';
+            html += '<div class="wa-conv-item-m3" data-phone="'+r.phone+'" onclick="openWaChat(\''+r.phone+'\',\''+escHtml(r.name)+'\')"><div class="wa-avatar-m3">'+(r.name||'?').substring(0,2).toUpperCase()+'</div><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:.83rem;color:#001d36">'+escHtml(r.name)+'</div><div style="font-size:.73rem;color:#9e9e9e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px">'+highlightText(escHtml(r.text),query)+'</div></div><div style="flex-shrink:0"><span style="font-size:.63rem;color:#9e9e9e">'+time+'</span></div></div>';
         }
         list.innerHTML = html;
         $('wa-conv-pagination').innerHTML = '<span class="text-xs text-slate-400">'+data.count+' hasil</span>';
