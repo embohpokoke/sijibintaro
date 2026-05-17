@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIJI — Chatbot Analytics</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/images/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
+function doLogout(){fetch('/api/auth/logout',{method:'POST',credentials:'include'}).then(()=>location.href='https://sijibintaro.id/login');}
+</script>
+<script>
+(function(){var t=localStorage.getItem('siji-theme');if(!t)t=window.matchMedia('(prefers-color-scheme:light)').matches?'light':'dark';document.documentElement.setAttribute('data-theme',t);})();
+</script>
+<style>
+:root{
+  --gold:#c8920d;--gold-deep:#a07508;--gold-light:#ffc965;
+  --sidebar-w:240px;--sidebar-bg:#0d0800;--sidebar-border:#1a1000;
+  --sidebar-text:#A0A0A0;--sidebar-text-active:#ffc965;
+  --sidebar-active-bg:rgba(255,201,101,0.12);
+  --radius-sm:6px;--radius-md:12px;--radius-lg:16px;--radius-full:9999px;
+  --shadow-card:0 2px 12px rgba(0,0,0,0.08);
+  --font-sans:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  --transition:all .2s ease;
+  color-scheme:light;
+  --bg:#f5f0e8;--surface:#FFF;--surface-2:#ede8dc;
+  --text-primary:#1A1A1A;--text-secondary:#6B6B6B;--text-muted:#9E9E9E;
+  --text-metric:#a07508;--border:#d4c8b0;--accent:#c8920d;
+  --success:#2D7A4F;--success-bg:#E8F5EE;
+  --danger:#C0392B;--danger-bg:#FDECEA;
+  --warning:#c8920d;--warning-bg:#fdf3d8;
+  --info:#1A6FA8;--info-bg:#E3F0FB;
+  --chart-grid:rgba(0,0,0,0.06);--chart-text:#9E9E9E;
+  --overlay:rgba(0,0,0,0.4);
+}
+[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#140d00;--surface:#1e1400;--surface-2:#261a00;
+  --text-primary:#F0EDE8;--text-secondary:#A0A0A0;--text-muted:#6B6B6B;
+  --text-metric:#ffc965;--border:#3a2800;
+  --success:#4CAF7D;--success-bg:rgba(76,175,125,0.12);
+  --danger:#E55A4E;--danger-bg:rgba(229,90,78,0.12);
+  --warning:#ffc965;--warning-bg:rgba(255,201,101,0.12);
+  --info:#4BA3D9;--info-bg:rgba(75,163,217,0.12);
+  --shadow-card:0 2px 12px rgba(0,0,0,0.4);
+  --chart-grid:rgba(255,255,255,0.05);--chart-text:#6B6B6B;
+  --overlay:rgba(0,0,0,0.65);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font-sans);background:var(--bg);color:var(--text-primary);overflow-x:hidden;line-height:1.5;transition:background .3s,color .3s}
+.app{display:flex;min-height:100vh}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar-w);background:var(--sidebar-bg);border-right:1px solid var(--sidebar-border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;transition:transform .3s ease}
+.sidebar-logo{padding:20px 16px 12px;border-bottom:1px solid var(--sidebar-border);display:flex;align-items:center;gap:10px}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,#D4A017,#B8860B);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.logo-text{font-size:15px;font-weight:700;color:#F5C842;letter-spacing:-.3px}
+.logo-sub{font-size:10px;color:var(--sidebar-text);margin-top:1px}
+.sidebar-nav{flex:1;padding:12px 8px;overflow-y:auto}
+.nav-section{margin-bottom:20px}
+.nav-label{font-size:10px;font-weight:600;color:var(--sidebar-text);text-transform:uppercase;letter-spacing:1px;padding:0 8px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--radius-sm);color:var(--sidebar-text);font-size:13px;font-weight:500;cursor:pointer;transition:var(--transition);text-decoration:none;margin-bottom:2px}
+.nav-item:hover{background:rgba(255,255,255,0.05);color:#fff}
+.nav-item.active{background:var(--sidebar-active-bg);color:var(--sidebar-text-active)}
+.nav-item .icon{font-size:15px;width:20px;text-align:center}
+.sidebar-footer{padding:12px 8px;border-top:1px solid var(--sidebar-border)}
+
+/* MAIN */
+.main{flex:1;margin-left:var(--sidebar-w);display:flex;flex-direction:column;min-height:100vh}
+.topbar{position:sticky;top:0;z-index:50;background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-title{font-size:16px;font-weight:600}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.content{padding:24px;flex:1}
+.content-header{margin-bottom:20px}
+.page-title{font-size:20px;font-weight:700}
+.page-sub{font-size:13px;color:var(--text-secondary);margin-top:3px}
+
+/* PERIOD SELECTOR */
+.period-bar{display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.period-label{font-size:12px;color:var(--text-secondary);font-weight:500}
+.period-btns{display:flex;gap:4px}
+.period-btn{padding:5px 12px;border-radius:var(--radius-full);border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-size:12px;font-weight:500;cursor:pointer;transition:var(--transition);font-family:var(--font-sans)}
+.period-btn:hover{border-color:var(--accent);color:var(--accent)}
+.period-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.refresh-btn{padding:5px 12px;border-radius:var(--radius-full);border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-size:12px;cursor:pointer;transition:var(--transition);font-family:var(--font-sans);display:flex;align-items:center;gap:4px;margin-left:auto}
+.refresh-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* CARDS */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;position:relative;overflow:hidden;transition:var(--transition)}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--card-accent,var(--accent))}
+.kpi-label{font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.kpi-value{font-size:28px;font-weight:700;color:var(--text-metric);line-height:1;margin-bottom:4px}
+.kpi-unit{font-size:13px;font-weight:400;color:var(--text-muted)}
+.kpi-sub{font-size:11px;color:var(--text-muted);margin-top:4px}
+.kpi-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:var(--radius-full);font-size:10px;font-weight:600;margin-top:6px}
+.badge-good{background:var(--success-bg);color:var(--success)}
+.badge-warn{background:var(--warning-bg);color:var(--warning)}
+.badge-bad{background:var(--danger-bg);color:var(--danger)}
+.badge-info{background:var(--info-bg);color:var(--info)}
+
+/* CHART CARDS */
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px}
+.chart-card.full{grid-column:1/-1}
+.chart-title{font-size:14px;font-weight:600;margin-bottom:4px}
+.chart-sub{font-size:11px;color:var(--text-muted);margin-bottom:16px}
+.chart-wrap{position:relative;height:220px}
+.chart-wrap.tall{height:280px}
+
+/* TABLE */
+.table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px;margin-bottom:20px}
+.table-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.table-title{font-size:14px;font-weight:600}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:8px 12px;color:var(--text-secondary);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--border-subtle,var(--border));vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surface-2)}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:var(--radius-full);font-size:11px;font-weight:600;white-space:nowrap}
+.badge-bot{background:rgba(26,111,168,0.12);color:var(--info)}
+.badge-human{background:rgba(45,122,79,0.12);color:var(--success)}
+.badge-hybrid{background:rgba(212,160,23,0.12);color:var(--gold-deep)}
+.badge-escalated{background:var(--danger-bg);color:var(--danger)}
+.badge-unknown{background:var(--surface-2);color:var(--text-muted)}
+
+/* THEME TOGGLE */
+.theme-toggle{width:32px;height:32px;border-radius:var(--radius-full);border:1px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--text-secondary);transition:var(--transition)}
+.theme-toggle:hover{border-color:var(--accent);color:var(--accent)}
+
+/* LOADING */
+.loading{display:flex;align-items:center;justify-content:center;height:120px;color:var(--text-muted);font-size:13px;gap:8px}
+.spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* STATUS BAR */
+.status-bar{display:flex;align-items:center;gap:8px;padding:8px 16px;background:var(--success-bg);border-radius:var(--radius-sm);margin-bottom:16px;font-size:12px;color:var(--success)}
+.status-bar.loading-bar{background:var(--info-bg);color:var(--info)}
+.status-bar.error-bar{background:var(--danger-bg);color:var(--danger)}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0}
+
+/* MOBILE */
+.hamburger{display:none;background:none;border:none;cursor:pointer;padding:4px;color:var(--text-primary)}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:var(--overlay);z-index:99}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar-overlay.open{display:block}
+  .main{margin-left:0}
+  .hamburger{display:flex}
+  .chart-grid{grid-template-columns:1fr}
+  .chart-card.full{grid-column:auto}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .content{padding:16px}
+  .topbar{padding:0 16px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🤖</div>
+      <div>
+        <div class="logo-text">SIJI Chatbot</div>
+        <div class="logo-sub">Analytics Dashboard</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-label">Analytics</div>
+        <a href="#overview" class="nav-item active" onclick="scrollTo('overview')"><span class="icon">📊</span> Overview</a>
+        <a href="#trend" class="nav-item" onclick="scrollTo('trend')"><span class="icon">📈</span> Trend Harian</a>
+        <a href="#layers" class="nav-item" onclick="scrollTo('layers')"><span class="icon">🔀</span> Layer Pipeline</a>
+        <a href="#hourly" class="nav-item" onclick="scrollTo('hourly')"><span class="icon">⏰</span> Jam Aktif</a>
+        <a href="#conversations" class="nav-item" onclick="scrollTo('conversations')"><span class="icon">💬</span> Percakapan</a>
+        <a href="#quality" class="nav-item" onclick="scrollTo('quality')"><span class="icon">⭐</span> Kualitas</a>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Menu</div>
+        <a href="https://dashboard.sijibintaro.id/" class="nav-item"><span class="icon">🏠</span> Dashboard Utama</a>
+        <a href="https://dashboard.sijibintaro.id/hr/" class="nav-item"><span class="icon">👥</span> HR Rekrutmen</a>
+        <a href="https://sijibintaro.id/gowa/" class="nav-item" target="_blank"><span class="icon">📱</span> GOWA Panel</a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="nav-item" style="font-size:11px;color:var(--sidebar-text)">
+        <span class="icon">🕐</span> <span id="lastUpdate">Loading...</span>
+      </div>
+      <div class="nav-item" onclick="doLogout()" style="font-size:12px;color:var(--sidebar-text);cursor:pointer;margin-top:2px" onmouseover="this.style.color='#E55A4E'" onmouseout="this.style.color='var(--sidebar-text)'">
+        <span class="icon">🚪</span> Logout
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger" onclick="toggleSidebar()">☰</button>
+        <div class="topbar-title">🤖 Chatbot Analytics</div>
+      </div>
+      <div class="topbar-right">
+        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">🌙</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="content-header">
+        <div class="page-title">Evaluasi Chatbot WhatsApp</div>
+        <div class="page-sub">Monitoring kualitas dan usage autoreply — 6281288783088</div>
+      </div>
+
+      <!-- STATUS -->
+      <div class="status-bar loading-bar" id="statusBar">
+        <div class="dot"></div>
+        <span>Memuat data...</span>
+      </div>
+
+      <!-- PERIOD SELECTOR -->
+      <div class="period-bar">
+        <span class="period-label">Periode:</span>
+        <div class="period-btns">
+          <button class="period-btn" onclick="setPeriod(7)">7 Hari</button>
+          <button class="period-btn active" onclick="setPeriod(30)">30 Hari</button>
+          <button class="period-btn" onclick="setPeriod(90)">90 Hari</button>
+        </div>
+        <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
+      </div>
+
+      <!-- KPI CARDS -->
+      <div id="overview">
+        <div class="kpi-grid" id="kpiGrid">
+          <div class="loading"><div class="spinner"></div> Memuat KPI...</div>
+        </div>
+      </div>
+
+      <!-- CHARTS ROW 1 -->
+      <div class="chart-grid" id="trend">
+        <div class="chart-card full">
+          <div class="chart-title">📈 Trend Pesan Harian</div>
+          <div class="chart-sub">Bot replies vs human replies vs pesan masuk</div>
+          <div class="chart-wrap tall">
+            <canvas id="chartDaily"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHARTS ROW 2 -->
+      <div class="chart-grid">
+        <div class="chart-card" id="layers">
+          <div class="chart-title">🔀 Distribusi Layer Pipeline</div>
+          <div class="chart-sub">Layer mana yang paling sering dipakai</div>
+          <div class="chart-wrap">
+            <canvas id="chartLayers"></canvas>
+          </div>
+        </div>
+        <div class="chart-card" id="hourly">
+          <div class="chart-title">⏰ Aktivitas per Jam (WIB)</div>
+          <div class="chart-sub">Jam berapa pelanggan paling aktif</div>
+          <div class="chart-wrap">
+            <canvas id="chartHourly"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- QUALITY SIGNALS -->
+      <div class="chart-grid" id="quality">
+        <div class="chart-card full">
+          <div class="chart-title">⭐ Sinyal Kualitas Bot</div>
+          <div class="chart-sub">Fallback rate, layer performance, escalation patterns</div>
+          <div id="qualityContent" class="loading"><div class="spinner"></div> Memuat...</div>
+        </div>
+      </div>
+
+      <!-- CONVERSATIONS TABLE -->
+      <div class="table-card" id="conversations">
+        <div class="table-header">
+          <div class="table-title">💬 Percakapan Terbaru</div>
+          <div style="font-size:12px;color:var(--text-muted)" id="convoCount">—</div>
+        </div>
+        <div class="table-wrap">
+          <table id="convoTable">
+            <thead>
+              <tr>
+                <th>Pelanggan</th>
+                <th>Handler</th>
+                <th>Bot</th>
+                <th>Human</th>
+                <th>Layer Terakhir</th>
+                <th>Eskalasi</th>
+                <th>Pesan Terakhir</th>
+              </tr>
+            </thead>
+            <tbody id="convoBody">
+              <tr><td colspan="7" style="text-align:center;color:var(--text-muted)">Memuat...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const BASE = '/api/chatbot';
+let DAYS = 30;
+let charts = {};
+
+// ─── Auth ───────────────────────────────────────────────────────────────────
+function getAuthHeader() {
+  let creds = sessionStorage.getItem('siji_creds');
+  if (!creds) {
+    const u = prompt('Username:') || '';
+    const p = prompt('Password:') || '';
+    creds = btoa(u + ':' + p);
+    sessionStorage.setItem('siji_creds', creds);
+  }
+  return 'Basic ' + creds;
+}
+
+async function apiFetch(path) {
+  const res = await fetch(BASE + path, {
+    headers: { 'Authorization': getAuthHeader() }
+  });
+  if (res.status === 401) {
+    sessionStorage.removeItem('siji_creds');
+    throw new Error('Unauthorized');
+  }
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+// ─── Period ──────────────────────────────────────────────────────────────────
+function setPeriod(d) {
+  DAYS = d;
+  document.querySelectorAll('.period-btn').forEach((b,i) => {
+    b.classList.toggle('active', [7,30,90][i] === d);
+  });
+  loadAll();
+}
+
+// ─── Status ──────────────────────────────────────────────────────────────────
+function setStatus(msg, type = 'ok') {
+  const bar = document.getElementById('statusBar');
+  bar.className = 'status-bar' + (type === 'loading' ? ' loading-bar' : type === 'error' ? ' error-bar' : '');
+  bar.innerHTML = `<div class="dot"></div><span>${msg}</span>`;
+  if (type === 'ok') setTimeout(() => bar.style.display = 'none', 3000);
+  else bar.style.display = 'flex';
+}
+
+// ─── KPI Cards ───────────────────────────────────────────────────────────────
+function renderKPI(data) {
+  const kpis = data.kpis;
+  const convos = data.conversations;
+  const msgs = data.messages;
+
+  const containBadge = kpis.containment_rate >= 70 ? 'good' :
+                       kpis.containment_rate >= 40 ? 'warn' : 'bad';
+  const escBadge = kpis.escalation_rate <= 5 ? 'good' :
+                   kpis.escalation_rate <= 15 ? 'warn' : 'bad';
+  const llmBadge = kpis.llm_rate >= 30 ? 'warn' : 'good';
+
+  document.getElementById('kpiGrid').innerHTML = `
+    <div class="kpi-card" style="--card-accent:var(--info)">
+      <div class="kpi-label">Containment Rate</div>
+      <div class="kpi-value">${kpis.containment_rate}<span class="kpi-unit">%</span></div>
+      <div class="kpi-sub">Bot handle penuh tanpa human</div>
+      <div class="kpi-badge badge-${containBadge}">
+        ${kpis.containment_rate >= 70 ? '✓ Baik' : kpis.containment_rate >= 40 ? '⚠ Cukup' : '✗ Rendah'}
+      </div>
+    </div>
+    <div class="kpi-card" style="--card-accent:var(--danger)">
+      <div class="kpi-label">Escalation Rate</div>
+      <div class="kpi-value">${kpis.escalation_rate}<span class="kpi-unit">%</span></div>
+      <div class="kpi-sub">Percakapan dieskalasi ke CS</div>
+      <div class="kpi-badge badge-${escBadge}">
+        ${kpis.escalation_rate <= 5 ? '✓ Normal' : kpis.escalation_rate <= 15 ? '⚠ Perhatian' : '✗ Tinggi'}
+      </div>
+    </div>
+    <div class="kpi-card" style="--card-accent:var(--warning)">
+      <div class="kpi-label">LLM Rate</div>
+      <div class="kpi-value">${kpis.llm_rate}<span class="kpi-unit">%</span></div>
+      <div class="kpi-sub">Bot pakai RAG+LLM</div>
+      <div class="kpi-badge badge-${llmBadge}">
+        ${kpis.llm_rate >= 30 ? '⚠ Tinggi' : '✓ Efisien'}
+      </div>
+    </div>
+    <div class="kpi-card" style="--card-accent:var(--success)">
+      <div class="kpi-label">Bot Ratio</div>
+      <div class="kpi-value">${kpis.bot_ratio}<span class="kpi-unit">%</span></div>
+      <div class="kpi-sub">dari total reply (bot vs human)</div>
+      <div class="kpi-badge badge-info">📊 ${msgs.bot_replies} bot / ${msgs.human_replies} human</div>
+    </div>
+    <div class="kpi-card" style="--card-accent:var(--gold)">
+      <div class="kpi-label">Response Time</div>
+      <div class="kpi-value">${kpis.avg_response_sec}<span class="kpi-unit">s</span></div>
+      <div class="kpi-sub">Rata-rata waktu bot reply</div>
+      <div class="kpi-badge badge-${kpis.avg_response_sec <= 3 ? 'good' : kpis.avg_response_sec <= 8 ? 'warn' : 'bad'}">
+        ${kpis.avg_response_sec <= 3 ? '✓ Cepat' : kpis.avg_response_sec <= 8 ? '⚠ Normal' : '✗ Lambat'}
+      </div>
+    </div>
+    <div class="kpi-card" style="--card-accent:var(--text-muted)">
+      <div class="kpi-label">Total Percakapan</div>
+      <div class="kpi-value">${convos.total}</div>
+      <div class="kpi-sub">${convos.unique_customers} pelanggan unik</div>
+      <div class="kpi-badge badge-info">📨 ${msgs.inbound} pesan masuk</div>
+    </div>
+  `;
+}
+
+// ─── Chart: Daily ────────────────────────────────────────────────────────────
+function renderDaily(data) {
+  const labels = data.data.map(d => {
+    const dt = new Date(d.date);
+    return dt.toLocaleDateString('id-ID', {month:'short',day:'numeric'});
+  });
+  const inbound = data.data.map(d => d.inbound);
+  const bot = data.data.map(d => d.bot_replies);
+  const human = data.data.map(d => d.human_replies);
+
+  if (charts.daily) charts.daily.destroy();
+  charts.daily = new Chart(document.getElementById('chartDaily'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {label:'Pesan Masuk',data:inbound,backgroundColor:'rgba(26,111,168,0.2)',borderColor:'rgba(26,111,168,0.8)',borderWidth:1,borderRadius:3},
+        {label:'Bot Reply',data:bot,backgroundColor:'rgba(212,160,23,0.7)',borderColor:'rgba(184,134,11,1)',borderWidth:1,borderRadius:3},
+        {label:'Human Reply',data:human,backgroundColor:'rgba(45,122,79,0.6)',borderColor:'rgba(45,122,79,1)',borderWidth:1,borderRadius:3},
+      ]
+    },
+    options: chartOpts({stacked:false})
+  });
+}
+
+// ─── Chart: Layers ───────────────────────────────────────────────────────────
+const LAYER_COLORS = {
+  'rag_llm':'rgba(212,160,23,0.8)','keyword':'rgba(26,111,168,0.8)',
+  'catalog':'rgba(45,122,79,0.8)','escalated':'rgba(192,57,43,0.8)',
+  'job':'rgba(142,68,173,0.8)','order_status':'rgba(41,128,185,0.8)',
+  'ask_item':'rgba(230,126,34,0.8)','holiday':'rgba(52,152,219,0.8)',
+  'default':'rgba(127,140,141,0.8)','untracked':'rgba(189,195,199,0.8)',
+};
+function renderLayers(data) {
+  if (!data.layers || !data.layers.length) {
+    document.getElementById('chartLayers').parentNode.innerHTML = '<div class="loading">Belum ada data bot replies</div>';
+    return;
+  }
+  const labels = data.layers.map(l => l.label);
+  const counts = data.layers.map(l => l.count);
+  const colors = data.layers.map(l => LAYER_COLORS[l.layer] || 'rgba(127,140,141,0.8)');
+
+  if (charts.layers) charts.layers.destroy();
+  charts.layers = new Chart(document.getElementById('chartLayers'), {
+    type: 'doughnut',
+    data: {labels, datasets: [{data:counts, backgroundColor:colors, borderWidth:2, borderColor:'var(--surface)'}]},
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins: {
+        legend: {position:'bottom', labels:{color:getChartColor(), font:{size:11}, padding:8}},
+        tooltip: {callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw} (${data.layers[ctx.dataIndex].pct}%)`}}
+      }
+    }
+  });
+}
+
+// ─── Chart: Hourly ───────────────────────────────────────────────────────────
+function renderHourly(data) {
+  const labels = data.data.map(d => d.label);
+  const inbound = data.data.map(d => d.inbound);
+  const bot = data.data.map(d => d.bot_replies);
+
+  if (charts.hourly) charts.hourly.destroy();
+  charts.hourly = new Chart(document.getElementById('chartHourly'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {label:'Pesan Masuk',data:inbound,backgroundColor:'rgba(26,111,168,0.3)',borderColor:'rgba(26,111,168,0.7)',borderWidth:1,borderRadius:2},
+        {label:'Bot Reply',data:bot,backgroundColor:'rgba(212,160,23,0.7)',borderColor:'rgba(184,134,11,1)',borderWidth:1,borderRadius:2},
+      ]
+    },
+    options: chartOpts({xTitle:'Jam (WIB)'})
+  });
+}
+
+// ─── Quality ─────────────────────────────────────────────────────────────────
+function renderQuality(data) {
+  const fallbackBadge = data.fallback_rate <= 5 ? 'good' : data.fallback_rate <= 15 ? 'warn' : 'bad';
+  let layerRows = '';
+  for (const l of (data.layer_performance || [])) {
+    layerRows += `<tr>
+      <td><code style="font-size:11px;background:var(--surface-2);padding:2px 6px;border-radius:4px">${l.layer}</code></td>
+      <td>${l.count}</td>
+      <td>${l.avg_response_ms}ms</td>
+    </tr>`;
+  }
+  document.getElementById('qualityContent').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px">
+      <div class="kpi-card" style="--card-accent:var(--danger)">
+        <div class="kpi-label">Fallback Rate</div>
+        <div class="kpi-value">${data.fallback_rate}<span class="kpi-unit">%</span></div>
+        <div class="kpi-sub">Bot tidak bisa jawab (${data.fallback_count} kali)</div>
+        <div class="kpi-badge badge-${fallbackBadge}">
+          ${data.fallback_rate <= 5 ? '✓ Rendah (baik)' : data.fallback_rate <= 15 ? '⚠ Perhatian' : '✗ Tinggi'}
+        </div>
+      </div>
+      <div class="kpi-card" style="--card-accent:var(--warning)">
+        <div class="kpi-label">Eskalasi setelah Bot</div>
+        <div class="kpi-value">${data.escalated_after_bot}</div>
+        <div class="kpi-sub">Percakapan yang eskalasi meski bot sudah coba</div>
+      </div>
+      <div class="kpi-card" style="--card-accent:var(--info)">
+        <div class="kpi-label">Rata-rata Pesan/Convo</div>
+        <div class="kpi-value">${data.avg_messages_per_convo}</div>
+        <div class="kpi-sub">Lebih panjang = lebih kompleks</div>
+      </div>
+    </div>
+    ${layerRows ? `<div style="font-size:13px;font-weight:600;margin-bottom:8px">Layer Performance Detail</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Layer</th><th>Count</th><th>Avg Response</th></tr></thead>
+      <tbody>${layerRows}</tbody>
+    </table></div>` : '<div style="color:var(--text-muted);font-size:13px">Belum ada data layer performance</div>'}
+  `;
+}
+
+// ─── Conversations Table ──────────────────────────────────────────────────────
+function renderConvos(data) {
+  document.getElementById('convoCount').textContent = `${data.conversations.length} percakapan`;
+  const tbody = document.getElementById('convoBody');
+  if (!data.conversations.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">Belum ada data</td></tr>';
+    return;
+  }
+  const handlerBadge = (h) => {
+    const map = {
+      'bot_only': ['badge-bot','🤖 Bot Only'],
+      'human_only': ['badge-human','👤 Human'],
+      'hybrid': ['badge-hybrid','🤝 Hybrid'],
+    };
+    const [cls, label] = map[h] || ['badge-unknown','❓ Unknown'];
+    return `<span class="badge ${cls}">${label}</span>`;
+  };
+  const layerLabel = (l) => {
+    if (!l) return '<span style="color:var(--text-muted)">—</span>';
+    const map = {rag_llm:'RAG+LLM',keyword:'Keyword',catalog:'Katalog',escalated:'Eskalasi',job:'Lamaran',order_status:'Status Order'};
+    const key = Object.keys(map).find(k => l.startsWith(k));
+    return `<code style="font-size:10px;background:var(--surface-2);padding:2px 5px;border-radius:3px">${map[key]||l}</code>`;
+  };
+  tbody.innerHTML = data.conversations.map(c => {
+    const phone = c.phone ? c.phone.replace('62','0') : '—';
+    const name = c.name && c.name !== c.phone && c.name !== c.jid
+      ? `<div style="font-weight:500">${c.name}</div><div style="font-size:11px;color:var(--text-muted)">${phone}</div>`
+      : `<div style="font-weight:500">${phone}</div>`;
+    const lastMsg = c.last_message ? c.last_message.substring(0,40) + (c.last_message.length>40?'…':'') : '—';
+    const lastTime = c.last_message_time ? new Date(c.last_message_time).toLocaleDateString('id-ID',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+    return `<tr>
+      <td>${name}</td>
+      <td>${handlerBadge(c.handled_by)}</td>
+      <td style="text-align:center">${c.bot_count||0}</td>
+      <td style="text-align:center">${c.human_count||0}</td>
+      <td>${layerLabel(c.last_bot_layer)}</td>
+      <td style="text-align:center">${c.escalated ? '<span class="badge badge-escalated">⚠ Ya</span>' : '<span style="color:var(--text-muted)">—</span>'}</td>
+      <td style="max-width:200px">
+        <div style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${lastMsg}</div>
+        <div style="font-size:10px;color:var(--text-muted)">${lastTime}</div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── Chart Defaults ───────────────────────────────────────────────────────────
+function getChartColor() {
+  return getComputedStyle(document.documentElement).getPropertyValue('--chart-text').trim() || '#9E9E9E';
+}
+function chartOpts({stacked=false, xTitle=null}={}) {
+  const color = getChartColor();
+  return {
+    responsive:true, maintainAspectRatio:false,
+    plugins: {
+      legend: {position:'bottom', labels:{color, font:{size:11}, padding:10}},
+      tooltip: {mode:'index', intersect:false}
+    },
+    scales: {
+      x: {stacked, grid:{color:'var(--chart-grid)'}, ticks:{color, maxRotation:45, font:{size:10}}, title:xTitle?{display:true,text:xTitle,color}:undefined},
+      y: {stacked, grid:{color:'var(--chart-grid)'}, ticks:{color, font:{size:10}}}
+    }
+  };
+}
+
+// ─── Load All ────────────────────────────────────────────────────────────────
+async function loadAll() {
+  setStatus('Memuat data...', 'loading');
+  try {
+    const [overview, daily, layers, hourly, convos, quality] = await Promise.all([
+      apiFetch(`/overview?days=${DAYS}`),
+      apiFetch(`/daily?days=${DAYS}`),
+      apiFetch(`/layers?days=${DAYS}`),
+      apiFetch(`/hourly?days=${DAYS}`),
+      apiFetch(`/conversations?days=${DAYS}&limit=50`),
+      apiFetch(`/quality?days=${DAYS}`),
+    ]);
+    renderKPI(overview);
+    renderDaily(daily);
+    renderLayers(layers);
+    renderHourly(hourly);
+    renderConvos(convos);
+    renderQuality(quality);
+    document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('id-ID');
+    setStatus(`Data berhasil dimuat — ${DAYS} hari terakhir`, 'ok');
+  } catch(e) {
+    setStatus('Gagal memuat data: ' + e.message, 'error');
+  }
+}
+
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+}
+function scrollTo(id) {
+  document.getElementById(id)?.scrollIntoView({behavior:'smooth', block:'start'});
+  closeSidebar();
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+}
+
+// ─── Theme ────────────────────────────────────────────────────────────────────
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('siji-theme', next);
+  document.querySelector('.theme-toggle').textContent = next === 'dark' ? '☀️' : '🌙';
+  // Redraw charts with new colors
+  Object.values(charts).forEach(c => c?.update());
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+document.querySelector('.theme-toggle').textContent =
+  document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+loadAll();
+// Auto-refresh every 5 minutes
+setInterval(loadAll, 5 * 60 * 1000);
+</script>
+</body>
+</html>

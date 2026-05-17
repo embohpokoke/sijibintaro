@@ -5,7 +5,7 @@ import requests
 from datetime import datetime
 import sys
 
-DB_PATH = '/var/www/sijibintaro/siji.db'
+DB_PATH = '/opt/sijibintaro/siji.db'
 DEEPSEEK_API = 'https://api.deepseek.com/v1/chat/completions'
 DEEPSEEK_KEY = 'sk-101e909db66846a2b84cc7f9479f58f6'
 MINIONS_API = 'https://minions.embohpokoke.my.id/api/logs'

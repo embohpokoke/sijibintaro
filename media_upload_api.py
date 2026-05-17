@@ -1,5 +1,5 @@
 """
-Media Upload API — Private file uploader for /var/www/sijibintaro/media/
+Media Upload API — Private file uploader for /opt/sijibintaro/media/
 URL: /siji-xm7k2p/upload
 PIN: protected (set via UPLOAD_PIN env or hardcoded fallback)
 """
@@ -11,7 +11,7 @@ from datetime import datetime
 router = APIRouter(prefix="/siji-xm7k2p")
 
 UPLOAD_PIN = os.environ.get("UPLOAD_PIN", "964214")
-MEDIA_DIR = "/var/www/sijibintaro/media"
+MEDIA_DIR = "/opt/sijibintaro/media"
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".mp4", ".mov", ".avi", ".pdf", ".zip"}
 

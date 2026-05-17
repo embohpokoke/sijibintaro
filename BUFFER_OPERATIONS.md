@@ -240,7 +240,7 @@ Fix:
 
 ```
 Check:
-1. Media folder exists? ls /var/www/sijibintaro/media/
+1. Media folder exists? ls /opt/sijibintaro/media/
 2. Images in folder?
 3. File permissions?
 

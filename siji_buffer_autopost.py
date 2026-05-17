@@ -21,7 +21,7 @@ logger = logging.getLogger()
 BUFFER_API_TOKEN = os.getenv("BUFFER_API_TOKEN", "").strip()
 BUFFER_API_URL = "https://api.buffer.com"
 BUFFER_ORG_ID = "69b39c8a4eae0eec66762adc"
-MEDIA_PATH = "/var/www/sijibintaro/media/"
+MEDIA_PATH = "/opt/sijibintaro/media/"
 
 CAPTIONS = {
     "promo": "🚀 Promo Minggu! Hemat cuci 08:00-16:00, bayar sekarang 25% ✨ Lokasi: Jl. Raya Emerald Boulevard, BLOK CE/A1 No.5 📲 Hubungi kami sekarang!",

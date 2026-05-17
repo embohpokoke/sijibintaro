@@ -23,7 +23,7 @@ BUFFER_API_URL = "https://api.buffer.com"
 BUFFER_ORG_ID = "69b39c8a4eae0eec66762adc"
 BUFFER_IG_ID = os.getenv("BUFFER_IG_ID", "").strip()
 BUFFER_TIKTOK_ID = os.getenv("BUFFER_TIKTOK_ID", "").strip()
-MEDIA_PATH = "/var/www/sijibintaro/media/"
+MEDIA_PATH = "/opt/sijibintaro/media/"
 
 CAPTION_TEMPLATES = {
     "promo": {

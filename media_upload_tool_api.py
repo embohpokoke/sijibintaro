@@ -12,7 +12,7 @@ from PIL import Image, ImageOps
 router = APIRouter()
 
 UPLOAD_TOKEN = "siji-media-2026"
-IMAGES_DIR = Path("/var/www/sijibintaro/images")
+IMAGES_DIR = Path("/opt/sijibintaro/images")
 ALLOWED_MIME = {
     "image/jpeg", "image/png", "image/webp", "image/gif",
     "video/mp4", "video/quicktime", "video/webm"
@@ -122,10 +122,10 @@ def extract_video_thumbnail(video_path: Path) -> Path | None:
 def git_push(filename: str):
     """Git add + commit + push."""
     try:
-        subprocess.run(["git", "add", f"images/{filename}"], cwd="/var/www/sijibintaro", capture_output=True, timeout=10)
+        subprocess.run(["git", "add", f"images/{filename}"], cwd="/opt/sijibintaro", capture_output=True, timeout=10)
         subprocess.run(["git", "commit", "-m", f"media: upload {filename} via web tool (auto-optimized)"],
-                       cwd="/var/www/sijibintaro", capture_output=True, timeout=15)
-        subprocess.run(["git", "push"], cwd="/var/www/sijibintaro", capture_output=True, timeout=30)
+                       cwd="/opt/sijibintaro", capture_output=True, timeout=15)
+        subprocess.run(["git", "push"], cwd="/opt/sijibintaro", capture_output=True, timeout=30)
         return True
     except Exception:
         return False

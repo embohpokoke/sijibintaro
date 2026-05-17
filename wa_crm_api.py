@@ -239,7 +239,8 @@ async def get_messages(
         if conv:
             p = conv["phone"]
             tx = conn.execute("""
-                SELECT customer_name, customer_address, COUNT(*) as total_orders,
+                SELECT MAX(customer_name) as customer_name, MAX(customer_address) as customer_address,
+                       COUNT(*) as total_orders,
                        SUM(total_tagihan) as total_revenue, MAX(date_of_transaction) as last_order
                 FROM transactions
                 WHERE REPLACE(REPLACE(REPLACE(customer_phone,'+',''),'-',''),' ','') = ?

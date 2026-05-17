@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIJI Bintaro - Ops Monitor</title>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #0F0F0F; --card: #1A1A1A; --card-border: #333;
+            --gold: #C17E1A; --gold-light: #D4A03C;
+            --text: #F5F5F5; --text-sec: #AAAAAA; --text-muted: #777;
+            --green: #4CAF50; --red: #E53935; --blue: #2196F3; --orange: #FF9800;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg); color: var(--text); padding: 2rem;
+        }
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 2rem;
+        }
+        .header h1 { font-size: 1.5rem; color: var(--gold); }
+        .header .refresh-btn {
+            background: var(--card); border: 1px solid var(--card-border);
+            color: var(--text-sec); border-radius: 8px; padding: .5rem 1rem;
+            font-size: .85rem; cursor: pointer;
+        }
+        .header .refresh-btn:hover { border-color: var(--gold); color: var(--gold); }
+        .status-time { font-size: .75rem; color: var(--text-muted); margin-bottom: 1.5rem; }
+        .cards {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem; margin-bottom: 2rem;
+        }
+        .card {
+            background: var(--card); border: 1px solid var(--card-border);
+            border-radius: 12px; padding: 1.25rem;
+        }
+        .card-label { font-size: .7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: .4rem; }
+        .card-value { font-size: 1.3rem; font-weight: 700; }
+        .card-value.ok { color: var(--green); }
+        .card-value.warn { color: var(--orange); }
+        .card-value.error { color: var(--red); }
+        .card-sub { font-size: .75rem; color: var(--text-muted); margin-top: .2rem; }
+        .panel {
+            background: var(--card); border: 1px solid var(--card-border);
+            border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem;
+        }
+        .panel-title { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; }
+        table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+        th { text-align: left; padding: .6rem .75rem; border-bottom: 2px solid var(--card-border); color: var(--text-muted); font-size: .75rem; text-transform: uppercase; }
+        td { padding: .6rem .75rem; border-bottom: 1px solid #222; }
+        .dot-ok { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+        .dot-err { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
+        .dot-warn { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--orange); }
+        .links { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem; }
+        .links a {
+            background: var(--card); border: 1px solid var(--card-border);
+            color: var(--gold); padding: .5rem 1rem; border-radius: 8px;
+            font-size: .85rem; text-decoration: none;
+        }
+        .links a:hover { border-color: var(--gold); background: rgba(193,126,26,.08); }
+        .footer { font-size: .7rem; color: var(--text-muted); margin-top: 2rem; }
+        @media (max-width: 480px) {
+            body { padding: 1rem; }
+            .cards { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>SIJI Bintaro Ops</h1>
+        <button class="refresh-btn" onclick="loadAll()">Refresh</button>
+    </div>
+    <div class="status-time" id="status-time"></div>
+
+    <div class="links">
+        <a href="/docs" target="_blank">API Docs (Swagger)</a>
+        <a href="https://dashboard.sijibintaro.id" target="_blank">Dashboard</a>
+        <a href="https://crm.sijibintaro.id" target="_blank">CRM</a>
+        <a href="https://gowa.sijibintaro.id" target="_blank">GOWA</a>
+        <a href="https://order.sijibintaro.id" target="_blank">Order Tracking</a>
+    </div>
+
+    <div class="cards" id="status-cards"></div>
+
+    <div class="panel">
+        <div class="panel-title">Services</div>
+        <table>
+            <thead><tr><th>Service</th><th>Status</th><th>Detail</th></tr></thead>
+            <tbody id="services-table"></tbody>
+        </table>
+    </div>
+
+    <div class="panel">
+        <div class="panel-title">Database</div>
+        <table>
+            <thead><tr><th>Table</th><th>Rows</th><th>Detail</th></tr></thead>
+            <tbody id="db-table"></tbody>
+        </table>
+    </div>
+
+    <div class="panel">
+        <div class="panel-title">Recent WA Messages (Today)</div>
+        <table>
+            <thead><tr><th>Time</th><th>From</th><th>Message</th></tr></thead>
+            <tbody id="wa-table"></tbody>
+        </table>
+    </div>
+
+    <div class="footer">SIJI Bintaro Ops Monitor v1.0 | Auto-refresh: 60s</div>
+
+    <script>
+    const API = '/api';
+
+    async function apiFetch(url) {
+        const r = await fetch(API + url);
+        if (!r.ok) throw new Error(`${r.status}`);
+        return r.json();
+    }
+
+    async function loadAll() {
+        document.getElementById('status-time').textContent = 'Last check: ' + new Date().toLocaleString('id-ID');
+        await Promise.all([loadHealth(), loadDbStats(), loadRecentWa()]);
+    }
+
+    async function loadHealth() {
+        const cards = document.getElementById('status-cards');
+        const svcs = document.getElementById('services-table');
+        const checks = [];
+
+        // API health
+        try {
+            const h = await apiFetch('/dashboard/health');
+            checks.push({ name: 'FastAPI', ok: true, detail: `${h.transactions || 0} transactions` });
+        } catch(e) {
+            checks.push({ name: 'FastAPI', ok: false, detail: 'Unreachable' });
+        }
+
+        // WA Stats
+        try {
+            const s = await apiFetch('/dashboard/wa/stats');
+            checks.push({ name: 'WA Pipeline', ok: true, detail: `${s.total_messages} msgs, ${s.total_today} today` });
+        } catch(e) {
+            checks.push({ name: 'WA Pipeline', ok: false, detail: 'Error' });
+        }
+
+        // GOWA check (via our API proxy)
+        checks.push({ name: 'GOWA', ok: true, detail: 'Port 3002 (check via gowa.sijibintaro.id)' });
+
+        // Overview for quick stats
+        try {
+            const ov = await apiFetch('/dashboard/overview?month=2026-02');
+            checks.push({ name: 'Dashboard API', ok: true, detail: `Revenue: Rp ${Math.round(ov.revenue||0).toLocaleString('id-ID')}` });
+        } catch(e) {
+            checks.push({ name: 'Dashboard API', ok: false, detail: 'Error' });
+        }
+
+        const okCount = checks.filter(c => c.ok).length;
+        cards.innerHTML = `
+            <div class="card"><div class="card-label">Services</div><div class="card-value ${okCount === checks.length ? 'ok' : 'warn'}">${okCount}/${checks.length} OK</div></div>
+            <div class="card"><div class="card-label">API</div><div class="card-value ok">Running</div><div class="card-sub">Port 8002</div></div>
+            <div class="card"><div class="card-label">GOWA</div><div class="card-value ok">Running</div><div class="card-sub">Port 3002</div></div>
+            <div class="card"><div class="card-label">Server</div><div class="card-value ok">Online</div><div class="card-sub">Hostinger VPS</div></div>
+        `;
+
+        svcs.innerHTML = checks.map(c => `
+            <tr>
+                <td>${c.name}</td>
+                <td><span class="${c.ok ? 'dot-ok' : 'dot-err'}"></span> ${c.ok ? 'OK' : 'DOWN'}</td>
+                <td style="color:var(--text-muted);font-size:.8rem">${c.detail}</td>
+            </tr>
+        `).join('');
+    }
+
+    async function loadDbStats() {
+        const tbody = document.getElementById('db-table');
+        try {
+            const h = await apiFetch('/dashboard/health');
+            const s = await apiFetch('/dashboard/wa/stats');
+            tbody.innerHTML = `
+                <tr><td>transactions</td><td>${(h.transactions||0).toLocaleString('id-ID')}</td><td style="color:var(--text-muted)">siji_database.db</td></tr>
+                <tr><td>wa_conversations</td><td>${(s.total_conversations||0).toLocaleString('id-ID')}</td><td style="color:var(--text-muted)">Individual chats</td></tr>
+                <tr><td>wa_messages</td><td>${(s.total_messages||0).toLocaleString('id-ID')}</td><td style="color:var(--text-muted)">${s.total_today||0} today</td></tr>
+            `;
+        } catch(e) {
+            tbody.innerHTML = '<tr><td colspan="3" style="color:var(--red)">Error loading DB stats</td></tr>';
+        }
+    }
+
+    async function loadRecentWa() {
+        const tbody = document.getElementById('wa-table');
+        try {
+            const data = await apiFetch('/dashboard/wa/conversations?page=1&limit=10&type=all');
+            const convs = data.conversations || [];
+            if (convs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="color:var(--text-muted)">No recent messages</td></tr>';
+                return;
+            }
+            tbody.innerHTML = convs.map(c => {
+                const time = c.last_message_time ? new Date(c.last_message_time).toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'}) : '-';
+                const msg = (c.last_message || '').substring(0, 60);
+                return `<tr>
+                    <td style="white-space:nowrap">${time}</td>
+                    <td>${esc(c.display_name)}</td>
+                    <td style="color:var(--text-muted);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(msg)}</td>
+                </tr>`;
+            }).join('');
+        } catch(e) {
+            tbody.innerHTML = '<tr><td colspan="3" style="color:var(--red)">Error</td></tr>';
+        }
+    }
+
+    function esc(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
+
+    loadAll();
+    setInterval(loadAll, 60000);
+    </script>
+</body>
+</html>

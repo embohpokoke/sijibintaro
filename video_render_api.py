@@ -12,8 +12,8 @@ from pathlib import Path
 router = APIRouter()
 
 UPLOAD_TOKEN = "siji-media-2026"
-IMAGES_DIR   = Path("/var/www/sijibintaro/images")
-RENDERED_DIR = Path("/var/www/sijibintaro/images/rendered")
+IMAGES_DIR   = Path("/opt/sijibintaro/images")
+RENDERED_DIR = Path("/opt/sijibintaro/images/rendered")
 RENDERED_DIR.mkdir(exist_ok=True)
 
 # ── Models ────────────────────────────────────────────────────────────

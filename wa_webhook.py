@@ -1844,6 +1844,16 @@ async def gowa_webhook(request: Request):
 
             print(f"[GOWA] {direction} {sender} → {body_text[:60]}")
 
+            # Presensi karyawan via WA (hadir/masuk/pulang/izin/sakit)
+            if (not is_from_me and not is_group and body_text.strip()):
+                try:
+                    if await handle_presensi(wa_conn, sender, body_text):
+                        wa_conn.commit()
+                        tx_conn.commit()
+                        return {"status": "ok", "handled": "presensi"}
+                except Exception as presensi_err:
+                    print(f"[PRESENSI] handler error for {sender}: {presensi_err}")
+
             # Tandai: karyawan sedang handle conversation ini
             if is_from_me and body_text.strip():
                 _mark_staff_replied(chat_jid)

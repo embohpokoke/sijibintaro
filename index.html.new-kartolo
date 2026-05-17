@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="SIJI Bintaro — Premium laundry & care specialist untuk sepatu, tas, dan pakaian. Antar jemput gratis radius 3km. Hubungi kami sekarang.">
+<meta name="keywords" content="laundry bintaro, cuci sepatu bintaro, cuci tas bintaro, laundry premium bintaro, shoes cleaning bintaro">
+<meta property="og:title" content="SIJI Bintaro — Premium Laundry & Care">
+<meta property="og:description" content="Premium laundry & care specialist. Sepatu, tas, pakaian, bed cover. Antar jemput gratis.">
+<meta property="og:image" content="https://sijibintaro.id/images/og-image.jpg">
+<meta property="og:url" content="https://sijibintaro.id">
+<title>SIJI Bintaro — Premium Laundry & Care</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+/* ── TOKENS ─────────────────────────────────────── */
+:root {
+  --color-primary:    #1a1a2e;
+  --color-accent:     #c8a96e;
+  --color-accent-lt:  #f0e0c0;
+  --color-surface:    #ffffff;
+  --color-bg:         #f9f7f4;
+  --color-text:       #1a1a2e;
+  --color-muted:      #6b7080;
+  --color-border:     #e8e0d4;
+  --color-success:    #25d366;
+
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 24px;
+  --radius-xl: 40px;
+
+  --space-xs:  8px;
+  --space-sm:  16px;
+  --space-md:  24px;
+  --space-lg:  48px;
+  --space-xl:  80px;
+  --space-2xl: 120px;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.08), 0 2px 6px rgba(0,0,0,.05);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,.12);
+
+  --max-w: 1100px;
+  --section-pad: var(--space-xl);
+}
+
+/* ── RESET ──────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body { font-family: var(--font-sans); background: var(--color-bg); color: var(--color-text); line-height: 1.6; }
+img { max-width: 100%; display: block; }
+a { color: inherit; text-decoration: none; }
+ul { list-style: none; }
+
+/* ── TYPOGRAPHY SCALE ───────────────────────────── */
+.text-xs   { font-size: 11px; line-height: 1.4; }
+.text-sm   { font-size: 13px; line-height: 1.5; }
+.text-base { font-size: 15px; line-height: 1.6; }
+.text-lg   { font-size: 18px; line-height: 1.5; }
+.text-xl   { font-size: 22px; line-height: 1.4; }
+.text-2xl  { font-size: 28px; line-height: 1.3; }
+.text-3xl  { font-size: 36px; line-height: 1.2; }
+.text-4xl  { font-size: 48px; line-height: 1.1; }
+.text-5xl  { font-size: 60px; line-height: 1.05; }
+.fw-400 { font-weight: 400; }
+.fw-500 { font-weight: 500; }
+.fw-600 { font-weight: 600; }
+.fw-700 { font-weight: 700; }
+.fw-800 { font-weight: 800; }
+.text-muted   { color: var(--color-muted); }
+.text-accent  { color: var(--color-accent); }
+.text-center  { text-align: center; }
+.text-upper   { text-transform: uppercase; letter-spacing: 1.5px; }
+
+/* ── LAYOUT ─────────────────────────────────────── */
+.container { max-width: var(--max-w); margin: 0 auto; padding: 0 var(--space-md); }
+.section   { padding: var(--section-pad) 0; }
+.section-alt { background: var(--color-surface); }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-md); }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-md); }
+.flex     { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-sm { gap: var(--space-sm); }
+.gap-md { gap: var(--space-md); }
+
+/* ── COMPONENTS ─────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 28px; border-radius: var(--radius-xl);
+  font-family: var(--font-sans); font-size: 14px; font-weight: 700;
+  cursor: pointer; border: none; transition: all 0.2s ease;
+  letter-spacing: 0.3px;
+}
+.btn-primary {
+  background: var(--color-accent); color: var(--color-primary);
+  box-shadow: 0 4px 16px rgba(200,169,110,.35);
+}
+.btn-primary:hover { background: #d4b57a; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(200,169,110,.4); }
+.btn-outline {
+  background: transparent; color: var(--color-primary);
+  border: 2px solid var(--color-border);
+}
+.btn-outline:hover { border-color: var(--color-accent); color: var(--color-accent); }
+.btn-wa {
+  background: var(--color-success); color: #fff;
+  box-shadow: 0 4px 16px rgba(37,211,102,.3);
+}
+.btn-wa:hover { background: #20c05c; transform: translateY(-1px); }
+.btn-lg { padding: 18px 36px; font-size: 15px; }
+
+.badge {
+  display: inline-block; padding: 5px 12px; border-radius: 20px;
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;
+}
+.badge-accent { background: var(--color-accent-lt); color: #8a6520; }
+.badge-dark   { background: var(--color-primary); color: var(--color-accent); }
+
+.card {
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg); padding: var(--space-md);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+
+.icon-wrap {
+  width: 52px; height: 52px; border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; flex-shrink: 0;
+}
+.icon-accent { background: var(--color-accent-lt); }
+.icon-dark   { background: var(--color-primary); }
+
+.divider { height: 1px; background: var(--color-border); margin: var(--space-lg) 0; }
+
+/* ── NAVBAR ─────────────────────────────────────── */
+.navbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(249,247,244,.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--color-border);
+  transition: all 0.3s ease;
+}
+.navbar .container { padding-top: 16px; padding-bottom: 16px; }
+.nav-brand { font-size: 20px; font-weight: 800; color: var(--color-primary); }
+.nav-brand span { color: var(--color-accent); }
+.nav-links { display: flex; gap: var(--space-md); align-items: center; }
+.nav-links a { font-size: 14px; font-weight: 500; color: var(--color-muted); transition: color 0.2s; }
+.nav-links a:hover { color: var(--color-primary); }
+.nav-cta { margin-left: var(--space-xs); }
+.nav-mobile-toggle { display: none; background: none; border: none; cursor: pointer; padding: 4px; }
+
+/* ── HERO ───────────────────────────────────────── */
+.hero {
+  min-height: 100vh; padding: 120px 0 80px;
+  background: linear-gradient(160deg, #1a1a2e 0%, #2d2b4e 50%, #1a2a1a 100%);
+  position: relative; overflow: hidden;
+}
+.hero::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 60% 60% at 70% 30%, rgba(200,169,110,.15) 0%, transparent 70%);
+}
+.hero .container { position: relative; z-index: 1; }
+.hero-inner { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-xl); align-items: center; }
+.hero-content .badge { margin-bottom: var(--space-sm); }
+.hero-headline {
+  font-size: clamp(36px, 5vw, 56px); font-weight: 800;
+  color: #fff; line-height: 1.1; margin: var(--space-sm) 0 var(--space-md);
+}
+.hero-headline em { color: var(--color-accent); font-style: normal; }
+.hero-sub { font-size: 17px; color: rgba(255,255,255,.65); margin-bottom: var(--space-lg); max-width: 460px; }
+.hero-actions { display: flex; gap: var(--space-sm); flex-wrap: wrap; }
+.hero-stats { display: flex; gap: var(--space-lg); margin-top: var(--space-lg); }
+.hero-stat-n { font-size: 28px; font-weight: 800; color: var(--color-accent); }
+.hero-stat-l { font-size: 12px; color: rgba(255,255,255,.5); margin-top: 2px; }
+.hero-visual {
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+  border-radius: var(--radius-xl); padding: var(--space-lg);
+  backdrop-filter: blur(8px);
+}
+.hero-service-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); }
+.hero-service-item {
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.1);
+  border-radius: var(--radius-md); padding: var(--space-sm) var(--space-md);
+  display: flex; align-items: center; gap: 10px;
+}
+.hero-service-item .icon { font-size: 22px; }
+.hero-service-item .name { font-size: 13px; font-weight: 600; color: #fff; }
+.hero-service-item .price { font-size: 11px; color: var(--color-accent); margin-top: 2px; }
+.hero-badge-live {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(37,211,102,.15); border: 1px solid rgba(37,211,102,.3);
+  border-radius: 20px; padding: 6px 12px; margin-bottom: var(--space-md);
+  font-size: 12px; color: #4ade80; font-weight: 600;
+}
+.dot-live { width: 7px; height: 7px; background: #4ade80; border-radius: 50%; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
+
+/* ── TRUST BAR ──────────────────────────────────── */
+.trust-bar { background: var(--color-primary); padding: var(--space-md) 0; }
+.trust-bar .container { display: flex; gap: var(--space-xl); justify-content: center; flex-wrap: wrap; }
+.trust-item { display: flex; align-items: center; gap: 10px; }
+.trust-item .icon { font-size: 20px; }
+.trust-item .text { font-size: 13px; color: rgba(255,255,255,.7); }
+.trust-item .text strong { color: #fff; display: block; font-size: 14px; }
+
+/* ── SERVICES ───────────────────────────────────── */
+.service-tabs { display: flex; gap: var(--space-xs); margin-bottom: var(--space-lg); flex-wrap: wrap; }
+.service-tab {
+  padding: 10px 20px; border-radius: var(--radius-xl); font-size: 13px; font-weight: 600;
+  cursor: pointer; border: 2px solid var(--color-border); background: transparent;
+  color: var(--color-muted); transition: all 0.2s; font-family: var(--font-sans);
+}
+.service-tab.active, .service-tab:hover {
+  border-color: var(--color-accent); color: var(--color-primary);
+  background: var(--color-accent-lt);
+}
+.service-panel { display: none; }
+.service-panel.active { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-sm); }
+.price-card {
+  background: var(--color-bg); border: 1px solid var(--color-border);
+  border-radius: var(--radius-md); padding: var(--space-md); position: relative;
+}
+.price-card.featured {
+  border-color: var(--color-accent); background: var(--color-surface);
+  box-shadow: 0 0 0 3px rgba(200,169,110,.15);
+}
+.price-card .svc-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.price-card .svc-desc { font-size: 12px; color: var(--color-muted); margin-bottom: var(--space-sm); }
+.price-card .svc-price { font-size: 20px; font-weight: 800; color: var(--color-accent); }
+.price-card .svc-unit  { font-size: 11px; color: var(--color-muted); }
+.price-card .svc-time  { font-size: 11px; color: var(--color-muted); margin-top: 6px; display: flex; align-items: center; gap: 4px; }
+.price-card .featured-tag {
+  position: absolute; top: -10px; right: 12px;
+  background: var(--color-accent); color: var(--color-primary);
+  font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 10px;
+  text-transform: uppercase; letter-spacing: 1px;
+}
+
+/* ── WHY SIJI ───────────────────────────────────── */
+.why-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-md); }
+.why-item { display: flex; gap: var(--space-md); }
+.why-item .icon-wrap { flex-shrink: 0; }
+.why-item h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+.why-item p  { font-size: 13px; color: var(--color-muted); line-height: 1.6; }
+
+/* ── TESTIMONIALS ───────────────────────────────── */
+.testimonials-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-md); }
+.testimonial-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-md); }
+.stars { color: #f59e0b; font-size: 14px; margin-bottom: var(--space-sm); }
+.testimonial-text { font-size: 14px; color: var(--color-text); line-height: 1.7; margin-bottom: var(--space-md); font-style: italic; }
+.testimonial-author { display: flex; align-items: center; gap: 10px; }
+.author-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--color-accent-lt); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; color: #8a6520; flex-shrink: 0; }
+.author-name { font-size: 13px; font-weight: 700; }
+.author-meta { font-size: 11px; color: var(--color-muted); }
+
+/* ── AREA COVERAGE ──────────────────────────────── */
+.area-grid { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
+.area-tag {
+  background: var(--color-bg); border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl); padding: 6px 14px;
+  font-size: 12px; font-weight: 500; color: var(--color-muted);
+}
+.area-tag.nearby { border-color: var(--color-accent); color: #8a6520; background: var(--color-accent-lt); }
+
+/* ── HOW IT WORKS ───────────────────────────────── */
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-md); position: relative; }
+.steps::before {
+  content: ''; position: absolute; top: 34px; left: calc(12.5% + 10px); right: calc(12.5% + 10px);
+  height: 1px; background: linear-gradient(90deg, var(--color-border) 0%, var(--color-accent) 50%, var(--color-border) 100%);
+  z-index: 0;
+}
+.step { text-align: center; position: relative; z-index: 1; }
+.step-num {
+  width: 56px; height: 56px; border-radius: 50%; background: var(--color-surface);
+  border: 2px solid var(--color-border); display: flex; align-items: center; justify-content: center;
+  margin: 0 auto var(--space-sm); font-size: 22px;
+}
+.step.active .step-num { border-color: var(--color-accent); background: var(--color-accent-lt); }
+.step h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.step p  { font-size: 12px; color: var(--color-muted); }
+
+/* ── CTA SECTION ────────────────────────────────── */
+.cta-section {
+  background: var(--color-primary);
+  position: relative; overflow: hidden;
+}
+.cta-section::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 50% 80% at 80% 50%, rgba(200,169,110,.12) 0%, transparent 70%);
+}
+.cta-inner { position: relative; z-index: 1; text-align: center; }
+.cta-inner h2 { font-size: clamp(28px, 4vw, 44px); font-weight: 800; color: #fff; margin-bottom: var(--space-sm); }
+.cta-inner p  { font-size: 16px; color: rgba(255,255,255,.6); margin-bottom: var(--space-lg); }
+.cta-actions  { display: flex; gap: var(--space-sm); justify-content: center; flex-wrap: wrap; }
+
+/* ── INFO BOX ───────────────────────────────────── */
+.info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-md); }
+.info-box { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-lg) var(--space-md); text-align: center; }
+.info-box .icon { font-size: 36px; margin-bottom: var(--space-sm); }
+.info-box h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+.info-box p  { font-size: 13px; color: var(--color-muted); line-height: 1.6; }
+
+/* ── FOOTER ─────────────────────────────────────── */
+footer {
+  background: var(--color-primary); padding: var(--space-xl) 0 var(--space-lg);
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+.footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: var(--space-xl); margin-bottom: var(--space-lg); }
+.footer-brand { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: var(--space-sm); }
+.footer-brand span { color: var(--color-accent); }
+.footer-desc { font-size: 13px; color: rgba(255,255,255,.45); line-height: 1.7; max-width: 300px; }
+.footer-col h4 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--color-accent); margin-bottom: var(--space-sm); }
+.footer-col ul li { margin-bottom: 8px; }
+.footer-col ul li a { font-size: 13px; color: rgba(255,255,255,.5); transition: color 0.2s; }
+.footer-col ul li a:hover { color: #fff; }
+.footer-bottom { display: flex; justify-content: space-between; align-items: center; padding-top: var(--space-md); border-top: 1px solid rgba(255,255,255,.08); }
+.footer-bottom p { font-size: 12px; color: rgba(255,255,255,.3); }
+.footer-social { display: flex; gap: var(--space-sm); }
+.social-btn { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all 0.2s; }
+.social-btn:hover { background: rgba(200,169,110,.2); border-color: var(--color-accent); }
+
+/* ── WA FLOAT ───────────────────────────────────── */
+.wa-float {
+  position: fixed; bottom: 24px; right: 24px; z-index: 99;
+  background: var(--color-success); color: #fff;
+  width: 60px; height: 60px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; box-shadow: 0 4px 20px rgba(37,211,102,.45);
+  transition: all 0.2s; animation: float-in 0.5s ease 2s backwards;
+}
+.wa-float:hover { transform: scale(1.1); box-shadow: 0 6px 28px rgba(37,211,102,.55); }
+@keyframes float-in { from{opacity:0;transform:scale(0.7)} to{opacity:1;transform:scale(1)} }
+
+/* ── SECTION HEADER ─────────────────────────────── */
+.section-header { text-align: center; margin-bottom: var(--space-lg); }
+.section-header .badge { margin-bottom: var(--space-sm); }
+.section-header h2 { font-size: clamp(24px, 4vw, 38px); font-weight: 800; margin-bottom: var(--space-sm); }
+.section-header p  { font-size: 15px; color: var(--color-muted); max-width: 520px; margin: 0 auto; }
+
+/* ── RESPONSIVE ─────────────────────────────────── */
+@media (max-width: 900px) {
+  .hero-inner { grid-template-columns: 1fr; }
+  .hero-visual { display: none; }
+  .grid-3, .service-panel.active, .testimonials-grid, .info-grid { grid-template-columns: 1fr 1fr; }
+  .grid-4, .steps { grid-template-columns: 1fr 1fr; }
+  .steps::before { display: none; }
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+  .why-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  :root { --section-pad: 48px; }
+  .grid-2, .grid-3, .service-panel.active, .testimonials-grid, .info-grid, .grid-4, .steps, .footer-grid { grid-template-columns: 1fr; }
+  .hero { padding: 100px 0 60px; }
+  .hero-stats { gap: var(--space-md); }
+  .hero-actions { flex-direction: column; }
+  .hero-actions .btn { justify-content: center; }
+  .nav-links { display: none; }
+  .nav-mobile-toggle { display: block; }
+  .trust-bar .container { gap: var(--space-md); justify-content: flex-start; overflow-x: auto; }
+  .cta-actions { flex-direction: column; align-items: center; }
+  .footer-bottom { flex-direction: column; gap: var(--space-sm); text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="container flex items-center justify-between">
+    <a href="/" class="nav-brand">SIJI<span>.</span>Bintaro</a>
+    <div class="nav-links">
+      <a href="#layanan">Layanan</a>
+      <a href="#tentang">Tentang</a>
+      <a href="#area">Area</a>
+      <a href="#kontak">Kontak</a>
+      <a href="https://wa.me/6281288783088?text=Halo%20SIJI%2C%20saya%20mau%20tanya%20layanan" class="btn btn-wa nav-cta" target="_blank" rel="noopener">
+        💬 Chat WA
+      </a>
+    </div>
+    <button class="nav-mobile-toggle" aria-label="Menu">☰</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-inner">
+      <div class="hero-content">
+        <div class="hero-badge-live">
+          <span class="dot-live"></span>
+          Melayani sekarang · Bintaro & sekitarnya
+        </div>
+        <div class="badge badge-accent">Premium Laundry & Care</div>
+        <h1 class="hero-headline">
+          Bersih Premium,<br>
+          <em>Hasil Terjamin</em>
+        </h1>
+        <p class="hero-sub">
+          Spesialis perawatan pakaian, sepatu, dan tas branded. Antar jemput gratis, proses profesional, hasil yang membuat Anda percaya kembali.
+        </p>
+        <div class="hero-actions">
+          <a href="https://wa.me/6281288783088?text=Halo%20SIJI%2C%20saya%20mau%20pesan%20laundry" class="btn btn-wa btn-lg" target="_blank" rel="noopener">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            Pesan Sekarang
+          </a>
+          <a href="#layanan" class="btn btn-outline">Lihat Layanan</a>
+        </div>
+        <div class="hero-stats">
+          <div>
+            <div class="hero-stat-n">4.9★</div>
+            <div class="hero-stat-l">Rating Google</div>
+          </div>
+          <div>
+            <div class="hero-stat-n">1000+</div>
+            <div class="hero-stat-l">Order selesai</div>
+          </div>
+          <div>
+            <div class="hero-stat-n">3km</div>
+            <div class="hero-stat-l">Antar jemput gratis</div>
+          </div>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div style="margin-bottom:16px">
+          <div class="text-xs text-upper" style="color:rgba(255,255,255,.4);margin-bottom:12px">Layanan unggulan</div>
+          <div class="hero-service-grid">
+            <div class="hero-service-item">
+              <div class="icon">👟</div>
+              <div><div class="name">Shoes Care</div><div class="price">Mulai Rp90.000</div></div>
+            </div>
+            <div class="hero-service-item">
+              <div class="icon">👜</div>
+              <div><div class="name">Bag Spa</div><div class="price">Mulai Rp140.000</div></div>
+            </div>
+            <div class="hero-service-item">
+              <div class="icon">👔</div>
+              <div><div class="name">Laundry Kiloan</div><div class="price">Mulai Rp12.000/kg</div></div>
+            </div>
+            <div class="hero-service-item">
+              <div class="icon">🛏</div>
+              <div><div class="name">Bed Cover</div><div class="price">Mulai Rp70.000</div></div>
+            </div>
+          </div>
+        </div>
+        <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:16px">
+          <div class="text-xs text-upper" style="color:rgba(255,255,255,.4);margin-bottom:10px">Juga melayani</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <span style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:4px 10px;font-size:11px;color:rgba(255,255,255,.6)">Koper</span>
+            <span style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:4px 10px;font-size:11px;color:rgba(255,255,255,.6)">Stroller</span>
+            <span style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:4px 10px;font-size:11px;color:rgba(255,255,255,.6)">Gordyn</span>
+            <span style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:4px 10px;font-size:11px;color:rgba(255,255,255,.6)">Karpet</span>
+            <span style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:4px 10px;font-size:11px;color:rgba(255,255,255,.6)">Helm</span>
+            <span style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:4px 10px;font-size:11px;color:rgba(255,255,255,.6)">Kasur</span>
+            <span style="background:rgba(200,169,110,.2);border:1px solid rgba(200,169,110,.3);border-radius:20px;padding:4px 10px;font-size:11px;color:var(--color-accent)">+ banyak lagi</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TRUST BAR -->
+<div class="trust-bar">
+  <div class="container">
+    <div class="trust-item"><span class="icon">🚗</span><div class="text"><strong>Antar Jemput Gratis</strong>Radius 3km dari outlet</div></div>
+    <div class="trust-item"><span class="icon">⚡</span><div class="text"><strong>Layanan Express</strong>Selesai dalam 24 jam</div></div>
+    <div class="trust-item"><span class="icon">🔒</span><div class="text"><strong>Garansi Kualitas</strong>Tidak puas? Kami ulang gratis</div></div>
+    <div class="trust-item"><span class="icon">📍</span><div class="text"><strong>Emerald Boulevard</strong>Bintaro Jaya, Tangerang Selatan</div></div>
+  </div>
+</div>
+
+<!-- LAYANAN -->
+<section class="section" id="layanan">
+  <div class="container">
+    <div class="section-header">
+      <div class="badge badge-accent">Layanan & Harga</div>
+      <h2>Semua Kebutuhan Perawatan<br>Ada di SIJI</h2>
+      <p>Harga transparan, kualitas konsisten. Tidak ada biaya tersembunyi.</p>
+    </div>
+    <div class="service-tabs">
+      <button class="service-tab active" onclick="showTab('sepatu')">👟 Sepatu</button>
+      <button class="service-tab" onclick="showTab('tas')">👜 Tas</button>
+      <button class="service-tab" onclick="showTab('kiloan')">👔 Kiloan</button>
+      <button class="service-tab" onclick="showTab('satuan')">🛏 Satuan</button>
+      <button class="service-tab" onclick="showTab('lainnya')">🏠 Lainnya</button>
+    </div>
+
+    <div id="tab-sepatu" class="service-panel active">
+      <div class="price-card featured">
+        <div class="featured-tag">Terlaris</div>
+        <div class="svc-name">Cuci Sepatu Reguler</div>
+        <div class="svc-desc">Sepatu sneaker, casual, olahraga</div>
+        <div class="svc-price">Rp90.000</div>
+        <div class="svc-unit">/pasang</div>
+        <div class="svc-time">⏱ Selesai 3 hari</div>
+      </div>
+      <div class="price-card">
+        <div class="svc-name">Sepatu Kulit / Boot</div>
+        <div class="svc-desc">Kulit asli, suede, premium</div>
+        <div class="svc-price">Rp150.000</div>
+        <div class="svc-unit">/pasang</div>
+        <div class="svc-time">⏱ 4 hari · Express Rp250.000</div>
+      </div>
+      <div class="price-card">
+        <div class="svc-name">Topi</div>
+        <div class="svc-desc">Snapback, bucket, fitted</div>
+        <div class="svc-price">Rp65.000</div>
+        <div class="svc-unit">/pcs</div>
+        <div class="svc-time">⏱ Selesai 3 hari</div>
+      </div>
+    </div>
+
+    <div id="tab-tas" class="service-panel">
+      <div class="price-card">
+        <div class="svc-name">Tas Reguler</div>
+        <div class="svc-desc">Tas canvas, nilon, polyester</div>
+        <div class="svc-price">Rp140.000</div>
+        <div class="svc-unit">/unit</div>
+        <div class="svc-time">⏱ Selesai 3-4 hari</div>
+      </div>
+      <div class="price-card featured">
+        <div class="featured-tag">Branded</div>
+        <div class="svc-name">Tas USA Brand</div>
+        <div class="svc-desc">Coach, Michael Kors, Kate Spade</div>
+        <div class="svc-price">Rp250.000</div>
+        <div class="svc-unit">/unit</div>
+        <div class="svc-time">⏱ Penanganan ekstra hati-hati</div>
+      </div>
+      <div class="price-card">
+        <div class="svc-name">Tas EU Luxury</div>
+        <div class="svc-desc">Louis Vuitton, Gucci, Prada, Hermès</div>
+        <div class="svc-price">Rp500.000</div>
+        <div class="svc-unit">/unit</div>
+        <div class="svc-time">⏱ Specialist treatment</div>
+      </div>
+    </div>
+
+    <div id="tab-kiloan" class="service-panel">
+      <div class="price-card featured">
+        <div class="featured-tag">Populer</div>
+        <div class="svc-name">Cuci Kering Setrika</div>
+        <div class="svc-desc">Bersih, rapi, wangi</div>
+        <div class="svc-price">Rp16.000</div>
+        <div class="svc-unit">/kg · min 3 kg</div>
+        <div class="svc-time">⏱ 2-3 hari</div>
+      </div>
+      <div class="price-card">
+        <div class="svc-name">Cuci Kering Lipat</div>
+        <div class="svc-desc">Tanpa setrika, lipat rapi</div>
+        <div class="svc-price">Rp12.000</div>
+        <div class="svc-unit">/kg · min 3 kg</div>
+        <div class="svc-time">⏱ 2-3 hari</div>
+      </div>
+      <div class="price-card">
+        <div class="svc-name">Setrika Saja</div>
+        <div class="svc-desc">Pakaian sudah dicuci</div>
+        <div class="svc-price">Rp12.000</div>
+        <div class="svc-unit">/kg · min 3 kg</div>
+        <div class="svc-time">⏱ 1-2 hari</div>
+      </div>
+    </div>
+
+    <div id="tab-satuan" class="service-panel">
+      <div class="price-card featured">
+        <div class="featured-tag">Terlaris</div>
+        <div class="svc-name">Bed Cover</div>
+        <div class="svc-desc">Single, double, king size</div>
+        <div class="svc-price">Rp70.000</div>
+        <div class="svc-unit">/lembar</div>
+        <div class="svc-time">⏱ 3 hari · Express Rp115.000</div>
+      </div>
+      <div class="price-card">
+        <div class="svc-name">Sprei 1 Set</div>
+        <div class="svc-desc">Sprei + sarung bantal</div>
+        <div class="svc-price">Rp35.000</div>
+        <div class="svc-unit">/set</div>
+        <div class="svc-time">⏱ 3 hari · Express Rp55.000</div>
+      </div>
+      <div class="price-card">
+        <div class="svc-name">Dress / Kebaya</div>
+        <div class="svc-desc">Brokat, chiffon, sifon</div>
+        <div class="svc-price">Rp100.000</div>
+        <div class="svc-unit">/pcs</div>
+        <div class="svc-time">⏱ 4 hari</div>
+      </div>
+    </div>
+
+    <div id="tab-lainnya" class="service-panel">
+      <div class="price-card">
+        <div class="svc-name">Baby Stroller</div>
+        <div class="svc-desc">Bersih menyeluruh, aman bayi</div>
+        <div class="svc-price">Rp250.000</div>
+        <div class="svc-unit">/unit</div>
+        <div class="svc-time">⏱ 6 hari</div>
+      </div>
+      <div class="price-card">
+        <div class="svc-name">Karpet</div>
+        <div class="svc-desc">Semua jenis karpet</div>
+        <div class="svc-price">Rp35.000</div>
+        <div class="svc-unit">/m²</div>
+        <div class="svc-time">⏱ 10 hari</div>
+      </div>
+      <div class="price-card">
+        <div class="svc-name">Helm</div>
+        <div class="svc-desc">Full face, half face, motocross</div>
+        <div class="svc-price">Rp80.000</div>
+        <div class="svc-unit">/unit</div>
+        <div class="svc-time">⏱ 3 hari</div>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:var(--space-lg)">
+      <a href="https://wa.me/6281288783088?text=Halo%20SIJI%2C%20saya%20mau%20cek%20harga" class="btn btn-outline" target="_blank" rel="noopener">
+        Tanya harga layanan lain →
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section section-alt">
+  <div class="container">
+    <div class="section-header">
+      <div class="badge badge-accent">Cara Pesan</div>
+      <h2>Mudah dalam 4 Langkah</h2>
+      <p>Dari rumah Anda ke tangan kami, semua beres.</p>
+    </div>
+    <div class="steps">
+      <div class="step active">
+        <div class="step-num">💬</div>
+        <h4>Chat WA</h4>
+        <p>Hubungi kami via WhatsApp, ceritakan kebutuhan Anda</p>
+      </div>
+      <div class="step active">
+        <div class="step-num">🚗</div>
+        <h4>Antar Jemput</h4>
+        <p>Kurir kami jemput barang Anda. Gratis radius 3km</p>
+      </div>
+      <div class="step active">
+        <div class="step-num">✨</div>
+        <h4>Proses Profesional</h4>
+        <p>Kami cuci & rawat dengan produk premium, penuh hati-hati</p>
+      </div>
+      <div class="step active">
+        <div class="step-num">📦</div>
+        <h4>Diantar Kembali</h4>
+        <p>Barang bersih diantarkan ke pintu rumah Anda</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHY SIJI -->
+<section class="section" id="tentang">
+  <div class="container">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-xl);align-items:center">
+      <div>
+        <div class="badge badge-accent" style="margin-bottom:var(--space-sm)">Kenapa SIJI?</div>
+        <h2 style="font-size:clamp(24px,3.5vw,36px);font-weight:800;margin-bottom:var(--space-md)">
+          Lebih dari Sekadar<br>Laundry Biasa
+        </h2>
+        <p style="color:var(--color-muted);margin-bottom:var(--space-lg)">
+          SIJI hadir dengan standar perawatan premium yang biasanya hanya ditemukan di dry cleaner kelas atas. Kami percaya setiap item Anda layak mendapat perlakuan terbaik.
+        </p>
+        <a href="https://wa.me/6281288783088" class="btn btn-primary" target="_blank" rel="noopener">Mulai sekarang →</a>
+      </div>
+      <div class="why-grid">
+        <div class="why-item">
+          <div class="icon-wrap icon-accent"><span style="font-size:22px">💎</span></div>
+          <div>
+            <h3>Spesialis Branded</h3>
+            <p>Satu-satunya di Bintaro yang eksplisit menangani tas & sepatu luxury (LV, Gucci, Prada, Jordan).</p>
+          </div>
+        </div>
+        <div class="why-item">
+          <div class="icon-wrap icon-accent"><span style="font-size:22px">🔬</span></div>
+          <div>
+            <h3>Produk Premium</h3>
+            <p>Menggunakan produk perawatan khusus untuk material berbeda. Tidak semua deterjen aman untuk semua bahan.</p>
+          </div>
+        </div>
+        <div class="why-item">
+          <div class="icon-wrap icon-accent"><span style="font-size:22px">🕐</span></div>
+          <div>
+            <h3>Tepat Waktu</h3>
+            <p>Kami menghargai waktu Anda. Pengiriman sesuai jadwal yang dijanjikan, ada notifikasi real-time.</p>
+          </div>
+        </div>
+        <div class="why-item">
+          <div class="icon-wrap icon-accent"><span style="font-size:22px">🛡️</span></div>
+          <div>
+            <h3>Garansi Kepuasan</h3>
+            <p>Tidak puas dengan hasilnya? Kami cuci ulang gratis tanpa pertanyaan tambahan.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="section section-alt">
+  <div class="container">
+    <div class="section-header">
+      <div class="badge badge-accent">Testimoni</div>
+      <h2>Apa Kata Pelanggan SIJI</h2>
+    </div>
+    <div class="testimonials-grid">
+      <div class="testimonial-card">
+        <div class="stars">★★★★★</div>
+        <p class="testimonial-text">"Sepatu Nike SB saya yang sudah menguning akhirnya bisa putih lagi! Hasilnya luar biasa, tidak nyangka bisa sebersih ini. Pasti balik lagi."</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">R</div>
+          <div><div class="author-name">Rizal H.</div><div class="author-meta">Sneaker collector · Pondok Aren</div></div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <div class="stars">★★★★★</div>
+        <p class="testimonial-text">"Tas LV saya ditangani dengan sangat hati-hati. Dikirim balik dalam kondisi perfect, packaging juga rapi. Worth banget untuk barang branded."</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">D</div>
+          <div><div class="author-name">Dewi S.</div><div class="author-meta">VIP Customer · Bintaro Sektor 9</div></div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <div class="stars">★★★★★</div>
+        <p class="testimonial-text">"Bed cover keluarga langsung dicuci semua, antar jemput gratis, beres tanpa ribet. Sekarang sudah jadi langganan tetap setiap 2 minggu sekali."</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">A</div>
+          <div><div class="author-name">Anisa M.</div><div class="author-meta">Pelanggan reguler · Ciputat</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- AREA COVERAGE -->
+<section class="section" id="area">
+  <div class="container">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-xl);align-items:start">
+      <div>
+        <div class="badge badge-accent" style="margin-bottom:var(--space-sm)">Area Layanan</div>
+        <h2 style="font-size:clamp(22px,3vw,32px);font-weight:800;margin-bottom:var(--space-md)">Kami Jemput dari<br>Lokasi Anda</h2>
+        <p style="color:var(--color-muted);margin-bottom:var(--space-md)">
+          Antar jemput <strong>GRATIS</strong> untuk radius 3km dari outlet. Di luar area? Hubungi kami — untuk pelanggan loyal sering bisa diatur.
+        </p>
+        <div class="info-box" style="text-align:left;margin-bottom:var(--space-md)">
+          <div style="display:flex;gap:var(--space-sm)">
+            <span style="font-size:32px">📍</span>
+            <div>
+              <div style="font-weight:700;margin-bottom:4px">SIJI Bintaro</div>
+              <div style="font-size:13px;color:var(--color-muted)">Jl. Raya Emerald Boulevard<br>Blok CE/A1 No. 5, Bintaro Jaya<br>Tangerang Selatan</div>
+              <div style="margin-top:10px;font-size:13px">
+                <strong>Senin–Sabtu:</strong> 07.00–20.00<br>
+                <strong>Minggu:</strong> 08.00–16.00
+              </div>
+            </div>
+          </div>
+        </div>
+        <a href="https://maps.google.com/?q=SIJI+Bintaro+Emerald+Boulevard" class="btn btn-outline" target="_blank" rel="noopener">
+          🗺️ Lihat di Google Maps
+        </a>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--color-muted);margin-bottom:var(--space-sm);text-transform:uppercase;letter-spacing:1px">Area yang kami layani</div>
+        <div class="area-grid">
+          <span class="area-tag nearby">Bintaro Sektor 1–9</span>
+          <span class="area-tag nearby">Emerald Boulevard</span>
+          <span class="area-tag nearby">Pondok Aren</span>
+          <span class="area-tag nearby">Rempoa</span>
+          <span class="area-tag nearby">Jombang</span>
+          <span class="area-tag">Ciputat</span>
+          <span class="area-tag">Pondok Jaya</span>
+          <span class="area-tag">Parigi</span>
+          <span class="area-tag">Ceger</span>
+          <span class="area-tag">Pd. Kacang</span>
+          <span class="area-tag">Graha Raya</span>
+          <span class="area-tag">Pesanggrahan</span>
+        </div>
+        <div style="margin-top:var(--space-md);padding:var(--space-sm);background:var(--color-accent-lt);border-radius:var(--radius-md);font-size:12px;color:#8a6520">
+          📦 <strong>Di luar area?</strong> Chat kami dulu — pelanggan VIP dan reguler sering bisa diatur antar jemput tanpa biaya tambahan.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section cta-section" id="kontak">
+  <div class="container">
+    <div class="cta-inner">
+      <div class="badge badge-dark" style="margin-bottom:var(--space-sm)">Siap Mulai?</div>
+      <h2>Hubungi Kami Sekarang,<br>Barang Bersih Hari Ini</h2>
+      <p>Chat WhatsApp kami 24 jam. Bot cerdas siap bantu, admin aktif di jam kerja.</p>
+      <div class="cta-actions">
+        <a href="https://wa.me/6281288783088?text=Halo%20SIJI%2C%20saya%20mau%20pesan%20laundry" class="btn btn-wa btn-lg" target="_blank" rel="noopener">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          Chat WhatsApp
+        </a>
+        <a href="tel:+6281288783088" class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,.3)">
+          📞 0812-8878-3088
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">SIJI<span>.</span>Bintaro</div>
+        <p class="footer-desc">Premium laundry & care specialist. Merawat pakaian, sepatu, dan tas kesayangan Anda dengan standar profesional.</p>
+        <div class="footer-social" style="margin-top:var(--space-md)">
+          <a href="https://wa.me/6281288783088" class="social-btn" title="WhatsApp">💬</a>
+          <a href="https://instagram.com/sijibintaro" class="social-btn" title="Instagram">📷</a>
+          <a href="https://maps.google.com/?q=SIJI+Bintaro" class="social-btn" title="Maps">🗺️</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Layanan</h4>
+        <ul>
+          <li><a href="#layanan">Laundry Kiloan</a></li>
+          <li><a href="#layanan">Shoes Care</a></li>
+          <li><a href="#layanan">Bag Spa</a></li>
+          <li><a href="#layanan">Bed Cover</a></li>
+          <li><a href="#layanan">Home Items</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Info</h4>
+        <ul>
+          <li><a href="#area">Area Layanan</a></li>
+          <li><a href="#kontak">Hubungi Kami</a></li>
+          <li><a href="/karir">Karir di SIJI</a></li>
+          <li><a href="https://wa.me/6281288783088">Order Tracking</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 SIJI Bintaro. Premium Laundry & Care · Tangerang Selatan</p>
+      <p style="color:rgba(255,255,255,.2);font-size:11px">Jl. Raya Emerald Boulevard Blok CE/A1 No.5 · 0812-8878-3088</p>
+    </div>
+  </div>
+</footer>
+
+<!-- WA FLOAT BUTTON -->
+<a href="https://wa.me/6281288783088?text=Halo%20SIJI%2C%20saya%20mau%20pesan" class="wa-float" target="_blank" rel="noopener" aria-label="Chat WhatsApp">
+  <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+</a>
+
+<script>
+// Tab switching
+function showTab(id) {
+  document.querySelectorAll('.service-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.service-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// Navbar scroll effect
+window.addEventListener('scroll', () => {
+  const nav = document.querySelector('.navbar');
+  nav.style.boxShadow = window.scrollY > 20 ? '0 2px 20px rgba(0,0,0,.1)' : 'none';
+});
+
+// Register service worker for PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>

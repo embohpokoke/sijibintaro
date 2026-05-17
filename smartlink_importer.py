@@ -61,45 +61,45 @@ class SmartlinkImporter:
         self.errors = []
 
     def import_file(self, filepath, dry_run=False, normalize_addr=True):
-        rows = self._parse_xlsx(filepath)
-        self.stats['total'] = len(rows)
-        print(f"Parsed {len(rows)} rows from {os.path.basename(filepath)}")
+        groups = self._parse_xlsx(filepath)
+        self.stats['total'] = len(groups)
+        print(f"Parsed {len(groups)} nota from {os.path.basename(filepath)}")
         
-        if not rows:
+        if not groups:
             print("No data!"); return self.stats
 
-        valid = []
-        for i, row in enumerate(rows):
-            issues = self._validate(row)
+        # Validate each group (header from first item)
+        valid_groups = []
+        for nota, items in groups.items():
+            header = items[0]
+            issues = self._validate(header)
             if issues:
-                if 'SKIP_SUBITEM' in issues:
-                    pass  # Sub-item of multi-item tx, silently skip
-                else:
-                    self.stats['failed'] += 1
-                    if len(self.errors) < 20:
-                        self.errors.append(f"Row {i+1} ({row.get('no_nota','?')}): {'; '.join(issues)}")
+                self.stats['failed'] += 1
+                if len(self.errors) < 20:
+                    self.errors.append(f"Nota {nota}: {'; '.join(issues)}")
             else:
-                valid.append(row)
+                valid_groups.append((nota, items))
 
-        self.stats['parsed'] = len(valid)
-        print(f"Valid: {len(valid)}, Failed: {self.stats['failed']}")
+        self.stats['parsed'] = len(valid_groups)
+        print(f"Valid: {len(valid_groups)}, Failed: {self.stats['failed']}")
         if self.errors:
             print("Errors (first 5):")
             for e in self.errors[:5]: print(f"  {e}")
 
         if dry_run:
             print("\n[DRY RUN] Preview first 3:")
-            for r in valid[:3]:
-                print(f"  {r['no_nota']} | {r['tgl_terima']} | {r['customer_name']} | {r['nama_layanan']} | {r['total_tagihan']}")
+            for nota, items in valid_groups[:3]:
+                header = items[0]
+                print(f"  {nota} | {header['tgl_terima']} | {header['customer_name']} | {len(items)} items | {header['total_tagihan']}")
             return self.stats
 
         cur = self.pg.cursor()
-        for row in valid:
+        for nota, items in valid_groups:
             try:
-                self._upsert(cur, row, normalize_addr)
+                self._upsert_group(cur, nota, items, normalize_addr)
             except Exception as e:
                 self.stats['failed'] += 1
-                self.errors.append(f"DB: {row.get('no_nota')}: {e}")
+                self.errors.append(f"DB: {nota}: {e}")
                 self.pg.rollback()
 
         # Log
@@ -150,48 +150,59 @@ class SmartlinkImporter:
         for hname, key in COL.items():
             if hname in hdr: cidx[key] = hdr[hname]
 
-        # Detail columns start after col 21 (0-indexed: 21=col22)
-        # Col 22: Tipe Item, 23: Nama Layanan, 24: Qty, 25: Satuan, 26: Harga, 27: Jumlah, 28: Keterangan
+        # Parse rows and group by no_nota
+        groups = {}  # no_nota -> list of item rows
+        current_nota = None
 
-        rows = []
         for rn in range(header_row + 1, ws.max_row + 1):
             cells = [c.value for c in ws[rn]]
             if not any(c for c in cells): continue
 
-            # Get no_nota
+            # Detect nota row (col 1 has SJ...)
             no_nota = cells[cidx['no_nota']] if 'no_nota' in cidx and cidx['no_nota'] < len(cells) else None
-            if not no_nota or not str(no_nota).startswith('SJ'):
-                continue  # Skip non-transaction rows (sub-items, totals, etc.)
+            if no_nota and str(no_nota).startswith('SJ'):
+                current_nota = str(no_nota).strip()
+            elif no_nota:
+                continue  # skip non-SJ rows
+            elif current_nota is None:
+                continue  # skip rows before first nota
 
-            row = {}
+            row = {'no_nota': current_nota}
             for key, idx in cidx.items():
                 row[key] = cells[idx] if idx < len(cells) else None
 
-            # Detail columns (first item - Smartlink puts first item on same row)
-            row['tipe_item'] = cells[21] if len(cells) > 21 else None
+            # Detail columns: 21=jenis/tipe, 22=nama, 23=jumlah, 24=satuan, 25=total, 26=jumlah_item, 27=keterangan
+            row['detail_jenis'] = cells[21] if len(cells) > 21 else None
             row['nama_layanan'] = cells[22] if len(cells) > 22 else None
-            row['qty'] = safe_float(cells[23] if len(cells) > 23 else None)
+            row['jumlah'] = safe_float(cells[23] if len(cells) > 23 else None)
             row['satuan'] = cells[24] if len(cells) > 24 else None
-            row['harga'] = safe_float(cells[25] if len(cells) > 25 else None)
+            row['total_item'] = safe_float(cells[25] if len(cells) > 25 else None)
             row['jumlah_item'] = safe_float(cells[26] if len(cells) > 26 else None)
-            row['keterangan'] = cells[27] if len(cells) > 27 else None
+            row['keterangan_layanan'] = cells[27] if len(cells) > 27 else None
 
-            # Parse dates
-            row['tgl_terima'] = parse_indo_date(row.get('tgl_terima_raw'))
-            row['tgl_selesai'] = parse_indo_date(row.get('tgl_selesai_raw'))
-            row['tgl_pengambilan'] = parse_indo_date(row.get('tgl_pengambilan_raw'))
+            # Parse dates (only on header row, copy to sub-items)
+            if row.get('tgl_terima_raw'):
+                row['tgl_terima'] = parse_indo_date(row.get('tgl_terima_raw'))
+            if row.get('tgl_selesai_raw'):
+                row['tgl_selesai'] = parse_indo_date(row.get('tgl_selesai_raw'))
+            if row.get('tgl_pengambilan_raw'):
+                row['tgl_pengambilan'] = parse_indo_date(row.get('tgl_pengambilan_raw'))
 
-            # Normalize amounts
-            for f in ['subtotal','tambahan_express','diskon','pajak','biaya_service','total_tagihan']:
-                row[f] = safe_float(row.get(f))
+            # Normalize amounts (only on header row)
+            if row.get('subtotal') is not None or row.get('total_tagihan'):
+                for f in ['subtotal','tambahan_express','diskon','pajak','biaya_service','total_tagihan']:
+                    row[f] = safe_float(row.get(f))
 
-            # Phone
-            row['customer_phone'] = normalize_phone(row.get('customer_phone'))
+            # Phone (only on header row)
+            if row.get('customer_phone'):
+                row['customer_phone'] = normalize_phone(row.get('customer_phone'))
 
-            rows.append(row)
+            if current_nota not in groups:
+                groups[current_nota] = []
+            groups[current_nota].append(row)
 
         wb.close()
-        return rows
+        return groups
 
     def _validate(self, row):
         issues = []
@@ -208,83 +219,103 @@ class SmartlinkImporter:
                 issues.append("SKIP_SUBITEM")  # Will be filtered, not counted as error
         return issues
 
-    def _upsert(self, cur, row, normalize_addr):
-        no_nota = str(row['no_nota']).strip()
+    def _upsert_group(self, cur, no_nota, items, normalize_addr):
+        header = items[0]
+        no_nota = str(no_nota).strip()
         
         # Check duplicate
         cur.execute("SELECT id FROM transactions WHERE no_nota = %s", (no_nota,))
         existing = cur.fetchone()
         
-        # Classify product
-        nama = row.get('nama_layanan')
-        cls = classify_product(nama) if nama else {}
+        # Classify first item
+        first_name = header.get('nama_layanan')
+        cls = classify_product(first_name) if first_name else {}
         
         # Normalize address
         addr_norm = None
         addr_conf = None
-        if normalize_addr and self.normalizer and row.get('customer_address'):
-            nr = self.normalizer.normalize(row['customer_address'])
+        if normalize_addr and self.normalizer and header.get('customer_address'):
+            nr = self.normalizer.normalize(header['customer_address'])
             addr_norm = nr['normalized']
             addr_conf = nr['confidence']
 
         # Match customer
         cust_id = None
-        if row.get('customer_phone'):
-            cur.execute("SELECT id FROM customers WHERE nomor_telpon = %s", (row['customer_phone'],))
+        if header.get('customer_phone'):
+            cur.execute("SELECT id FROM customers WHERE nomor_telpon = %s", (header['customer_phone'],))
             r = cur.fetchone()
             if r: cust_id = r[0]
-        if not cust_id and row.get('customer_name'):
-            cur.execute("SELECT id FROM customers WHERE LOWER(nama) = %s", (row['customer_name'].strip().lower(),))
+        if not cust_id and header.get('customer_name'):
+            cur.execute("SELECT id FROM customers WHERE LOWER(nama) = %s", (header['customer_name'].strip().lower(),))
             r = cur.fetchone()
             if r: cust_id = r[0]
 
         if existing:
-            # Update existing
+            # Update header
             cur.execute("""UPDATE transactions SET
                 customer_id=%s, customer_name=%s, customer_phone=%s, customer_address=%s,
-                progress_status=%s, tgl_selesai=%s, tgl_pengambilan=%s,
-                subtotal=%s, tambahan_express=%s, diskon=%s, pajak=%s, biaya_service=%s, total_tagihan=%s,
-                pembayaran=%s, pengambilan=%s, kasir=%s,
-                customer_address_normalized=%s, address_confidence=%s
+                progress_status=%s, outlet=%s, tgl_terima_orig=%s, date_of_transaction=%s,
+                tgl_selesai=%s, tgl_pengambilan=%s,
+                subtotal=%s, tambahan_express=%s, diskon=%s, pajak=%s, total_tagihan=%s,
+                jenis=%s, pembayaran=%s, pengambilan=%s, pembuat_nota=%s, keterangan_nota=%s,
+                nama_layanan=%s, group_layanan=%s, jumlah=%s, satuan=%s, total_item=%s, jumlah_item=%s,
+                keterangan_layanan=%s, customer_address_normalized=%s, address_confidence=%s,
+                import_file=%s, imported_at=NOW()
                 WHERE no_nota=%s""",
-                (cust_id, row.get('customer_name'), row.get('customer_phone'), row.get('customer_address'),
-                 row.get('progress'), row.get('tgl_selesai'), row.get('tgl_pengambilan'),
-                 row['subtotal'], row['tambahan_express'], row['diskon'], row['pajak'],
-                 row.get('biaya_service',0), row['total_tagihan'],
-                 row.get('pembayaran'), row.get('pengambilan'), row.get('kasir'),
-                 addr_norm, addr_conf, no_nota))
+                (cust_id, header.get('customer_name'), header.get('customer_phone'), header.get('customer_address'),
+                 header.get('progress'), header.get('outlet','SIJI Bintaro'), header.get('tgl_terima_raw'), header.get('tgl_terima'),
+                 header.get('tgl_selesai'), header.get('tgl_pengambilan'),
+                 header.get('subtotal',0), header.get('tambahan_express',0), header.get('diskon',0), header.get('pajak',0),
+                 header.get('total_tagihan',0),
+                 header.get('jenis','Reguler'), header.get('pembayaran'), header.get('pengambilan'),
+                 header.get('kasir'), header.get('catatan'),
+                 first_name, cls.get('kategori'),
+                 items[0].get('jumlah'), items[0].get('satuan'), items[0].get('total_item'), items[0].get('jumlah_item'),
+                 items[0].get('keterangan_layanan'), addr_norm, addr_conf,
+                 os.path.basename(header.get('_filepath', 'smartlink_import')),
+                 no_nota))
+            # Delete old details
+            cur.execute("DELETE FROM transaction_details WHERE no_nota = %s", (no_nota,))
             self.stats['updated'] += 1
         else:
-            # Get product mapping id
-            pm_id = None
-            if nama:
-                cur.execute("SELECT id FROM product_mappings WHERE smartlink_name = %s", (nama,))
-                r = cur.fetchone()
-                if r: pm_id = r[0]
-
+            # Insert header
             cur.execute("""INSERT INTO transactions 
                 (no_nota, customer_id, customer_name, customer_phone, customer_address,
-                 progress_status, outlet, tgl_terima, tgl_selesai, tgl_pengambilan,
-                 subtotal, tambahan_express, diskon, pajak, biaya_service, total_tagihan,
-                 jenis, pembayaran, pengambilan, kasir, catatan,
-                 nama_layanan_original, product_mapping_id, kategori, sub_kategori,
-                 speed_tier, is_promo, qty, satuan, harga_item, jumlah_item, keterangan,
-                 import_source, customer_address_normalized, address_confidence)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
-                (no_nota, cust_id, row.get('customer_name'), row.get('customer_phone'),
-                 row.get('customer_address'), row.get('progress'), row.get('outlet','SIJI Bintaro'),
-                 row['tgl_terima'], row.get('tgl_selesai'), row.get('tgl_pengambilan'),
-                 row['subtotal'], row['tambahan_express'], row['diskon'], row['pajak'],
-                 row.get('biaya_service',0), row['total_tagihan'],
-                 row.get('jenis','Reguler'), row.get('pembayaran'), row.get('pengambilan'),
-                 row.get('kasir'), row.get('catatan'),
-                 nama, pm_id,
-                 cls.get('kategori'), cls.get('sub_kategori'),
-                 cls.get('speed_tier','REGULER'), cls.get('is_promo', False),
-                 row.get('qty'), row.get('satuan'), row.get('harga'), row.get('jumlah_item'),
-                 row.get('keterangan'), 'smartlink_import',
+                 progress_status, outlet, tgl_terima_orig, date_of_transaction, tgl_selesai, tgl_pengambilan,
+                 subtotal, tambahan_express, diskon, pajak, total_tagihan,
+                 jenis, pembayaran, pengambilan, pembuat_nota, keterangan_nota,
+                 nama_layanan, group_layanan, jumlah, satuan, total_item, jumlah_item, keterangan_layanan,
+                 import_file, imported_at, customer_address_normalized, address_confidence)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,NOW(),%s,%s)""",
+                (no_nota, cust_id, header.get('customer_name'), header.get('customer_phone'),
+                 header.get('customer_address'), header.get('progress'), header.get('outlet','SIJI Bintaro'),
+                 header.get('tgl_terima_raw'), header.get('tgl_terima'), header.get('tgl_selesai'), header.get('tgl_pengambilan'),
+                 header.get('subtotal',0), header.get('tambahan_express',0), header.get('diskon',0), header.get('pajak',0),
+                 header.get('total_tagihan',0),
+                 header.get('jenis','Reguler'), header.get('pembayaran'), header.get('pengambilan'),
+                 header.get('kasir'), header.get('catatan'),
+                 first_name, cls.get('kategori'),
+                 items[0].get('jumlah'), items[0].get('satuan'), items[0].get('total_item'), items[0].get('jumlah_item'),
+                 items[0].get('keterangan_layanan'),
+                 os.path.basename(header.get('_filepath', 'smartlink_import')),
                  addr_norm, addr_conf))
             self.stats['inserted'] += 1
+
+        # Insert ALL items into transaction_details
+        for line_num, item in enumerate(items, 1):
+            item_name = item.get('nama_layanan')
+            item_cls = classify_product(item_name) if item_name else {}
+            cur.execute("""
+                INSERT INTO transaction_details
+                (no_nota, line_number, jenis, nama_layanan, group_layanan,
+                 jumlah, satuan, total_item, jumlah_item, keterangan)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                no_nota, line_num,
+                item.get('detail_jenis'), item_name, item_cls.get('kategori'),
+                item.get('jumlah'), item.get('satuan'), item.get('total_item'), item.get('jumlah_item'),
+                item.get('keterangan_layanan')
+            ))
 
     def _quality(self):
         total = self.stats['total'] or 1
