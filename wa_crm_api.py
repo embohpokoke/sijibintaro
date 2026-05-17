@@ -100,12 +100,15 @@ async def get_conversations(
     try:
         offset = (page - 1) * limit
 
+        # Exclude @lid (WhatsApp Linked Device IDs - not real phone numbers) and
+        # @broadcast (outgoing broadcast lists - not inbound CRM conversations)
+        jid_filter = "AND c.jid NOT LIKE '%@lid' AND c.jid NOT LIKE '%@broadcast'"
         if type == "customer":
-            where = "WHERE c.is_group = 0 AND c.customer_name IS NOT NULL"
+            where = f"WHERE c.is_group = FALSE AND c.customer_name IS NOT NULL {jid_filter}"
         elif type == "unknown":
-            where = "WHERE c.is_group = 0 AND c.customer_name IS NULL"
+            where = f"WHERE c.is_group = FALSE AND c.customer_name IS NULL {jid_filter}"
         else:
-            where = "WHERE c.is_group = 0"
+            where = f"WHERE c.is_group = FALSE {jid_filter}"
 
         total = conn.execute(
             f"SELECT COUNT(*) FROM wa_conversations c {where}"
@@ -197,7 +200,7 @@ async def get_conversations(
             "pages": -(-total // limit),
         }
     finally:
-        conn.close()
+        release_db_connection(conn)
 
 
 # ─── Messages ─────────────────────────────────────────────────────────────────
@@ -262,7 +265,7 @@ async def get_messages(
             "pages": -(-total // limit),
         }
     finally:
-        conn.close()
+        release_db_connection(conn)
 
 
 # ─── Stats ────────────────────────────────────────────────────────────────────
@@ -273,7 +276,8 @@ async def get_stats(request: Request):
     conn = get_db()
     try:
         total_conv = conn.execute(
-            "SELECT COUNT(*) FROM wa_conversations WHERE is_group = 0"
+            "SELECT COUNT(*) FROM wa_conversations WHERE is_group = FALSE"
+            " AND jid NOT LIKE '%@lid' AND jid NOT LIKE '%@broadcast'"
         ).fetchone()[0]
         total_msg = conn.execute("SELECT COUNT(*) FROM wa_messages").fetchone()[0]
         today = datetime.now().strftime("%Y-%m-%d")
@@ -282,11 +286,13 @@ async def get_stats(request: Request):
         ).fetchone()[0]
         unread = conn.execute(
             "SELECT SUM(unread_count) FROM wa_conversations"
+            " WHERE jid NOT LIKE '%@lid' AND jid NOT LIKE '%@broadcast'"
         ).fetchone()[0] or 0
 
         top = conn.execute("""
             SELECT c.phone, c.customer_name, c.contact_name, c.total_messages
-            FROM wa_conversations c WHERE c.is_group = 0
+            FROM wa_conversations c WHERE c.is_group = FALSE
+              AND c.jid NOT LIKE '%@lid' AND c.jid NOT LIKE '%@broadcast'
             ORDER BY c.total_messages DESC LIMIT 10
         """).fetchall()
         top_contacted = [
@@ -299,12 +305,12 @@ async def get_stats(request: Request):
         ]
 
         rows = conn.execute("""
-            SELECT DATE(timestamp) as day, COUNT(*) as count,
-                   SUM(CASE WHEN is_from_me = 0 THEN 1 ELSE 0 END) as incoming,
-                   SUM(CASE WHEN is_from_me = 1 THEN 1 ELSE 0 END) as outgoing
+            SELECT LEFT(timestamp, 10) as day, COUNT(*) as count,
+                   SUM(CASE WHEN NOT is_from_me THEN 1 ELSE 0 END) as incoming,
+                   SUM(CASE WHEN is_from_me THEN 1 ELSE 0 END) as outgoing
             FROM wa_messages
-            WHERE timestamp >= DATE('now', '-30 days')
-            GROUP BY DATE(timestamp) ORDER BY day
+            WHERE timestamp >= (CURRENT_DATE - INTERVAL '30 days')::text
+            GROUP BY LEFT(timestamp, 10) ORDER BY day
         """).fetchall()
         messages_by_day = [
             {"date": r["day"], "total": r["count"], "incoming": r["incoming"], "outgoing": r["outgoing"]}
@@ -320,7 +326,7 @@ async def get_stats(request: Request):
             "messages_by_day": messages_by_day,
         }
     finally:
-        conn.close()
+        release_db_connection(conn)
 
 
 # ─── Search ───────────────────────────────────────────────────────────────────
@@ -364,7 +370,7 @@ async def search_messages(
             "query": q,
         }
     finally:
-        conn.close()
+        release_db_connection(conn)
 
 
 # ─── Export ───────────────────────────────────────────────────────────────────
@@ -412,7 +418,7 @@ async def export_chat(
             headers={"Content-Disposition": f"attachment; filename={filename}"},
         )
     finally:
-        conn.close()
+        release_db_connection(conn)
 
 
 # ─── Analytics ────────────────────────────────────────────────────────────────
@@ -427,10 +433,10 @@ async def get_analytics(request: Request):
 
         # Volume per day
         vol_rows = conn.execute("""
-            SELECT DATE(timestamp) as day,
-                   SUM(CASE WHEN is_from_me = 0 THEN 1 ELSE 0 END) as incoming,
-                   SUM(CASE WHEN is_from_me = 1 THEN 1 ELSE 0 END) as outgoing
-            FROM wa_messages WHERE timestamp >= ? GROUP BY DATE(timestamp) ORDER BY day
+            SELECT LEFT(timestamp, 10) as day,
+                   SUM(CASE WHEN NOT is_from_me THEN 1 ELSE 0 END) as incoming,
+                   SUM(CASE WHEN is_from_me THEN 1 ELSE 0 END) as outgoing
+            FROM wa_messages WHERE timestamp >= %s GROUP BY LEFT(timestamp, 10) ORDER BY day
         """, (d30,)).fetchall()
         messages_by_day = [
             {"date": r["day"], "incoming": r["incoming"], "outgoing": r["outgoing"]}
@@ -443,8 +449,8 @@ async def get_analytics(request: Request):
 
         # Peak hours
         peak = conn.execute("""
-            SELECT CAST(SUBSTR(timestamp, 12, 2) AS INTEGER) as hour, COUNT(*) as count
-            FROM wa_messages WHERE timestamp >= ?
+            SELECT EXTRACT(HOUR FROM timestamp::timestamp)::INTEGER as hour, COUNT(*) as count
+            FROM wa_messages WHERE timestamp >= %s
             GROUP BY hour ORDER BY hour
         """, (d30,)).fetchall()
         peak_hours = [{"hour": r["hour"], "count": r["count"]} for r in peak]
@@ -452,17 +458,20 @@ async def get_analytics(request: Request):
 
         # Contact counts
         total_contacted = conn.execute(
-            "SELECT COUNT(*) FROM wa_conversations WHERE is_group = 0"
+            "SELECT COUNT(*) FROM wa_conversations WHERE is_group = FALSE"
+            " AND jid NOT LIKE '%@lid' AND jid NOT LIKE '%@broadcast'"
         ).fetchone()[0]
         new_30d = conn.execute(
-            "SELECT COUNT(*) FROM wa_conversations WHERE created_at >= ? AND is_group = 0", (d30,)
+            "SELECT COUNT(*) FROM wa_conversations WHERE created_at >= %s AND is_group = FALSE"
+            " AND jid NOT LIKE '%@lid' AND jid NOT LIKE '%@broadcast'", (d30,)
         ).fetchone()[0]
 
         most_active = conn.execute("""
             SELECT c.phone, c.customer_name, c.contact_name, COUNT(m.id) as msg_count
             FROM wa_messages m JOIN wa_conversations c ON c.jid = m.conversation_jid
-            WHERE m.timestamp >= ? AND c.is_group = 0
-            GROUP BY c.jid ORDER BY msg_count DESC LIMIT 10
+            WHERE m.timestamp >= %s AND c.is_group = FALSE
+              AND c.jid NOT LIKE '%@lid' AND c.jid NOT LIKE '%@broadcast'
+            GROUP BY c.jid, c.phone, c.customer_name, c.contact_name ORDER BY msg_count DESC LIMIT 10
         """, (d30,)).fetchall()
         most_active_list = [
             {
@@ -477,10 +486,11 @@ async def get_analytics(request: Request):
         silent = conn.execute("""
             SELECT c.phone, c.customer_name, c.contact_name, c.last_message_time
             FROM wa_conversations c
-            WHERE c.is_group = 0 AND c.customer_name IS NOT NULL
+            WHERE c.is_group = FALSE AND c.customer_name IS NOT NULL
+              AND c.jid NOT LIKE '%@lid' AND c.jid NOT LIKE '%@broadcast'
               AND c.phone NOT IN (
                 SELECT REPLACE(REPLACE(REPLACE(customer_phone,'+',''),'-',''),' ','')
-                FROM transactions WHERE date_of_transaction >= DATE('now', '-60 days')
+                FROM transactions WHERE date_of_transaction >= CURRENT_DATE - INTERVAL '60 days'
                 AND customer_phone IS NOT NULL
               )
             ORDER BY c.last_message_time DESC LIMIT 20
@@ -503,9 +513,9 @@ async def get_analytics(request: Request):
 
         # Topic keyword counts
         def count_topic(keywords):
-            conds = " OR ".join(f"LOWER(message_text) LIKE '%{kw}%'" for kw in keywords)
+            conds = " OR ".join(f"LOWER(message_text) LIKE '%%{kw}%%'" for kw in keywords)
             return conn.execute(
-                f"SELECT COUNT(*) FROM wa_messages WHERE is_from_me = 0 AND timestamp >= ? AND ({conds})",
+                f"SELECT COUNT(*) FROM wa_messages WHERE NOT is_from_me AND timestamp >= %s AND ({conds})",
                 (d30,),
             ).fetchone()[0]
 
@@ -525,19 +535,19 @@ async def get_analytics(request: Request):
                     is_from_me,
                     LEAD(is_from_me) OVER (PARTITION BY conversation_jid ORDER BY timestamp) AS next_from_me
                 FROM wa_messages
-                WHERE timestamp >= ?
-                  AND conversation_jid LIKE '%@s.whatsapp.net'
+                WHERE timestamp >= %s
+                  AND conversation_jid LIKE '%%@s.whatsapp.net'
             ),
             valid AS (
                 SELECT
-                    (JULIANDAY(out_ts) - JULIANDAY(in_ts)) * 1440.0 AS diff_min
+                    EXTRACT(EPOCH FROM (out_ts::timestamp - in_ts::timestamp)) / 60.0 AS diff_min
                 FROM pairs
-                WHERE is_from_me = 0 AND next_from_me = 1
+                WHERE NOT is_from_me AND next_from_me = TRUE
                   AND out_ts IS NOT NULL
-                  AND (JULIANDAY(out_ts) - JULIANDAY(in_ts)) * 1440.0 BETWEEN 0 AND 1440
+                  AND EXTRACT(EPOCH FROM (out_ts::timestamp - in_ts::timestamp)) / 60.0 BETWEEN 0 AND 1440
             )
             SELECT
-                ROUND(AVG(diff_min), 1) as avg_minutes,
+                ROUND(AVG(diff_min)::numeric, 1) as avg_minutes,
                 COUNT(*) as sample_count
             FROM valid
         """, (d30,)).fetchone()
@@ -549,22 +559,22 @@ async def get_analytics(request: Request):
         rt_by_day = conn.execute("""
             WITH pairs AS (
                 SELECT
-                    DATE(timestamp) AS day,
+                    LEFT(timestamp, 10) AS day,
                     timestamp AS in_ts,
                     LEAD(timestamp) OVER (PARTITION BY conversation_jid ORDER BY timestamp) AS out_ts,
                     is_from_me,
                     LEAD(is_from_me) OVER (PARTITION BY conversation_jid ORDER BY timestamp) AS next_from_me
                 FROM wa_messages
-                WHERE timestamp >= DATE('now', '-7 days')
+                WHERE timestamp >= (CURRENT_DATE - INTERVAL '7 days')::text
                   AND conversation_jid LIKE '%@s.whatsapp.net'
             )
             SELECT
                 day,
-                ROUND(AVG((JULIANDAY(out_ts) - JULIANDAY(in_ts)) * 1440.0), 1) as avg_minutes
+                ROUND(AVG(EXTRACT(EPOCH FROM (out_ts::timestamp - in_ts::timestamp)) / 60.0)::numeric, 1) as avg_minutes
             FROM pairs
-            WHERE is_from_me = 0 AND next_from_me = 1
+            WHERE NOT is_from_me AND next_from_me = TRUE
               AND out_ts IS NOT NULL
-              AND (JULIANDAY(out_ts) - JULIANDAY(in_ts)) * 1440.0 BETWEEN 0 AND 1440
+              AND EXTRACT(EPOCH FROM (out_ts::timestamp - in_ts::timestamp)) / 60.0 BETWEEN 0 AND 1440
             GROUP BY day
             ORDER BY day
         """).fetchall()
@@ -591,7 +601,7 @@ async def get_analytics(request: Request):
             "topics": topics,
         }
     finally:
-        conn.close()
+        release_db_connection(conn)
 
 
 # ─── LLM Insights ─────────────────────────────────────────────────────────────
@@ -606,17 +616,18 @@ async def get_wa_insights(request: Request):
             "SELECT COUNT(*) FROM wa_messages WHERE timestamp >= ?", (d30,)
         ).fetchone()[0]
         incoming = conn.execute(
-            "SELECT COUNT(*) FROM wa_messages WHERE timestamp >= ? AND is_from_me = 0", (d30,)
+            "SELECT COUNT(*) FROM wa_messages WHERE timestamp >= %s AND NOT is_from_me", (d30,)
         ).fetchone()[0]
         outgoing = total - incoming
         convs = conn.execute(
-            "SELECT COUNT(*) FROM wa_conversations WHERE is_group = 0"
+            "SELECT COUNT(*) FROM wa_conversations WHERE is_group = FALSE"
+            " AND jid NOT LIKE '%@lid' AND jid NOT LIKE '%@broadcast'"
         ).fetchone()[0]
 
         def cnt(kws):
-            c = " OR ".join(f"LOWER(message_text) LIKE '%{k}%'" for k in kws)
+            c = " OR ".join(f"LOWER(message_text) LIKE '%%{k}%%'" for k in kws)
             return conn.execute(
-                f"SELECT COUNT(*) FROM wa_messages WHERE is_from_me=0 AND timestamp>=? AND ({c})", (d30,)
+                f"SELECT COUNT(*) FROM wa_messages WHERE NOT is_from_me AND timestamp >= %s AND ({c})", (d30,)
             ).fetchone()[0]
 
         topics = {
@@ -672,7 +683,7 @@ async def get_wa_insights(request: Request):
             },
         }
     finally:
-        conn.close()
+        release_db_connection(conn)
 
 
 # ─── Unified Customer Profiles ────────────────────────────────────────────────
@@ -704,7 +715,7 @@ async def get_customer_profiles(
             conditions.append("(nama_transaksi LIKE ? OR nama_wa LIKE ? OR phone LIKE ?)")
             params += [f"%{search}%", f"%{search}%", f"%{search}%"]
         if has_wa:
-            conditions.append("ada_wa = 1")
+            conditions.append("ada_wa = TRUE")
 
         where = "WHERE " + " AND ".join(conditions) if conditions else ""
 
@@ -756,11 +767,11 @@ async def get_customer_profiles(
             "pages": -(-total // limit),
             "segment_summary": segment_summary,
             "wa_linked": conn.execute(
-                "SELECT COUNT(*) FROM v_customer_profiles WHERE ada_wa = 1"
+                "SELECT COUNT(*) FROM v_customer_profiles WHERE ada_wa = TRUE"
             ).fetchone()[0],
         }
     finally:
-        conn.close()
+        release_db_connection(conn)
 
 
 @router.get("/customers/profile/{phone}")
@@ -829,7 +840,7 @@ async def get_customer_profile(phone: str, request: Request):
             ],
         }
     finally:
-        conn.close()
+        release_db_connection(conn)
 
 
 # ─── Risk / Complaint-Churn Analysis ─────────────────────────────────────────
@@ -855,7 +866,7 @@ async def get_risk_flags(request: Request):
             for r in rows
         }
     finally:
-        conn.close()
+        release_db_connection(conn)
 
 
 @router.post("/risk-scan")
@@ -879,7 +890,8 @@ async def risk_scan(request: Request, limit: int = Query(30, ge=1, le=100)):
                 SELECT conversation_jid, MAX(timestamp) AS last_ts
                 FROM wa_messages GROUP BY conversation_jid
             ) lm ON lm.conversation_jid = c.jid
-            WHERE c.is_group = 0
+            WHERE c.is_group = FALSE
+              AND c.jid NOT LIKE '%@lid' AND c.jid NOT LIKE '%@broadcast'
             ORDER BY COALESCE(lm.last_ts, c.last_message_time) DESC
             LIMIT ?
         """, (limit,)).fetchall()
@@ -890,8 +902,8 @@ async def risk_scan(request: Request, limit: int = Query(30, ge=1, le=100)):
 
             # Fetch last 15 customer-sent messages
             msgs = conn.execute("""
-                SELECT body, timestamp FROM wa_messages
-                WHERE conversation_jid = ? AND from_me = 0 AND body IS NOT NULL AND TRIM(body) != ''
+                SELECT message_text, timestamp FROM wa_messages
+                WHERE conversation_jid = ? AND NOT is_from_me AND message_text IS NOT NULL AND TRIM(message_text) != ''
                 ORDER BY timestamp DESC LIMIT 15
             """, (jid,)).fetchall()
 
@@ -899,7 +911,7 @@ async def risk_scan(request: Request, limit: int = Query(30, ge=1, le=100)):
                 continue
 
             msg_text = "\n".join(
-                f"[{m['timestamp'][:16] if m['timestamp'] else '?'}] {m['body']}"
+                f"[{m['timestamp'][:16] if m['timestamp'] else '?'}] {m['message_text']}"
                 for m in reversed(msgs)
             )
 
@@ -929,9 +941,9 @@ async def risk_scan(request: Request, limit: int = Query(30, ge=1, le=100)):
                     "churn_risk": False, "indicators": [], "summary": f"parse error: {e}"
                 }
 
-            risk_level  = analysis.get("risk_level", "none")
-            is_complaint = 1 if analysis.get("complaint") else 0
-            is_churn     = 1 if analysis.get("churn_risk") else 0
+            risk_level   = analysis.get("risk_level", "none")
+            is_complaint = bool(analysis.get("complaint"))
+            is_churn     = bool(analysis.get("churn_risk"))
             indicators   = json.dumps(analysis.get("indicators", []), ensure_ascii=False)
             summary      = analysis.get("summary", "")
 
@@ -945,7 +957,7 @@ async def risk_scan(request: Request, limit: int = Query(30, ge=1, le=100)):
                     indicators=EXCLUDED.indicators,
                     summary=EXCLUDED.summary,
                     analyzed_at=EXCLUDED.analyzed_at
-            """, (jid, phone, risk_level, bool(is_complaint), bool(is_churn), indicators, summary))
+            """, (jid, phone, risk_level, is_complaint, is_churn, indicators, summary))
             conn.commit()
 
             results.append({
@@ -958,7 +970,7 @@ async def risk_scan(request: Request, limit: int = Query(30, ge=1, le=100)):
 
         return {"scanned": len(results), "flagged": sum(1 for r in results if r["risk_level"] != "none"), "results": results}
     finally:
-        conn.close()
+        release_db_connection(conn)
 
 
 # ─── Media ────────────────────────────────────────────────────────────────────
@@ -1018,7 +1030,7 @@ async def list_payment_images(
                FROM wa_messages m
                JOIN wa_conversations c ON c.jid = m.conversation_jid
                WHERE m.message_type = 'image'
-                 AND m.is_from_me = 0
+                 AND NOT m.is_from_me
                  AND m.timestamp >= ?
                ORDER BY m.timestamp DESC
                LIMIT ?""",
@@ -1084,7 +1096,7 @@ async def list_payment_images(
 
         return {"images": results, "count": len(results), "days": days}
     finally:
-        conn.close()
+        release_db_connection(conn)
 
 
 @router.get("/media/{filename}")

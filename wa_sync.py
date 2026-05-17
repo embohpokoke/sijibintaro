@@ -53,6 +53,14 @@ def is_group_jid(jid: str) -> bool:
     return "@g.us" in jid
 
 
+def is_standard_jid(jid: str) -> bool:
+    """Return True for standard individual or group JIDs that belong in the CRM.
+    Excludes @lid (Linked Device IDs — opaque numeric identifiers, not real phone numbers)
+    and @broadcast (outgoing broadcast lists).
+    """
+    return "@lid" not in jid and "@broadcast" not in jid
+
+
 def gowa_get(endpoint: str, params: dict = None) -> dict:
     url = f"{GOWA_BASE}/{endpoint.lstrip('/')}"
     resp = requests.get(url, auth=GOWA_AUTH, params=params, timeout=30)
@@ -77,7 +85,7 @@ def sync_all_conversations(conn) -> int:
 
             for chat in chats:
                 jid = chat.get("jid", "")
-                if not jid or jid == "status@broadcast":
+                if not jid or not is_standard_jid(jid):
                     continue
 
                 phone = jid_to_phone(jid)

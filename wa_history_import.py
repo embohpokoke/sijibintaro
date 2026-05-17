@@ -129,6 +129,13 @@ def is_group(jid: str) -> bool:
     return "@g.us" in jid
 
 
+def is_importable_jid(jid: str) -> bool:
+    """Return True only for standard individual WhatsApp JIDs (@s.whatsapp.net).
+    Exclude @lid (Linked Device IDs — not real phone numbers), @broadcast, and @g.us groups.
+    """
+    return "@s.whatsapp.net" in jid
+
+
 def import_file(conn, filepath: str) -> tuple[int, int]:
     """Import one history JSON file. Returns (convs_counted, msgs_counted).
     conn=None means dry-run (count only, no writes)."""
@@ -142,7 +149,11 @@ def import_file(conn, filepath: str) -> tuple[int, int]:
 
     for conv in conversations:
         jid = conv.get("ID") or conv.get("id") or ""
-        if not jid or jid == "status@broadcast":
+        if not jid:
+            continue
+        # Skip non-standard JIDs: @lid (Linked Device IDs with fake phone numbers),
+        # @broadcast (outgoing broadcast lists), and group chats (@g.us)
+        if not is_importable_jid(jid):
             continue
 
         messages = conv.get("messages", []) or []
