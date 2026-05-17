@@ -700,6 +700,15 @@
                                 </button>
                             </div>
                         </div>
+                        <!-- Sort pills -->
+                        <div style="display:flex;gap:.35rem;padding:.5rem .75rem;border-bottom:1px solid #f0ece3;background:#fafaf8" id="wa-sort-pills">
+                            <button class="wa-sort-pill active" data-wa-sort="newest" onclick="setWaSort('newest')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:.25rem;padding:.3rem .5rem;border-radius:.5rem;font-size:.68rem;font-weight:700;cursor:pointer;border:none;background:#735c00;color:white;font-family:'Inter',sans-serif;transition:all .15s">
+                                <span class="material-symbols-outlined" style="font-size:.85rem">schedule</span> Terbaru
+                            </button>
+                            <button class="wa-sort-pill" data-wa-sort="risk" onclick="setWaSort('risk')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:.25rem;padding:.3rem .5rem;border-radius:.5rem;font-size:.68rem;font-weight:700;cursor:pointer;border:1px solid #ffc107;background:white;color:#795548;font-family:'Inter',sans-serif;transition:all .15s">
+                                <span class="material-symbols-outlined" style="font-size:.85rem">warning</span> Risiko
+                            </button>
+                        </div>
                         <div class="wa-conv-list-wrap" id="wa-conv-list"><div class="loading"><div class="spinner"></div> Memuat...</div></div>
                         <div class="p-2 flex items-center justify-center gap-2" id="wa-conv-pagination" style="border-top:1px solid #f0ece3"></div>
                     </div>
@@ -1646,7 +1655,7 @@ function showAreaDetail(idx) {
 
 
 // ─── WhatsApp Page ───────────────────────────────────────────────
-var waState = { filter:'all', page:1, selectedPhone:null, analyticsLoaded:false, insightsLoaded:false };
+var waState = { filter:'all', sort:'newest', page:1, selectedPhone:null, analyticsLoaded:false, insightsLoaded:false };
 document.querySelectorAll('.wa-tab-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
         document.querySelectorAll('.wa-tab-btn').forEach(function(b){b.classList.remove('active'); b.style.background='transparent'; b.style.color='#545e76';});
@@ -1667,6 +1676,26 @@ document.querySelectorAll('#wa-filter-chips .chip').forEach(function(chip) {
         loadWaConversations();
     });
 });
+function setWaSort(sortVal) {
+    waState.sort = sortVal;
+    waState.page = 1;
+    document.querySelectorAll('.wa-sort-pill').forEach(function(p) {
+        var isActive = p.dataset.waSort === sortVal;
+        p.classList.toggle('active', isActive);
+        if (isActive) {
+            p.style.background = sortVal === 'risk' ? '#fff8e1' : '#735c00';
+            p.style.color      = sortVal === 'risk' ? '#795548' : 'white';
+            p.style.border     = sortVal === 'risk' ? '2px solid #ffc107' : 'none';
+            p.style.fontWeight = '800';
+        } else {
+            p.style.background = 'white';
+            p.style.color      = '#9e9e9e';
+            p.style.border     = '1px solid #e0e0e0';
+            p.style.fontWeight = '700';
+        }
+    });
+    loadWaConversations();
+}
 var waSearchTimeout;
 var waSearchInput = $('wa-search-input');
 if (waSearchInput) {
@@ -1685,7 +1714,7 @@ async function loadWaConversations() {
     var list = $('wa-conv-list');
     list.innerHTML = '<div class="loading"><div class="spinner"></div> Memuat...</div>';
     try {
-        var data = await api('/wa/conversations?page='+waState.page+'&limit=20&type='+waState.filter);
+        var data = await api('/wa/conversations?page='+waState.page+'&limit=20&type='+waState.filter+'&sort='+waState.sort);
         if (!data.conversations || data.conversations.length===0) { list.innerHTML='<div style="padding:2rem;text-align:center;color:#9e9e9e">Tidak ada conversation</div>'; $('wa-conv-pagination').innerHTML=''; return; }
         var html = '';
         for (var i=0; i<data.conversations.length; i++) {

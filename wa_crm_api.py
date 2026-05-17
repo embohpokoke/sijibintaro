@@ -118,6 +118,7 @@ async def get_conversations(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     type: str = Query("all", regex="^(all|customer|unknown)$"),
+    sort: str = Query("newest", regex="^(newest|risk)$"),
 ):
     _require_auth(request)
     conn = get_db()
@@ -134,6 +135,21 @@ async def get_conversations(
         total = conn.execute(
             f"SELECT COUNT(*) FROM wa_conversations c {where}"
         ).fetchone()[0]
+
+        # risk sort: high→medium→low→none, then newest within each tier
+        if sort == "risk":
+            order_clause = """
+                ORDER BY
+                    CASE COALESCE(rf.risk_level,'none')
+                        WHEN 'high'   THEN 0
+                        WHEN 'medium' THEN 1
+                        WHEN 'low'    THEN 2
+                        ELSE               3
+                    END,
+                    sort_ts DESC
+            """
+        else:
+            order_clause = "ORDER BY sort_ts DESC"
 
         rows = conn.execute(f"""
             SELECT c.jid, c.phone, c.contact_name, c.customer_name,
@@ -157,7 +173,7 @@ async def get_conversations(
             ) lm ON lm.conversation_jid = c.jid
             LEFT JOIN wa_risk_flags rf ON rf.jid = c.jid
             {where}
-            ORDER BY sort_ts DESC
+            {order_clause}
             LIMIT ? OFFSET ?
         """, (limit, offset)).fetchall()
 
