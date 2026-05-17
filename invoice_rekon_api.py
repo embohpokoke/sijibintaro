@@ -418,7 +418,7 @@ async def run_ocr(
             raise HTTPException(status_code=400, detail="Signal tidak punya file lokal")
 
     async def _do_ocr():
-        result = await ocr_payment_image(sig["local_file_path"])
+        result = await ocr_payment_image(sig["local_file_path"], caption=sig.get("raw_caption", ""))
         with get_db_dict() as conn2:
             cur2 = conn2.cursor()
             import json as _json
@@ -508,11 +508,11 @@ async def run_ocr_batch(
         for sig_id in ids:
             with get_db_dict() as conn2:
                 cur2 = conn2.cursor()
-                cur2.execute("SELECT local_file_path FROM payment_signal WHERE id = %s", (sig_id,))
+                cur2.execute("SELECT local_file_path, raw_caption FROM payment_signal WHERE id = %s", (sig_id,))
                 row = cur2.fetchone()
                 if not row or not row["local_file_path"]:
                     continue
-            result = await ocr_payment_image(row["local_file_path"])
+            result = await ocr_payment_image(row["local_file_path"], caption=row.get("raw_caption", ""))
             import json as _json
             with get_db_dict() as conn3:
                 cur3 = conn3.cursor()

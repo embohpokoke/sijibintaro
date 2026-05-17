@@ -19,9 +19,17 @@ import httpx
 # ── Config ─────────────────────────────────────────────────────────────────
 GOWA_DB       = "/opt/siji-dashboard/siji_database.db"
 MEDIA_DIR     = "/opt/gowa/storages"
+
+# Vision OCR — OpenAI gpt-4o-mini (only model confirmed to work, ~$0.00047/img)
 OPENAI_KEY    = os.getenv("OPENAI_API_KEY", "")
 OPENAI_URL    = "https://api.openai.com/v1/chat/completions"
 OCR_MODEL     = "gpt-4o-mini"
+
+# Text fallback — DeepSeek v4-flash (no vision, used when OpenAI unavailable)
+# Handles: ambiguous captions, structured text extraction, caption classification
+DEEPSEEK_KEY  = os.getenv("DEEPSEEK_API_KEY", "")
+DEEPSEEK_URL  = "https://api.deepseek.com/chat/completions"
+DEEPSEEK_MODEL = "deepseek-v4-flash"
 
 # ── Regex patterns ──────────────────────────────────────────────────────────
 
@@ -153,14 +161,59 @@ def find_local_media(wa_timestamp_str: str) -> Optional[str]:
     return best_path
 
 
+# ── Text-fallback payment classifier (DeepSeek, Tier-1.5) ────────────────────
+
+async def classify_payment_caption(caption: str) -> dict[str, Any]:
+    """
+    Use DeepSeek v4-flash to classify an ambiguous text caption as payment proof.
+    Called when regex Tier-1 is inconclusive but a keyword hint exists.
+    Falls back gracefully if DeepSeek key is absent.
+    """
+    if not DEEPSEEK_KEY or not caption.strip():
+        return {"is_payment": False, "source": "deepseek_unavailable"}
+
+    prompt = (
+        "Apakah teks berikut adalah konfirmasi/bukti pembayaran pelanggan? "
+        "Extract info jika iya. Return ONLY JSON:\n"
+        '{"is_payment":true/false,"bank_name":"...or null","amount":12345,"reference":"...or null"}\n\n'
+        f"Teks: {caption[:400]}"
+    )
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.post(
+                DEEPSEEK_URL,
+                headers={"Authorization": f"Bearer {DEEPSEEK_KEY}"},
+                json={
+                    "model": DEEPSEEK_MODEL,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 150,
+                },
+            )
+            resp.raise_for_status()
+        raw = resp.json()["choices"][0]["message"]["content"].strip()
+        raw = re.sub(r"^```(?:json)?\s*", "", raw)
+        raw = re.sub(r"\s*```$", "", raw)
+        result = json.loads(raw)
+        result["source"] = "deepseek_text"
+        result["confidence"] = 0.65 if result.get("is_payment") else 0.2
+        return result
+    except Exception as exc:
+        return {"is_payment": False, "source": "deepseek_error", "error": str(exc)}
+
+
 # ── Vision OCR (Tier-2) ───────────────────────────────────────────────────────
 
-async def ocr_payment_image(local_path: str) -> dict[str, Any]:
+async def ocr_payment_image(local_path: str, caption: str = "") -> dict[str, Any]:
     """
-    Call gpt-4o-mini vision on a local JPEG.
+    Tier-2 vision OCR using gpt-4o-mini on a local JPEG.
+    If OpenAI key is missing/unavailable, falls back to DeepSeek text
+    classification of the caption (Tier-1.5).
     Returns parsed payment dict or {is_payment: false}.
     """
     if not OPENAI_KEY:
+        # Graceful degradation: try DeepSeek text fallback on caption
+        if caption and DEEPSEEK_KEY:
+            return await classify_payment_caption(caption)
         return {"is_payment": False, "error": "no OPENAI_API_KEY"}
     try:
         with open(local_path, "rb") as fh:
