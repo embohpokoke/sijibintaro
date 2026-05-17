@@ -336,10 +336,10 @@ async def list_invoices(
     _: dict[str, Any] = Depends(_require_auth),
 ):
     since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
-    where_parts = ["wa_timestamp >= %s"]
+    where_parts = ["i.wa_timestamp >= %s"]
     params: list[Any] = [since]
     if status:
-        where_parts.append("rekon_status = %s")
+        where_parts.append("i.rekon_status = %s")
         params.append(status)
     with get_db_dict() as conn:
         cur = conn.cursor()
@@ -356,7 +356,7 @@ async def list_invoices(
         )
         items = cur.fetchall()
         cur.execute(
-            f"SELECT COUNT(*) AS n FROM invoice_rekon WHERE {' AND '.join(where_parts)}",
+            f"SELECT COUNT(*) AS n FROM invoice_rekon i WHERE {' AND '.join(where_parts)}",
             params,
         )
         total = cur.fetchone()["n"]
@@ -374,16 +374,16 @@ async def list_signals(
     _: dict[str, Any] = Depends(_require_auth),
 ):
     since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
-    where_parts = ["wa_timestamp >= %s"]
+    where_parts = ["ps.wa_timestamp >= %s"]
     params: list[Any] = [since]
     if status:
-        where_parts.append("rekon_status = %s")
+        where_parts.append("ps.rekon_status = %s")
         params.append(status)
     if is_payment is not None:
-        where_parts.append("is_payment = %s")
+        where_parts.append("ps.is_payment = %s")
         params.append(is_payment)
     if pending_ocr:
-        where_parts.append("signal_type = 'vision_ocr' AND is_payment = false AND local_file_path IS NOT NULL")
+        where_parts.append("ps.signal_type = 'vision_ocr' AND ps.is_payment = false AND ps.local_file_path IS NOT NULL")
     with get_db_dict() as conn:
         cur = conn.cursor()
         cur.execute(
