@@ -1,7 +1,7 @@
 """
 WA CRM API — SIJI Bintaro
 Endpoints for WhatsApp conversation management, analytics, and LLM insights.
-Database: /opt/siji-dashboard/siji_database.db (wa_conversations + wa_messages — SQLite, synced from GOWA)
+Database: PostgreSQL siji_bintaro schema (wa_conversations + wa_messages), synced from GOWA every 15 min.
 """
 
 import csv
@@ -10,7 +10,6 @@ import json
 import os
 import glob
 import re
-import sqlite3
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -19,9 +18,10 @@ from fastapi import APIRouter, Query, Request, HTTPException
 from fastapi.responses import FileResponse, StreamingResponse
 import jwt as pyjwt
 
+from database import get_db_connection, release_db_connection
+
 router = APIRouter(prefix="/api/dashboard/wa", tags=["whatsapp"])
 
-DB_PATH = "/opt/siji-dashboard/siji_database.db"
 OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
 LLM_MODEL = "minimax-m2.5:cloud"
 GOWA_MEDIA_PATH = "/opt/gowa/storages"
@@ -48,32 +48,7 @@ def _require_auth(request: Request) -> dict:
 # ─── DB ───────────────────────────────────────────────────────────────────────
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-
-def _ensure_risk_table():
-    """Create wa_risk_flags table if not present."""
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS wa_risk_flags (
-            jid             TEXT PRIMARY KEY,
-            phone           TEXT,
-            risk_level      TEXT NOT NULL DEFAULT 'none'
-                            CHECK (risk_level IN ('none','low','medium','high')),
-            is_complaint    INTEGER NOT NULL DEFAULT 0,
-            is_churn        INTEGER NOT NULL DEFAULT 0,
-            indicators      TEXT,   -- JSON array
-            summary         TEXT,
-            analyzed_at     TEXT NOT NULL DEFAULT (datetime('now'))
-        )
-    """)
-    conn.commit()
-    conn.close()
-
-
-_ensure_risk_table()
+    return get_db_connection()
 
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
 DEEPSEEK_RISK_PROMPT = """\
@@ -962,15 +937,15 @@ async def risk_scan(request: Request, limit: int = Query(30, ge=1, le=100)):
 
             conn.execute("""
                 INSERT INTO wa_risk_flags (jid, phone, risk_level, is_complaint, is_churn, indicators, summary, analyzed_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+                VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
                 ON CONFLICT(jid) DO UPDATE SET
-                    risk_level=excluded.risk_level,
-                    is_complaint=excluded.is_complaint,
-                    is_churn=excluded.is_churn,
-                    indicators=excluded.indicators,
-                    summary=excluded.summary,
-                    analyzed_at=excluded.analyzed_at
-            """, (jid, phone, risk_level, is_complaint, is_churn, indicators, summary))
+                    risk_level=EXCLUDED.risk_level,
+                    is_complaint=EXCLUDED.is_complaint,
+                    is_churn=EXCLUDED.is_churn,
+                    indicators=EXCLUDED.indicators,
+                    summary=EXCLUDED.summary,
+                    analyzed_at=EXCLUDED.analyzed_at
+            """, (jid, phone, risk_level, bool(is_complaint), bool(is_churn), indicators, summary))
             conn.commit()
 
             results.append({

@@ -10,14 +10,14 @@ import base64
 import json
 import os
 import re
-import sqlite3
 from datetime import datetime, timezone
 from typing import Any, Optional
 
 import httpx
 
+from database import get_db_connection, release_db_connection
+
 # ── Config ─────────────────────────────────────────────────────────────────
-GOWA_DB       = "/opt/siji-dashboard/siji_database.db"
 MEDIA_DIR     = "/opt/gowa/storages"
 
 # Vision OCR — OpenAI gpt-4o-mini (only model confirmed to work, ~$0.00047/img)
@@ -257,14 +257,13 @@ async def ocr_payment_image(local_path: str, caption: str = "") -> dict[str, Any
         return {"is_payment": False, "raw": raw_content}
 
 
-# ── SQLite helpers ─────────────────────────────────────────────────────────────
+# ── PostgreSQL helpers ──────────────────────────────────────────────────────────
 
 def iter_invoice_messages(since_ts: Optional[str] = None):
     """Yield rows from wa_messages that contain FAKTUR ELEKTRONIK."""
-    conn = sqlite3.connect(GOWA_DB)
-    conn.row_factory = sqlite3.Row
+    conn = get_db_connection()
     try:
-        where = "message_text LIKE '%FAKTUR ELEKTRONIK%' AND is_from_me = 1"
+        where = "message_text LIKE '%FAKTUR ELEKTRONIK%' AND is_from_me = TRUE"
         params: list[Any] = []
         if since_ts:
             where += " AND timestamp > ?"
@@ -276,15 +275,14 @@ def iter_invoice_messages(since_ts: Optional[str] = None):
         for row in rows:
             yield dict(row)
     finally:
-        conn.close()
+        release_db_connection(conn)
 
 
 def iter_payment_images(since_ts: Optional[str] = None, conversation_jids: Optional[set] = None):
     """Yield customer-sent image/text messages that may contain payment proof."""
-    conn = sqlite3.connect(GOWA_DB)
-    conn.row_factory = sqlite3.Row
+    conn = get_db_connection()
     try:
-        where_parts = ["is_from_me = 0", "(message_type = 'image' OR (message_type = 'text' AND message_text LIKE '%Rp%'))"]
+        where_parts = ["is_from_me = FALSE", "(message_type = 'image' OR (message_type = 'text' AND message_text LIKE '%Rp%'))"]
         params: list[Any] = []
         if since_ts:
             where_parts.append("timestamp > ?")
@@ -300,4 +298,4 @@ def iter_payment_images(since_ts: Optional[str] = None, conversation_jids: Optio
         for row in rows:
             yield dict(row)
     finally:
-        conn.close()
+        release_db_connection(conn)

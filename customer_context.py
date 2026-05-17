@@ -2,10 +2,9 @@
 customer_context.py — Lookup customer profile dari transactions DB
 Dipakai oleh autoreply pipeline untuk personalisasi
 """
-import sqlite3
 from typing import Optional
 
-TX_DB_PATH = "/opt/siji-dashboard/siji_database.db"
+from database import get_db_connection, release_db_connection
 
 
 def get_customer_context(phone: str) -> dict:
@@ -28,7 +27,7 @@ def get_customer_context(phone: str) -> dict:
         return result
 
     try:
-        conn = sqlite3.connect(TX_DB_PATH, timeout=5)
+        conn = get_db_connection()
         cur = conn.execute("""
             SELECT
               customer_name,
@@ -45,7 +44,7 @@ def get_customer_context(phone: str) -> dict:
         """, (phone,))
 
         row = cur.fetchone()
-        conn.close()
+        release_db_connection(conn)
 
         if row and row[0]:
             nama, total_tx, total_belanja, last_tx, last_layanan = row
