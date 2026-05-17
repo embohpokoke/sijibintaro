@@ -227,6 +227,8 @@
 #pg-whatsapp { font-family: 'Inter', sans-serif; }
 #pg-whatsapp h1, #pg-whatsapp h2, #pg-whatsapp h3, #pg-whatsapp h4 { font-family: 'Hanken Grotesk', sans-serif; }
 .wa-layout-m3 { display: grid; grid-template-columns: 300px 1fr 280px; border-radius: 1.5rem; overflow: hidden; border: 1px solid #d0c5af; background: white; height: calc(100vh - 23rem); min-height: 520px; }
+/* Grid flex child: allow message column to shrink so .wa-messages-m3 can scroll */
+#wa-chat-area { min-height: 0; min-width: 0; }
 .wa-panel-left { border-right: 1px solid #d0c5af; display: flex; flex-direction: column; background: white; overflow: hidden; }
 .wa-panel-right { border-left: 1px solid #d0c5af; overflow-y: auto; background: white; }
 .wa-conv-list-wrap { flex: 1; overflow-y: auto; }
@@ -1116,7 +1118,7 @@ function rp(n) { if (n == null || isNaN(n)) return 'Rp 0'; return 'Rp ' + Math.r
 function rpShort(n) { if (n >= 1e9) return 'Rp ' + (n/1e9).toFixed(1) + 'M'; if (n >= 1e6) return 'Rp ' + (n/1e6).toFixed(1) + 'jt'; if (n >= 1e3) return 'Rp ' + (n/1e3).toFixed(0) + 'rb'; return rp(n); }
 function fmtDate(d) { if (!d) return '-'; return new Date(d).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' }); }
 function fmtDateShort(d) { if (!d) return '-'; return new Date(d).toLocaleDateString('id-ID', { day:'numeric', month:'short' }); }
-async function api(endpoint) { const r = await fetch(API + endpoint); if (!r.ok) throw new Error('API ' + r.status); return r.json(); }
+async function api(endpoint) { const r = await fetch(API + endpoint, { credentials: 'same-origin' }); if (!r.ok) throw new Error('API ' + r.status); return r.json(); }
 async function apiPost(endpoint, body) { const r = await fetch(API + endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) }); if (!r.ok) throw new Error('API ' + r.status); return r.json(); }
 async function accountingApi(endpoint, options) {
     const opts = Object.assign({ credentials: 'include' }, options || {});
@@ -1789,20 +1791,21 @@ async function openWaChat(phone, name) {
     var initials2 = (name||'?').substring(0,2).toUpperCase();
     area.innerHTML = '<div class="wa-chat-header-m3"><div style="display:flex;align-items:center;gap:.625rem"><button class="wa-chat-back-m3" onclick="closeWaChat()"><span class="material-symbols-outlined">arrow_back</span></button><div class="wa-avatar-m3 customer" style="width:36px;height:36px;font-size:.7rem;flex-shrink:0">'+initials2+'</div><div><div style="font-weight:700;font-size:.88rem;font-family:\'Hanken Grotesk\',sans-serif;color:#001d36" class="wa-chat-header-name">'+escHtml(name)+'</div><div style="font-size:.7rem;color:#545e76" class="wa-chat-header-phone">'+phone+'</div></div></div><div style="display:flex;gap:.375rem"><button onclick="viewWaCustomer(\''+phone+'\')" style="font-size:.72rem;padding:.3rem .75rem;border-radius:.5rem;border:1px solid #d0c5af;background:white;cursor:pointer;color:#545e76;font-family:\'Inter\',sans-serif;font-weight:600">Profile</button><button onclick="exportWaChat(\''+phone+'\')" style="font-size:.72rem;padding:.3rem .75rem;border-radius:.5rem;border:1px solid #d0c5af;background:white;cursor:pointer;color:#545e76;font-family:\'Inter\',sans-serif;font-weight:600">Export CSV</button></div></div><div class="wa-messages-m3" id="wa-chat-msgs"><div class="loading"><div class="spinner"></div></div></div><div class="wa-reply-bar-m3"><textarea class="wa-reply-input-m3" id="wa-reply-input" aria-label="Type message" placeholder="Ketik pesan..." rows="1" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();sendWaReply()}"></textarea><button class="wa-send-btn-m3" onclick="sendWaReply()" title="Kirim"><span class="material-symbols-outlined" style="font-size:1.25rem">send</span></button></div>';
     try {
-        var data = await api('/wa/messages?phone='+phone+'&limit=100');
+        var data = await api('/wa/messages?phone='+encodeURIComponent(phone)+'&limit=100');
         var msgs = data.messages || [];
         var container = $('wa-chat-msgs');
-        if (msgs.length===0) { container.innerHTML=emptyStateHtml(); return; }
+        if (msgs.length===0) { container.innerHTML='<div class="wa-empty-m3" style="min-height:120px"><span class="material-symbols-outlined" style="font-size:2rem;color:#d0c5af">chat_bubble_outline</span><div style="font-size:.85rem;color:#545e76">Belum ada pesan di thread ini</div></div>'; return; }
         var html='', lastDate='';
         for (var i=0; i<msgs.length; i++) {
             var m = msgs[i];
-            var msgDate = m.timestamp ? m.timestamp.substring(0,10) : '';
+            var fromMe = m.is_from_me === true || m.is_from_me === 1 || m.from_me === true || m.from_me === 1;
+            var msgDate = m.timestamp ? String(m.timestamp).substring(0,10) : '';
             if (msgDate !== lastDate) { html += '<div class="wa-date-sep-m3"><span>'+fmtDate(msgDate)+'</span></div>'; lastDate = msgDate; }
-            var isBot = m.is_from_me && !!m.is_bot;
-            var cls = m.is_from_me ? ('outgoing ' + (isBot ? 'bot' : 'human')) : 'incoming';
-            var text = m.message_text || '';
-            var time = m.timestamp ? m.timestamp.substring(11,16) : '';
-            var senderTag = m.is_from_me ? ('<span class="wa-bubble-sender-tag">' + (isBot ? '🤖 Bot' : '👤 CS') + '</span>') : '';
+            var isBot = fromMe && (m.is_bot === true || m.is_bot === 1);
+            var text = m.message_text || m.body || '';
+            var tsStr = m.timestamp ? String(m.timestamp) : '';
+            var time = tsStr.length >= 16 ? tsStr.substring(11,16) : '';
+            var senderTag = fromMe ? ('<span class="wa-bubble-sender-tag">' + (isBot ? '🤖 Bot' : '👤 CS') + '</span>') : '';
             var mediaTag = '';
             if (m.message_type && m.message_type !== 'text') {
                 if (m.message_type === 'image' && m.timestamp) {
@@ -1813,8 +1816,8 @@ async function openWaChat(phone, name) {
                     mediaTag = '<div class="wa-bubble-media">['+m.message_type+']</div>';
                 }
             }
-            var bubbleCls = m.is_from_me ? ('wa-bubble-m3-sent' + (isBot ? ' bot' : '')) : 'wa-bubble-m3-received';
-            html += '<div class="'+bubbleCls+'">'+mediaTag+(text?'<div style="white-space:pre-line">'+escHtml(text)+'</div>':'')+'<div class="wa-bubble-time-m3">'+senderTag+'<span>'+time+'</span>'+(m.is_from_me?'<span class="material-symbols-outlined" style="font-size:.7rem;opacity:.6">done_all</span>':'')+'</div></div>';
+            var bubbleCls = fromMe ? ('wa-bubble-m3-sent' + (isBot ? ' bot' : '')) : 'wa-bubble-m3-received';
+            html += '<div class="'+bubbleCls+'">'+mediaTag+(text?'<div style="white-space:pre-line">'+escHtml(text)+'</div>':'')+'<div class="wa-bubble-time-m3">'+senderTag+'<span>'+time+'</span>'+(fromMe?'<span class="material-symbols-outlined" style="font-size:.7rem;opacity:.6">done_all</span>':'')+'</div></div>';
         }
         container.innerHTML = html;
         container.scrollTop = container.scrollHeight;
@@ -2290,7 +2293,7 @@ if (window.visualViewport) {
         var waInputBar = document.querySelector('.wa-reply-bar');
         if (waInputBar) { waInputBar.style.bottom = (window.innerHeight - window.visualViewport.height) + 'px'; }
         var chatMsgs = document.getElementById('wa-chat-msgs');
-        if (chatMsgs && document.querySelector('.wa-layout.chat-open')) {
+        if (chatMsgs && document.querySelector('.wa-layout-m3.chat-open')) {
             chatMsgs.style.maxHeight = (window.visualViewport.height - 160) + 'px';
             chatMsgs.scrollTop = chatMsgs.scrollHeight;
         }

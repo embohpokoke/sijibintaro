@@ -229,7 +229,28 @@ async def get_messages(
             ORDER BY timestamp ASC LIMIT ? OFFSET ?
         """, (jid, limit, offset)).fetchall()
 
-        messages = [dict(r) for r in rows]
+        def _serialize_message_row(r) -> dict:
+            """Normalize row shape for JSON + dashboard (snake_case + legacy aliases)."""
+            d = dict(r)
+            text = d.get("message_text")
+            d["message_text"] = text
+            d["body"] = text
+            for key in ("is_from_me", "is_bot", "is_forwarded"):
+                v = d.get(key)
+                if isinstance(v, (int, float)):
+                    d[key] = bool(v)
+                elif isinstance(v, str):
+                    d[key] = v.lower() in ("1", "true", "t", "yes")
+                elif v is None:
+                    d[key] = False
+                else:
+                    d[key] = bool(v)
+            ts = d.get("timestamp")
+            if ts is not None and not isinstance(ts, str):
+                d["timestamp"] = str(ts)
+            return d
+
+        messages = [_serialize_message_row(r) for r in rows]
 
         conv = conn.execute(
             "SELECT * FROM wa_conversations WHERE jid = ?", (jid,)
