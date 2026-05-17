@@ -1747,6 +1747,7 @@ function initAccountingPage() {
     var now = new Date();
     var monthSel = $('acc-month'), yearSel = $('acc-year');
     if (!monthSel || !yearSel) return;
+    if (monthSel.options.length > 0) return; // already initialized
     for (var m=1; m<=12; m++) { var opt=document.createElement('option'); opt.value=m; opt.textContent=monthName(m); if (m===now.getMonth()+1) opt.selected=true; monthSel.appendChild(opt); }
     for (var y=2021; y<=now.getFullYear()+1; y++) { var opt=document.createElement('option'); opt.value=y; opt.textContent=y; if (y===now.getFullYear()) opt.selected=true; yearSel.appendChild(opt); }
     monthSel.addEventListener('change', function() { refreshAccountingPage(); });
@@ -1768,10 +1769,15 @@ function initAccountingPage() {
     });
 }
 function accountingPeriod() {
-    return { bulan: parseInt($('acc-month').value, 10), tahun: parseInt($('acc-year').value, 10) };
+    var now = new Date();
+    var bulan = parseInt($('acc-month').value, 10);
+    var tahun = parseInt($('acc-year').value, 10);
+    if (!bulan || isNaN(bulan)) bulan = now.getMonth() + 1;
+    if (!tahun || isNaN(tahun)) tahun = now.getFullYear();
+    return { bulan: bulan, tahun: tahun };
 }
 async function refreshAccountingPage() {
-    if (!accountingState.initialized) { accountingState.initialized = true; }
+    if (!accountingState.initialized) { accountingState.initialized = true; initAccountingPage(); }
     var period = accountingPeriod();
     try {
         var overview = await accountingApi('/overview?bulan=' + period.bulan + '&tahun=' + period.tahun);
