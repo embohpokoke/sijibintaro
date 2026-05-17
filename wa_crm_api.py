@@ -53,6 +53,51 @@ def get_db():
     return conn
 
 
+def _ensure_risk_table():
+    """Create wa_risk_flags table if not present."""
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS wa_risk_flags (
+            jid             TEXT PRIMARY KEY,
+            phone           TEXT,
+            risk_level      TEXT NOT NULL DEFAULT 'none'
+                            CHECK (risk_level IN ('none','low','medium','high')),
+            is_complaint    INTEGER NOT NULL DEFAULT 0,
+            is_churn        INTEGER NOT NULL DEFAULT 0,
+            indicators      TEXT,   -- JSON array
+            summary         TEXT,
+            analyzed_at     TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+
+_ensure_risk_table()
+
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
+DEEPSEEK_RISK_PROMPT = """\
+Kamu adalah analis CRM untuk usaha laundry premium. Analisis percakapan WhatsApp berikut dari satu pelanggan.
+
+Tugas:
+1. Apakah ada indikator KOMPLAIN (keluhan, barang rusak/hilang, lamban, kecewa, marah)?
+2. Apakah ada indikator CHURN (tidak puas, ingin pindah, membanding-bandingkan, mengancam berhenti)?
+
+Pesan terakhir pelanggan:
+{messages}
+
+Jawab HANYA dengan JSON valid:
+{{
+  "risk_level": "none|low|medium|high",
+  "complaint": true/false,
+  "churn_risk": true/false,
+  "indicators": ["daftar frase spesifik yang menunjukkan risiko"],
+  "summary": "ringkasan singkat 1 kalimat"
+}}
+Jika tidak ada risiko, kembalikan risk_level "none", complaint false, churn_risk false, indicators [].
+"""
+
+
 def normalize_phone(phone) -> str:
     if phone is None:
         return ""
@@ -93,7 +138,9 @@ async def get_conversations(
         rows = conn.execute(f"""
             SELECT c.jid, c.phone, c.contact_name, c.customer_name,
                    c.last_message, c.last_message_time, c.unread_count, c.total_messages,
-                   t.total_orders, t.total_revenue, t.last_order
+                   t.total_orders, t.total_revenue, t.last_order,
+                   COALESCE(lm.actual_last_ts, c.last_message_time) AS sort_ts,
+                   rf.risk_level, rf.is_complaint, rf.is_churn, rf.indicators, rf.analyzed_at
             FROM wa_conversations c
             LEFT JOIN (
                 SELECT customer_phone,
@@ -104,8 +151,13 @@ async def get_conversations(
                 WHERE customer_phone IS NOT NULL AND customer_phone != ''
                 GROUP BY customer_phone
             ) t ON c.phone = t.customer_phone
+            LEFT JOIN (
+                SELECT conversation_jid, MAX(timestamp) AS actual_last_ts
+                FROM wa_messages GROUP BY conversation_jid
+            ) lm ON lm.conversation_jid = c.jid
+            LEFT JOIN wa_risk_flags rf ON rf.jid = c.jid
             {where}
-            ORDER BY c.last_message_time DESC
+            ORDER BY sort_ts DESC
             LIMIT ? OFFSET ?
         """, (limit, offset)).fetchall()
 
@@ -118,12 +170,17 @@ async def get_conversations(
                 "customer_name": r["customer_name"],
                 "display_name": r["customer_name"] or r["contact_name"] or r["phone"],
                 "last_message": (r["last_message"] or "")[:80],
-                "last_message_time": r["last_message_time"],
+                "last_message_time": r["sort_ts"] or r["last_message_time"],
                 "unread_count": r["unread_count"] or 0,
                 "total_messages": r["total_messages"] or 0,
                 "total_orders": r["total_orders"] or 0,
                 "total_revenue": r["total_revenue"] or 0,
                 "last_order": r["last_order"],
+                "risk_level": r["risk_level"],
+                "is_complaint": bool(r["is_complaint"]) if r["is_complaint"] is not None else False,
+                "is_churn": bool(r["is_churn"]) if r["is_churn"] is not None else False,
+                "indicators": json.loads(r["indicators"]) if r["indicators"] else [],
+                "risk_analyzed_at": r["analyzed_at"],
             })
 
         return {
@@ -764,6 +821,135 @@ async def get_customer_profile(phone: str, request: Request):
                 for t in recent_tx
             ],
         }
+    finally:
+        conn.close()
+
+
+# ─── Risk / Complaint-Churn Analysis ─────────────────────────────────────────
+
+@router.get("/risk-flags")
+async def get_risk_flags(request: Request):
+    """Return all cached risk flags keyed by JID."""
+    _require_auth(request)
+    conn = get_db()
+    try:
+        rows = conn.execute(
+            "SELECT jid, phone, risk_level, is_complaint, is_churn, indicators, summary, analyzed_at FROM wa_risk_flags"
+        ).fetchall()
+        return {
+            r["jid"]: {
+                "risk_level": r["risk_level"],
+                "is_complaint": bool(r["is_complaint"]),
+                "is_churn": bool(r["is_churn"]),
+                "indicators": json.loads(r["indicators"]) if r["indicators"] else [],
+                "summary": r["summary"],
+                "analyzed_at": r["analyzed_at"],
+            }
+            for r in rows
+        }
+    finally:
+        conn.close()
+
+
+@router.post("/risk-scan")
+async def risk_scan(request: Request, limit: int = Query(30, ge=1, le=100)):
+    """
+    Analyze the most-recent `limit` conversations with DeepSeek for
+    complaint / churn indicators. Results are cached in wa_risk_flags.
+    """
+    _require_auth(request)
+    api_key = DEEPSEEK_API_KEY or os.getenv("DEEPSEEK_API_KEY", "")
+    if not api_key:
+        raise HTTPException(502, "DEEPSEEK_API_KEY not configured")
+
+    conn = get_db()
+    try:
+        # Fetch conversations with most-recent actual message
+        recent = conn.execute("""
+            SELECT c.jid, c.phone
+            FROM wa_conversations c
+            LEFT JOIN (
+                SELECT conversation_jid, MAX(timestamp) AS last_ts
+                FROM wa_messages GROUP BY conversation_jid
+            ) lm ON lm.conversation_jid = c.jid
+            WHERE c.is_group = 0
+            ORDER BY COALESCE(lm.last_ts, c.last_message_time) DESC
+            LIMIT ?
+        """, (limit,)).fetchall()
+
+        results = []
+        for row in recent:
+            jid, phone = row["jid"], row["phone"]
+
+            # Fetch last 15 customer-sent messages
+            msgs = conn.execute("""
+                SELECT body, timestamp FROM wa_messages
+                WHERE conversation_jid = ? AND from_me = 0 AND body IS NOT NULL AND TRIM(body) != ''
+                ORDER BY timestamp DESC LIMIT 15
+            """, (jid,)).fetchall()
+
+            if not msgs:
+                continue
+
+            msg_text = "\n".join(
+                f"[{m['timestamp'][:16] if m['timestamp'] else '?'}] {m['body']}"
+                for m in reversed(msgs)
+            )
+
+            prompt = DEEPSEEK_RISK_PROMPT.format(messages=msg_text)
+            try:
+                async with httpx.AsyncClient(timeout=30) as client:
+                    resp = await client.post(
+                        "https://api.deepseek.com/chat/completions",
+                        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                        json={
+                            "model": "deepseek-chat",
+                            "messages": [{"role": "user", "content": prompt}],
+                            "temperature": 0.2,
+                            "max_tokens": 300,
+                        },
+                    )
+                resp.raise_for_status()
+                raw = resp.json()["choices"][0]["message"]["content"].strip()
+                # Strip code fences if present
+                if raw.startswith("```"):
+                    raw = re.sub(r"^```[a-z]*\n?", "", raw)
+                    raw = re.sub(r"```$", "", raw).strip()
+                analysis = json.loads(raw)
+            except Exception as e:
+                analysis = {
+                    "risk_level": "none", "complaint": False,
+                    "churn_risk": False, "indicators": [], "summary": f"parse error: {e}"
+                }
+
+            risk_level  = analysis.get("risk_level", "none")
+            is_complaint = 1 if analysis.get("complaint") else 0
+            is_churn     = 1 if analysis.get("churn_risk") else 0
+            indicators   = json.dumps(analysis.get("indicators", []), ensure_ascii=False)
+            summary      = analysis.get("summary", "")
+
+            conn.execute("""
+                INSERT INTO wa_risk_flags (jid, phone, risk_level, is_complaint, is_churn, indicators, summary, analyzed_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+                ON CONFLICT(jid) DO UPDATE SET
+                    risk_level=excluded.risk_level,
+                    is_complaint=excluded.is_complaint,
+                    is_churn=excluded.is_churn,
+                    indicators=excluded.indicators,
+                    summary=excluded.summary,
+                    analyzed_at=excluded.analyzed_at
+            """, (jid, phone, risk_level, is_complaint, is_churn, indicators, summary))
+            conn.commit()
+
+            results.append({
+                "jid": jid, "phone": phone,
+                "risk_level": risk_level,
+                "is_complaint": bool(is_complaint),
+                "is_churn": bool(is_churn),
+                "summary": summary,
+            })
+
+        return {"scanned": len(results), "flagged": sum(1 for r in results if r["risk_level"] != "none"), "results": results}
     finally:
         conn.close()
 

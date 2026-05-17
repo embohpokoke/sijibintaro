@@ -693,7 +693,12 @@
                     <div class="wa-panel-left">
                         <div class="p-4 flex items-center justify-between" style="border-bottom:1px solid #d0c5af">
                             <h2 style="font-family:'Hanken Grotesk',sans-serif;font-size:1.1rem;font-weight:700;color:#001d36">Inbox</h2>
-                            <span id="wa-inbox-count" class="text-xs font-bold px-2 py-0.5 rounded-full" style="background:#e5efff;color:#545e76"></span>
+                            <div style="display:flex;align-items:center;gap:.5rem">
+                                <span id="wa-inbox-count" class="text-xs font-bold px-2 py-0.5 rounded-full" style="background:#e5efff;color:#545e76"></span>
+                                <button id="wa-risk-scan-btn" onclick="runWaRiskScan()" title="Analisis keluhan/churn dengan DeepSeek AI" style="display:flex;align-items:center;gap:.3rem;padding:.3rem .7rem;border-radius:.5rem;border:1px solid #ffc107;background:#fff8e1;color:#795548;font-size:.68rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s">
+                                    <span class="material-symbols-outlined" style="font-size:.95rem">psychology</span> Scan AI
+                                </button>
+                            </div>
                         </div>
                         <div class="wa-conv-list-wrap" id="wa-conv-list"><div class="loading"><div class="spinner"></div> Memuat...</div></div>
                         <div class="p-2 flex items-center justify-center gap-2" id="wa-conv-pagination" style="border-top:1px solid #f0ece3"></div>
@@ -1688,9 +1693,18 @@ async function loadWaConversations() {
             var initials = (c.display_name||'?').substring(0,2).toUpperCase();
             var isCust = c.customer_name ? ' customer' : '';
             var time = c.last_message_time ? fmtWaTime(c.last_message_time) : '';
-            var badge = c.total_orders>0 ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-gold/10 text-gold">'+c.total_orders+' order</span>' : '';
             var active = c.phone===waState.selectedPhone ? ' active' : '';
-            html += '<div class="wa-conv-item-m3'+active+'" data-phone="'+c.phone+'" onclick="openWaChat(\''+c.phone+'\',\''+escHtml(c.display_name)+'\')"><div class="wa-avatar-m3'+isCust+'">'+initials+'</div><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:.83rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#001d36">'+escHtml(c.display_name)+'</div><div style="font-size:.73rem;color:#9e9e9e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px">'+escHtml(c.last_message)+'</div>'+(c.total_orders>0?'<span style="display:inline-flex;align-items:center;padding:.1rem .5rem;border-radius:9999px;font-size:.65rem;font-weight:700;background:#e5efff;color:#735c00;margin-top:.25rem">'+c.total_orders+' order</span>':'')+'</div><div style="text-align:right;flex-shrink:0"><span style="font-size:.63rem;color:#9e9e9e">'+time+'</span>'+(c.total_messages>0?'<br><span style="font-size:.6rem;color:#c0bdb5">'+c.total_messages+' msg</span>':'')+'</div></div>';
+
+            // Risk badge
+            var riskBadge = '';
+            if (c.risk_level && c.risk_level !== 'none') {
+                var rColors = {low:'#fff3e0;color:#e65100', medium:'#fff8e1;color:#f57f17', high:'#fce4ec;color:#b71c1c'};
+                var rStyle = rColors[c.risk_level] || rColors.low;
+                if (c.is_complaint) riskBadge += '<span style="display:inline-flex;align-items:center;gap:.2rem;padding:.1rem .4rem;border-radius:9999px;font-size:.6rem;font-weight:800;background:'+rStyle+';margin-top:.2rem;margin-right:.2rem">🚨 Keluhan</span>';
+                if (c.is_churn) riskBadge += '<span style="display:inline-flex;align-items:center;gap:.2rem;padding:.1rem .4rem;border-radius:9999px;font-size:.6rem;font-weight:800;background:#f3e5f5;color:#6a1b9a;margin-top:.2rem">⚠️ Churn</span>';
+            }
+
+            html += '<div class="wa-conv-item-m3'+active+'" data-phone="'+c.phone+'" data-risk="'+(c.risk_level||'none')+'" onclick="openWaChat(\''+c.phone+'\',\''+escHtml(c.display_name)+'\','+JSON.stringify(c)+')"><div class="wa-avatar-m3'+isCust+'">'+initials+'</div><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:.83rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#001d36">'+escHtml(c.display_name)+'</div><div style="font-size:.73rem;color:#9e9e9e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px">'+escHtml(c.last_message)+'</div><div style="display:flex;flex-wrap:wrap;gap:.15rem;margin-top:.15rem">'+(c.total_orders>0?'<span style="display:inline-flex;align-items:center;padding:.1rem .4rem;border-radius:9999px;font-size:.6rem;font-weight:700;background:#e5efff;color:#735c00">'+c.total_orders+' order</span>':'')+riskBadge+'</div></div><div style="text-align:right;flex-shrink:0"><span style="font-size:.63rem;color:#9e9e9e">'+time+'</span>'+(c.total_messages>0?'<br><span style="font-size:.6rem;color:#c0bdb5">'+c.total_messages+' msg</span>':'')+'</div></div>';
         }
         list.innerHTML = html;
         var countEl = $('wa-inbox-count'); if (countEl) countEl.textContent = data.total || data.conversations.length;
@@ -1699,7 +1713,20 @@ async function loadWaConversations() {
         else { pag.innerHTML=''; }
     } catch(e) { list.innerHTML='<div style="padding:2rem;text-align:center;color:#C0392B">Gagal memuat conversation</div>'; console.error('WA conversations error:', e); }
 }
-async function openWaChat(phone, name) {
+async function runWaRiskScan() {
+    var btn = $('wa-risk-scan-btn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:.95rem;animation:spin 1s linear infinite">autorenew</span> Scanning…'; }
+    try {
+        var res = await api('/wa/risk-scan', {method:'POST'});
+        showToast('✅ Scan selesai: ' + res.flagged + ' dari ' + res.scanned + ' chat berisiko');
+        loadWaConversations();
+    } catch(e) {
+        showToast('Scan gagal: ' + (e.message || e));
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:.95rem">psychology</span> Scan AI'; }
+    }
+}
+async function openWaChat(phone, name, convData) {
     waState.selectedPhone = phone;
     var layout = $('wa-layout'); if (layout) layout.classList.add('chat-open');
     document.body.classList.add('wa-chat-active');
@@ -1742,7 +1769,26 @@ async function openWaChat(phone, name) {
             var c = data.customer || {};
             var cName = c.customer_name || name;
             var cInitials = (cName||'?').substring(0,2).toUpperCase();
-            sidebar.innerHTML = '<div style="padding:1.5rem;display:flex;flex-direction:column;gap:1rem"><div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:.75rem"><div class="wa-avatar-m3 customer" style="width:56px;height:56px;font-size:1.1rem;border-radius:.75rem">'+cInitials+'</div><div><div style="font-family:\'Hanken Grotesk\',sans-serif;font-weight:700;font-size:1rem;color:#001d36">'+escHtml(cName)+'</div><div style="font-size:.73rem;color:#545e76;margin-top:.2rem">'+phone+'</div>'+(c.total_orders>0?'<span style="display:inline-block;margin-top:.5rem;padding:.2rem .75rem;border-radius:9999px;font-size:.7rem;font-weight:700;background:#d4af37;color:#554300">'+c.total_orders+' orders</span>':'')+'</div></div><div style="height:1px;background:#f0ece3"></div><div class="text-[11px] font-bold uppercase tracking-wider" style="color:#545e76;letter-spacing:.05em">QUICK ANALYTICS</div><div class="wa-sidebar-stat-m3"><div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#545e76;margin-bottom:.3rem">TOTAL ORDERS</div><div style="font-family:\'Hanken Grotesk\',sans-serif;font-size:1.75rem;font-weight:700;color:#735c00">'+(c.total_orders||0)+'</div></div><div class="wa-sidebar-stat-m3"><div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#545e76;margin-bottom:.3rem">TOTAL SPENT</div><div style="font-family:\'Hanken Grotesk\',sans-serif;font-size:1.4rem;font-weight:700;color:#001d36">'+(c.total_revenue?rpShort(c.total_revenue):'-')+'</div></div><button onclick="viewWaCustomer(\''+phone+'\')" style="width:100%;padding:.625rem;border-radius:.625rem;font-size:.8rem;font-weight:700;font-family:\'Inter\',sans-serif;background:#735c00;color:white;border:none;cursor:pointer;transition:all .15s">Lihat Profil Lengkap</button></div>';
+            // Build risk panel from convData if available
+            var riskHtml = '';
+            var cd = convData || {};
+            if (cd.risk_level && cd.risk_level !== 'none') {
+                var rLvlColor = {low:'#e65100',medium:'#f57f17',high:'#b71c1c'}[cd.risk_level] || '#e65100';
+                var rLvlBg   = {low:'#fff3e0',medium:'#fff8e1',high:'#fce4ec'}[cd.risk_level] || '#fff3e0';
+                var rLabels = [];
+                if (cd.is_complaint) rLabels.push('🚨 Keluhan');
+                if (cd.is_churn) rLabels.push('⚠️ Risiko Churn');
+                var indicators = cd.indicators || [];
+                riskHtml = '<div style="background:'+rLvlBg+';border:1px solid '+rLvlColor+'22;border-radius:.625rem;padding:.875rem">'
+                    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">'
+                    + '<span style="font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:'+rLvlColor+'">⚠ RISIKO '+cd.risk_level.toUpperCase()+'</span>'
+                    + '<div style="display:flex;gap:.25rem">'+rLabels.map(function(l){return '<span style="font-size:.6rem;font-weight:700;padding:.1rem .4rem;border-radius:9999px;background:white;color:'+rLvlColor+'">'+l+'</span>';}).join('')+'</div>'
+                    + '</div>'
+                    + (indicators.length ? '<ul style="margin:0;padding-left:1rem;font-size:.72rem;color:#424242">'+indicators.map(function(i){return '<li style="margin:.2rem 0">'+escHtml(i)+'</li>';}).join('')+'</ul>' : '')
+                    + (cd.risk_analyzed_at ? '<div style="font-size:.6rem;color:#9e9e9e;margin-top:.4rem">Dianalisis: '+fmtDate(cd.risk_analyzed_at)+'</div>' : '')
+                    + '</div>';
+            }
+            sidebar.innerHTML = '<div style="padding:1.5rem;display:flex;flex-direction:column;gap:1rem"><div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:.75rem"><div class="wa-avatar-m3 customer" style="width:56px;height:56px;font-size:1.1rem;border-radius:.75rem">'+cInitials+'</div><div><div style="font-family:\'Hanken Grotesk\',sans-serif;font-weight:700;font-size:1rem;color:#001d36">'+escHtml(cName)+'</div><div style="font-size:.73rem;color:#545e76;margin-top:.2rem">'+phone+'</div>'+(c.total_orders>0?'<span style="display:inline-block;margin-top:.5rem;padding:.2rem .75rem;border-radius:9999px;font-size:.7rem;font-weight:700;background:#d4af37;color:#554300">'+c.total_orders+' orders</span>':'')+'</div></div>'+riskHtml+'<div style="height:1px;background:#f0ece3"></div><div class="text-[11px] font-bold uppercase tracking-wider" style="color:#545e76;letter-spacing:.05em">QUICK ANALYTICS</div><div class="wa-sidebar-stat-m3"><div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#545e76;margin-bottom:.3rem">TOTAL ORDERS</div><div style="font-family:\'Hanken Grotesk\',sans-serif;font-size:1.75rem;font-weight:700;color:#735c00">'+(c.total_orders||0)+'</div></div><div class="wa-sidebar-stat-m3"><div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#545e76;margin-bottom:.3rem">TOTAL SPENT</div><div style="font-family:\'Hanken Grotesk\',sans-serif;font-size:1.4rem;font-weight:700;color:#001d36">'+(c.total_revenue?rpShort(c.total_revenue):'-')+'</div></div><button onclick="viewWaCustomer(\''+phone+'\')" style="width:100%;padding:.625rem;border-radius:.625rem;font-size:.8rem;font-weight:700;font-family:\'Inter\',sans-serif;background:#735c00;color:white;border:none;cursor:pointer;transition:all .15s">Lihat Profil Lengkap</button></div>';
         }
         var infoEl = area.querySelector('.wa-chat-header-phone');
         if (infoEl && data.customer && data.customer.total_orders > 0) {
