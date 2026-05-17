@@ -10,8 +10,9 @@ import json
 import os
 import glob
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
+from urllib.parse import quote
 
 import httpx
 from fastapi import APIRouter, Query, Request, HTTPException
@@ -26,11 +27,89 @@ OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
 LLM_MODEL = "minimax-m2.5:cloud"
 GOWA_MEDIA_PATH = "/opt/gowa/storages"
 
+_MEDIA_EXT_TYPES = {
+    ".jpe": "image/jpeg",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".gif": "image/gif",
+    ".webp": "image/webp",
+}
+
 _jwt_secret = os.environ.get("JWT_SECRET")
 if not _jwt_secret:
     raise RuntimeError("JWT_SECRET env var is required but not set")
 JWT_SECRET: str = _jwt_secret
 COOKIE_NAME = "siji_session"
+
+_GOWA_FILENAME_RE = re.compile(
+    r"^\d+-[0-9a-f-]+\.(jpe|jpg|jpeg|png|webp|gif)$",
+    re.IGNORECASE,
+)
+
+
+def _timestamp_param_to_unix(ts_raw: str) -> int:
+    """Parse path/query timestamps for GOWA media lookup (UTC-consistent)."""
+    ts = (ts_raw or "").strip()
+    if not ts:
+        raise ValueError("empty timestamp")
+    if "T" in ts:
+        dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        return int(dt.timestamp())
+    if re.match(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}", ts):
+        dt = datetime.strptime(ts[:19], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+        return int(dt.timestamp())
+    n = int(ts)
+    if n > 10_000_000_000:
+        n //= 1000
+    return n
+
+
+def _message_ts_to_unix_utc(ts) -> Optional[int]:
+    if ts is None:
+        return None
+    try:
+        if isinstance(ts, datetime):
+            dt = ts
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return int(dt.timestamp())
+        return _timestamp_param_to_unix(str(ts))
+    except Exception:
+        return None
+
+
+def _is_image_message_row(d: dict) -> bool:
+    mt = (d.get("message_type") or "").lower()
+    if mt == "image" or mt.startswith("image/"):
+        return True
+    body = (d.get("message_text") or "").strip().lower()
+    return body.startswith("[image")
+
+
+def _storage_basename_from_media_url(media_url: Optional[str]) -> Optional[str]:
+    if not media_url:
+        return None
+    s = media_url.strip()
+    if not s or s.startswith("http://") or s.startswith("https://"):
+        return None
+    base = os.path.basename(s.rstrip("/"))
+    if _GOWA_FILENAME_RE.match(base):
+        return base
+    return None
+
+
+def _compute_wa_image_url(d: dict) -> Optional[str]:
+    """Resolvable same-origin URL for chat thumbnails (cookie auth on <img>)."""
+    direct = _storage_basename_from_media_url(d.get("media_url"))
+    if direct:
+        return f"/api/dashboard/wa/media/{quote(direct)}"
+    if not _is_image_message_row(d):
+        return None
+    unix = _message_ts_to_unix_utc(d.get("timestamp"))
+    if unix is None:
+        return None
+    return f"/api/dashboard/wa/media/by-timestamp/{unix}"
 
 
 # ─── Auth ─────────────────────────────────────────────────────────────────────
@@ -248,6 +327,8 @@ async def get_messages(
             ts = d.get("timestamp")
             if ts is not None and not isinstance(ts, str):
                 d["timestamp"] = str(ts)
+            d["media_filename"] = _storage_basename_from_media_url(d.get("media_url"))
+            d["image_url"] = _compute_wa_image_url(d)
             return d
 
         messages = [_serialize_message_row(r) for r in rows]
@@ -1012,28 +1093,30 @@ async def list_recent_media(request: Request, limit: int = 50):
 async def serve_media_by_timestamp(timestamp: str, request: Request):
     _require_auth(request)
     try:
-        if "T" in timestamp:
-            dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-            unix_ts = int(dt.timestamp())
-        else:
-            unix_ts = int(timestamp)
+        unix_ts = _timestamp_param_to_unix(timestamp)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid timestamp")
 
     matches = []
-    for f in glob.glob(f"{GOWA_MEDIA_PATH}/*.jpe"):
-        fname = os.path.basename(f)
-        try:
-            file_ts = int(fname.split("-")[0])
-            if abs(file_ts - unix_ts) <= 5:
-                matches.append(f)
-        except Exception:
-            continue
+    for ext in ("jpe", "jpg", "jpeg", "png", "webp"):
+        for f in glob.glob(f"{GOWA_MEDIA_PATH}/*.{ext}"):
+            fname = os.path.basename(f)
+            try:
+                file_ts = int(fname.split("-")[0])
+                if abs(file_ts - unix_ts) <= 5:
+                    matches.append(f)
+            except Exception:
+                continue
 
     if not matches:
         raise HTTPException(status_code=404, detail="No media found")
 
-    return FileResponse(matches[0], media_type="image/jpeg")
+    pick = matches[0]
+    ext = os.path.splitext(pick)[1].lower()
+    return FileResponse(
+        pick,
+        media_type=_MEDIA_EXT_TYPES.get(ext, "application/octet-stream"),
+    )
 
 
 @router.get("/payment-images")

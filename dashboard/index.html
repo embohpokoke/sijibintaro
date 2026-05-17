@@ -1803,21 +1803,39 @@ async function openWaChat(phone, name) {
             if (msgDate !== lastDate) { html += '<div class="wa-date-sep-m3"><span>'+fmtDate(msgDate)+'</span></div>'; lastDate = msgDate; }
             var isBot = fromMe && (m.is_bot === true || m.is_bot === 1);
             var text = m.message_text || m.body || '';
+            var mt = (m.message_type || '').toLowerCase();
+            var isImage = !!(m.image_url || mt === 'image' || mt.indexOf('image/') === 0 || /^\[image/i.test(String(text).trim()));
             var tsStr = m.timestamp ? String(m.timestamp) : '';
-            var time = tsStr.length >= 16 ? tsStr.substring(11,16) : '';
-            var senderTag = fromMe ? ('<span class="wa-bubble-sender-tag">' + (isBot ? '🤖 Bot' : '👤 CS') + '</span>') : '';
-            var mediaTag = '';
-            if (m.message_type && m.message_type !== 'text') {
-                if (m.message_type === 'image' && m.timestamp) {
-                    var ts = m.timestamp;
-                    var unixTs = ts ? Math.floor(new Date(ts).getTime() / 1000) : 0;
-                    mediaTag = '<div class="wa-bubble-media"><img src="/api/dashboard/wa/media/by-timestamp/' + unixTs + '" alt="image" style="max-width:200px;max-height:200px;border-radius:8px;cursor:pointer" onclick="window.open(this.src)" onerror="this.style.display=\'none\';this.parentNode.innerHTML=\'[image tidak tersedia]\'"></div>';
+            var time = '';
+            if (tsStr.length >= 16) {
+                if (tsStr.indexOf('T') >= 0) {
+                    var tpos = tsStr.indexOf('T');
+                    time = tsStr.substring(tpos + 1, tpos + 6);
                 } else {
-                    mediaTag = '<div class="wa-bubble-media">['+m.message_type+']</div>';
+                    time = tsStr.substring(11, 16);
                 }
             }
+            var senderTag = fromMe ? ('<span class="wa-bubble-sender-tag">' + (isBot ? '🤖 Bot' : '👤 CS') + '</span>') : '';
+            var src = null;
+            if (isImage && (m.image_url || tsStr)) {
+                src = m.image_url || null;
+                if (!src && tsStr) {
+                    var norm = tsStr.indexOf('T') >= 0 ? tsStr : tsStr.replace(' ', 'T');
+                    if (norm.indexOf('+') < 0 && norm.indexOf('Z') < 0) norm += 'Z';
+                    var ux = Math.floor(new Date(norm).getTime() / 1000);
+                    if (!isNaN(ux)) src = '/api/dashboard/wa/media/by-timestamp/' + ux;
+                }
+            }
+            var showText = text;
+            if (src && isImage && /^\[image/i.test(String(text).trim())) showText = '';
+            var mediaTag = '';
+            if (src) {
+                mediaTag = '<div class="wa-bubble-media"><img src="' + escHtml(src) + '" alt="image" style="max-width:200px;max-height:200px;border-radius:8px;cursor:pointer" onclick="window.open(this.src)" onerror="this.style.display=\'none\';this.parentNode.innerHTML=\'[image tidak tersedia]\'"></div>';
+            } else if (m.message_type && m.message_type !== 'text') {
+                mediaTag = '<div class="wa-bubble-media">['+escHtml(m.message_type)+']</div>';
+            }
             var bubbleCls = fromMe ? ('wa-bubble-m3-sent' + (isBot ? ' bot' : '')) : 'wa-bubble-m3-received';
-            html += '<div class="'+bubbleCls+'">'+mediaTag+(text?'<div style="white-space:pre-line">'+escHtml(text)+'</div>':'')+'<div class="wa-bubble-time-m3">'+senderTag+'<span>'+time+'</span>'+(fromMe?'<span class="material-symbols-outlined" style="font-size:.7rem;opacity:.6">done_all</span>':'')+'</div></div>';
+            html += '<div class="'+bubbleCls+'">'+mediaTag+(showText?'<div style="white-space:pre-line">'+escHtml(showText)+'</div>':'')+'<div class="wa-bubble-time-m3">'+senderTag+'<span>'+time+'</span>'+(fromMe?'<span class="material-symbols-outlined" style="font-size:.7rem;opacity:.6">done_all</span>':'')+'</div></div>';
         }
         container.innerHTML = html;
         container.scrollTop = container.scrollHeight;
