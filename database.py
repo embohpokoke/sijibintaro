@@ -22,6 +22,24 @@ DB_SCHEMA = "siji_bintaro"
 connection_pool = None
 
 
+def _sql_sqlite_to_psycopg(sql: str) -> str:
+    """
+    Adapt SQLite-style queries for psycopg2.execute(sql, params).
+
+    1. Replace ? placeholders with %s.
+    2. Escape literal % as %% everywhere except the %s parameter tokens.
+       (psycopg2 uses % for printf-style substitution; LIKE '%x%' must be
+       written as LIKE '%%x%%' or binding params fails with tuple index errors.)
+    """
+    if "?" in sql:
+        sql = sql.replace("?", "%s")
+    if "%" not in sql:
+        return sql
+    parts = sql.split("%s")
+    escaped = [p.replace("%", "%%") for p in parts]
+    return "%s".join(escaped)
+
+
 class DictRow(dict):
     """Dict that also supports integer indexing like SQLite Row"""
     def __getitem__(self, key):
@@ -73,14 +91,11 @@ class PostgreSQLiteCursor:
         return [self._make_dict_row(row) for row in rows]
     
     def execute(self, query, params=None):
-        # Convert SQLite ? placeholders to PostgreSQL %s
-        if '?' in query:
-            query = query.replace('?', '%s')
+        query = _sql_sqlite_to_psycopg(query)
         return self._cursor.execute(query, params)
     
     def executemany(self, query, params_list):
-        if '?' in query:
-            query = query.replace('?', '%s')
+        query = _sql_sqlite_to_psycopg(query)
         return self._cursor.executemany(query, params_list)
     
     @property
@@ -113,8 +128,7 @@ class PostgreSQLiteConnection:
     
     def execute(self, sql, params=None):
         """Execute SQL directly on connection (SQLite compatibility)"""
-        # Convert ? to %s for PostgreSQL
-        sql = sql.replace("?", "%s")
+        sql = _sql_sqlite_to_psycopg(sql)
         cursor = self._pg_conn.cursor()
         if params:
             cursor.execute(sql, params)
