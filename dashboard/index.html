@@ -1655,7 +1655,7 @@ function showAreaDetail(idx) {
 
 
 // ─── WhatsApp Page ───────────────────────────────────────────────
-var waState = { filter:'all', sort:'newest', page:1, selectedPhone:null, analyticsLoaded:false, insightsLoaded:false, convMap:{} };
+var waState = { filter:'all', sort:'newest', page:1, selectedPhone:null, analyticsLoaded:false, insightsLoaded:false, convMap:{}, riskScanned:false };
 document.querySelectorAll('.wa-tab-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
         document.querySelectorAll('.wa-tab-btn').forEach(function(b){b.classList.remove('active'); b.style.background='transparent'; b.style.color='#545e76';});
@@ -1676,9 +1676,7 @@ document.querySelectorAll('#wa-filter-chips .chip').forEach(function(chip) {
         loadWaConversations();
     });
 });
-function setWaSort(sortVal) {
-    waState.sort = sortVal;
-    waState.page = 1;
+function _applyWaSortPillStyle(sortVal) {
     document.querySelectorAll('.wa-sort-pill').forEach(function(p) {
         var isActive = p.dataset.waSort === sortVal;
         p.classList.toggle('active', isActive);
@@ -1694,6 +1692,28 @@ function setWaSort(sortVal) {
             p.style.fontWeight = '700';
         }
     });
+}
+async function setWaSort(sortVal) {
+    waState.sort = sortVal;
+    waState.page = 1;
+    _applyWaSortPillStyle(sortVal);
+
+    // If switching to risk mode and no scan has been run yet, auto-scan first
+    if (sortVal === 'risk' && !waState.riskScanned) {
+        var list = $('wa-conv-list');
+        if (list) list.innerHTML = '<div style="padding:2rem;text-align:center;color:#795548"><div class="spinner" style="border-color:#ffc107;border-top-color:#795548;margin:0 auto .75rem"></div><div style="font-size:.8rem;font-weight:600">Menganalisis chat dengan DeepSeek AI…</div><div style="font-size:.7rem;color:#9e9e9e;margin-top:.25rem">Mohon tunggu sebentar</div></div>';
+        var btn = $('wa-risk-scan-btn');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:.95rem;animation:spin 1s linear infinite">autorenew</span> Scanning…'; }
+        try {
+            var res = await api('/wa/risk-scan', {method:'POST'});
+            waState.riskScanned = true;
+            showToast('✅ Scan selesai: ' + res.flagged + ' dari ' + res.scanned + ' chat berisiko');
+        } catch(e) {
+            showToast('Scan AI gagal: ' + (e.message || e));
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:.95rem">psychology</span> Scan AI'; }
+        }
+    }
     loadWaConversations();
 }
 var waSearchTimeout;
@@ -1750,6 +1770,7 @@ async function runWaRiskScan() {
     if (btn) { btn.disabled = true; btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:.95rem;animation:spin 1s linear infinite">autorenew</span> Scanning…'; }
     try {
         var res = await api('/wa/risk-scan', {method:'POST'});
+        waState.riskScanned = true;
         showToast('✅ Scan selesai: ' + res.flagged + ' dari ' + res.scanned + ' chat berisiko');
         loadWaConversations();
     } catch(e) {

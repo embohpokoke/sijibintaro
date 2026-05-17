@@ -136,16 +136,32 @@ async def get_conversations(
             f"SELECT COUNT(*) FROM wa_conversations c {where}"
         ).fetchone()[0]
 
-        # risk sort: high→medium→low→none, then newest within each tier
+        # risk sort: high→medium→low keyword-hint→none, then newest within each tier
         if sort == "risk":
             order_clause = """
                 ORDER BY
-                    CASE COALESCE(rf.risk_level,'none')
+                    CASE COALESCE(rf.risk_level, 'none')
                         WHEN 'high'   THEN 0
                         WHEN 'medium' THEN 1
                         WHEN 'low'    THEN 2
                         ELSE               3
                     END,
+                    CASE WHEN rf.risk_level IS NULL AND (
+                        LOWER(COALESCE(c.last_message,'')) LIKE '%komplain%' OR
+                        LOWER(COALESCE(c.last_message,'')) LIKE '%kecewa%' OR
+                        LOWER(COALESCE(c.last_message,'')) LIKE '%rusak%' OR
+                        LOWER(COALESCE(c.last_message,'')) LIKE '%hilang%' OR
+                        LOWER(COALESCE(c.last_message,'')) LIKE '%lambat%' OR
+                        LOWER(COALESCE(c.last_message,'')) LIKE '%lama%' OR
+                        LOWER(COALESCE(c.last_message,'')) LIKE '%mahal%' OR
+                        LOWER(COALESCE(c.last_message,'')) LIKE '%pindah%' OR
+                        LOWER(COALESCE(c.last_message,'')) LIKE '%batal%' OR
+                        LOWER(COALESCE(c.last_message,'')) LIKE '%minta refund%' OR
+                        LOWER(COALESCE(c.last_message,'')) LIKE '%tidak puas%' OR
+                        LOWER(COALESCE(c.last_message,'')) LIKE '%nggak puas%' OR
+                        LOWER(COALESCE(c.last_message,'')) LIKE '%ga puas%' OR
+                        LOWER(COALESCE(c.last_message,'')) LIKE '%mengecewakan%'
+                    ) THEN 0 ELSE 1 END,
                     sort_ts DESC
             """
         else:
