@@ -958,33 +958,46 @@
             </div>
 
             <div class="tab-content" id="acc-rekon-wa">
-                <div class="flex flex-col lg:flex-row gap-6">
-                    <!-- Left: Unlinked Mutasi -->
-                    <div class="flex-1 min-w-0">
-                        <div class="flex justify-between items-center mb-4">
-                            <div class="font-display font-bold text-sm">Mutasi Masuk Belum Terekonsiliasi</div>
-                            <button class="text-xs font-bold text-gold hover:underline" onclick="refreshRekonWa()">Refresh</button>
+                <div class="rounded-[32px] border border-amber-100 bg-gradient-to-br from-[#fff8ed] via-white to-[#eef4ff] p-5 md:p-6 shadow-card mb-6">
+                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        <div>
+                            <div class="text-[11px] uppercase tracking-[0.2em] text-gold font-bold mb-2">Human-in-the-loop Recon</div>
+                            <h2 class="font-display text-xl md:text-2xl font-bold tracking-tight text-slate-900">Review bukti transfer dari WhatsApp</h2>
+                            <p class="text-sm text-slate-500 mt-1 max-w-2xl">Ollama membaca gambar, sistem mencari kandidat invoice, lalu staff tetap approve sebelum invoice ditandai lunas.</p>
                         </div>
-                        <div id="rekon-mutasi-list" class="space-y-3 max-h-[70vh] overflow-y-auto pr-1"></div>
-                    </div>
-                    <!-- Right: WA Payment Images -->
-                    <div class="flex-1 min-w-0">
-                        <div class="flex justify-between items-center mb-4">
-                            <div class="font-display font-bold text-sm">Bukti Transfer WA (14 hari)</div>
-                            <button class="text-xs font-bold text-gold hover:underline" onclick="loadRekonWaImages()">Refresh</button>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <select id="rekon-filter-status" class="border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold bg-white" onchange="loadRekonReview()">
+                                <option value="all">Semua status</option>
+                                <option value="pending_ocr">Perlu OCR</option>
+                                <option value="needs_match">Perlu Match</option>
+                                <option value="needs_confirm">Perlu Approve</option>
+                                <option value="confirmed">Selesai</option>
+                            </select>
+                            <input id="rekon-ocr-limit" type="number" min="1" max="20" value="5" class="w-20 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold bg-white" aria-label="Limit OCR batch">
+                            <button class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all" onclick="syncRekonWa()">Sync WA</button>
+                            <button class="bg-gold text-white px-4 py-2 rounded-xl text-xs font-bold hover:scale-[1.02] active:scale-95 transition-all" onclick="runRekonOcrBatch()">OCR Batch</button>
+                            <button class="bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold hover:scale-[1.02] active:scale-95 transition-all" onclick="refreshRekonWa()">Refresh</button>
                         </div>
-                        <div id="rekon-wa-images" class="space-y-3 max-h-[70vh] overflow-y-auto pr-1"></div>
                     </div>
+                    <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mt-5" id="rekon-review-summary">
+                        <div class="bg-white/80 rounded-2xl p-4 border border-white"><div class="text-xs text-slate-400 font-semibold">Memuat</div><div class="text-xl font-bold text-gold font-display">-</div></div>
+                    </div>
+                    <div class="text-xs text-slate-500 mt-3" id="rekon-period-label">Periode mengikuti filter Keuangan.</div>
                 </div>
-                <!-- Preview Modal for WA Image -->
-                <div id="rekon-preview-modal" class="fixed inset-0 bg-black/50 z-[200] hidden items-center justify-center p-4" onclick="if(event.target===this)closeRekonPreview()">
-                    <div class="bg-white rounded-3xl max-w-lg w-full p-4 shadow-float" onclick="event.stopPropagation()">
-                        <div class="flex justify-between items-center mb-3">
-                            <div class="font-display font-bold text-sm">Bukti Transfer</div>
-                            <button class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200" onclick="closeRekonPreview()">&times;</button>
+
+                <div class="grid grid-cols-1 xl:grid-cols-[420px_1fr] gap-6">
+                    <div class="bg-white rounded-[32px] shadow-card border border-slate-100 p-4 md:p-5 min-w-0">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <div class="font-display font-bold text-sm">Antrian Review</div>
+                                <div class="text-xs text-slate-400">Klik satu bukti untuk membaca OCR dan kandidat invoice.</div>
+                            </div>
+                            <span class="text-xs font-bold text-gold" id="rekon-review-count">-</span>
                         </div>
-                        <img id="rekon-preview-img" class="w-full rounded-2xl mb-3" src="" alt="Bukti transfer">
-                        <div id="rekon-preview-context" class="text-xs text-slate-500 space-y-1 max-h-32 overflow-y-auto bg-slate-50 rounded-xl p-3"></div>
+                        <div id="rekon-review-list" class="space-y-3 max-h-[72vh] overflow-y-auto pr-1"></div>
+                    </div>
+                    <div class="bg-white rounded-[32px] shadow-card border border-slate-100 p-4 md:p-6 min-w-0">
+                        <div id="rekon-review-detail" class="min-h-[420px]"></div>
                     </div>
                 </div>
             </div>
@@ -1115,6 +1128,7 @@
 
 const API = '/api/dashboard';
 const ACCOUNTING_API = '/api/accounting';
+const REKON_API = '/api/rekon';
 const accountingState = { initialized: false, categories: [], suppliers: [], activeTab: 'acc-overview' };
 
 // ─── Theme Manager ───────────────────────────────────────────────
@@ -1147,6 +1161,14 @@ async function apiPost(endpoint, body) { const r = await fetch(API + endpoint, {
 async function accountingApi(endpoint, options) {
     const opts = Object.assign({ credentials: 'include' }, options || {});
     const response = await fetch(ACCOUNTING_API + endpoint, opts);
+    if (!response.ok) { let detail = 'API ' + response.status; try { const data = await response.json(); detail = data.detail || detail; } catch(e){} throw new Error(detail); }
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) return response.json();
+    return response;
+}
+async function rekonApi(endpoint, options) {
+    const opts = Object.assign({ credentials: 'include' }, options || {});
+    const response = await fetch(REKON_API + endpoint, opts);
     if (!response.ok) { let detail = 'API ' + response.status; try { const data = await response.json(); detail = data.detail || detail; } catch(e){} throw new Error(detail); }
     const contentType = response.headers.get('content-type') || '';
     if (contentType.includes('application/json')) return response.json();
@@ -1998,7 +2020,7 @@ function initAccountingPage() {
             if (tab === 'acc-pengeluaran') { loadAccountingCategories(); loadAccountingSuppliers(); loadAccountingExpenses(); }
             if (tab === 'acc-pemasukan') loadAccountingIncome();
             if (tab === 'acc-mutasi') loadAccountingMutasi();
-            if (tab === 'acc-rekon-wa') { loadRekonWa(); loadRekonWaImages(); }
+            if (tab === 'acc-rekon-wa') loadRekonReview();
             if (tab === 'acc-laporan') loadAccountingReportPreview();
         });
     });
@@ -2043,7 +2065,7 @@ async function refreshAccountingPage() {
     if (accountingState.activeTab === 'acc-pengeluaran') { loadAccountingCategories(); loadAccountingSuppliers(); loadAccountingExpenses(); }
     if (accountingState.activeTab === 'acc-pemasukan') loadAccountingIncome();
     if (accountingState.activeTab === 'acc-mutasi') loadAccountingMutasi();
-    if (accountingState.activeTab === 'acc-rekon-wa') { loadRekonWa(); loadRekonWaImages(); }
+    if (accountingState.activeTab === 'acc-rekon-wa') loadRekonReview();
     if (accountingState.activeTab === 'acc-laporan') loadAccountingReportPreview();
 }
 async function loadAccountingCategories() {
@@ -2178,156 +2200,248 @@ function loadPageData(page) {
     }
 }
 
-// ─── WA Payment Reconciliation ───────────────────────────────────
-var rekonState = { selectedMutasi: null, selectedImage: null };
-var rekonImageData = [];
-async function loadRekonWa() {
-    var list = $('rekon-mutasi-list');
-    list.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-    try {
-        var data = await accountingApi('/mutasi/unlinked-incoming?days=30');
-        if (!data.items || data.items.length === 0) {
-            list.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">Semua mutasi sudah terekonsiliasi</div></div>';
-            return;
-        }
-        list.innerHTML = data.items.map(function(m) {
-            var isLinked = m.wa_media_path;
-            return '<div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-card hover:shadow-card-hover transition-all '+(isLinked?'border-green-200 bg-green-50/30':'')+'" data-mutasi-id="'+m.id+'">'+
-                '<div class="flex justify-between items-start mb-2">'+
-                    '<div>'+
-                        '<div class="text-xs text-slate-400 font-semibold">'+m.tanggal+'</div>'+
-                        '<div class="text-sm font-bold">'+(m.penerima||'-')+'</div>'+
-                        '<div class="text-xs text-slate-500">'+(m.keterangan||'-')+'</div>'+
-                    '</div>'+
-                    '<div class="text-gold font-bold text-sm">'+rp(m.nominal)+'</div>'+
-                '</div>'+
-                (isLinked?'<div class="flex items-center gap-2 mt-2"><span class="material-symbols-outlined text-green-500 text-sm" style="font-variation-settings:\'FILL\' 1;">check_circle</span><span class="text-xs text-green-600 font-semibold">Terekonsiliasi</span><span class="text-xs text-slate-400 truncate">'+(m.wa_media_path||'')+'</span></div>':'')+
-                '<div class="flex gap-2 mt-3">'+
-                    '<button class="flex-1 bg-gold text-white text-xs font-bold py-2 rounded-xl hover:scale-[1.02] active:scale-95 transition-all" onclick="selectMutasiForRekon('+m.id+')">Pilih untuk Rekon</button>'+
-                    (isLinked?'<button class="px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-50" onclick="unlinkMutasiRekon('+m.id+')">Batal</button>':'')+
-                '</div>'+
-            '</div>';
-        }).join('');
-    } catch(e) { console.error('Rekon mutasi error:', e); list.innerHTML = '<div class="text-error text-sm p-4">Gagal memuat mutasi</div>'; }
+// ─── WA Payment Reconciliation Review Desk ───────────────────────
+var rekonState = { items: [], selectedSignalId: null, lastData: null };
+function rekonPeriodQuery() {
+    var period = accountingPeriod();
+    return period.bulan ? 'bulan=' + period.bulan + '&tahun=' + period.tahun : 'tahun=' + period.tahun;
 }
-async function loadRekonWaImages() {
-    var list = $('rekon-wa-images');
-    list.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-    try {
-        var data = await api('/wa/payment-images?days=14&limit=50');
-        rekonImageData = data.images || [];
-        if (!data.images || data.images.length === 0) {
-            list.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">Tidak ada bukti transfer WA</div></div>';
-            return;
-        }
-        list.innerHTML = data.images.map(function(img, idx) {
-            return '<div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-card hover:shadow-card-hover transition-all">'+
-                '<div class="flex justify-between items-start mb-2">'+
-                    '<div>'+
-                        '<div class="text-xs text-slate-400 font-semibold">'+fmtDateShort(img.timestamp)+'</div>'+
-                        '<div class="text-sm font-bold">'+escHtml(img.customer_name)+'</div>'+
-                        '<div class="text-xs text-slate-500 font-mono">'+img.phone+'</div>'+
-                    '</div>'+
-                    '<span class="material-symbols-outlined text-gold">image</span>'+
-                '</div>'+
-                '<div class="text-xs text-slate-500 mb-2 truncate">'+escHtml(img.message_text)+'</div>'+
-                '<div class="flex gap-2">'+
-                    '<button class="flex-1 bg-white border border-slate-200 text-slate-600 text-xs font-bold py-2 rounded-xl hover:bg-slate-50 transition-all" onclick="showRekonPreview('+idx+')">Preview</button>'+
-                    '<button class="flex-1 bg-gold text-white text-xs font-bold py-2 rounded-xl hover:scale-[1.02] active:scale-95 transition-all" onclick="linkMutasiToWa('+idx+')">Link ke Mutasi</button>'+
-                '</div>'+
-            '</div>';
-        }).join('');
-    } catch(e) { console.error('Rekon images error:', e); list.innerHTML = '<div class="text-error text-sm p-4">Gagal memuat gambar WA</div>'; }
+function rekonStageMeta(stage) {
+    var map = {
+        pending_ocr: { label: 'Perlu OCR', cls: 'bg-orange-50 text-orange-700 border-orange-100' },
+        needs_match: { label: 'Perlu Match', cls: 'bg-blue-50 text-blue-700 border-blue-100' },
+        needs_confirm: { label: 'Perlu Approve', cls: 'bg-amber-50 text-amber-700 border-amber-100' },
+        confirmed: { label: 'Selesai', cls: 'bg-green-50 text-green-700 border-green-100' }
+    };
+    return map[stage] || { label: stage || '-', cls: 'bg-slate-50 text-slate-600 border-slate-100' };
 }
-function selectMutasiForRekon(id) {
-    rekonState.selectedMutasi = id;
-    document.querySelectorAll('#rekon-mutasi-list > div').forEach(function(el){ el.classList.remove('ring-2','ring-gold'); });
-    var selected = document.querySelector('#rekon-mutasi-list [data-mutasi-id="'+id+'"]');
-    if (selected) selected.classList.add('ring-2','ring-gold');
-    showToast('Mutasi #'+id+' dipilih. Klik "Link ke Mutasi" pada bukti transfer.');
+function confidenceLabel(value) {
+    var pct = Math.round((Number(value) || 0) * 100);
+    return pct + '%';
 }
-function linkMutasiToWa(mediaPath, phone) {
-    if (!rekonState.selectedMutasi) {
-        showToast('Pilih mutasi di sebelah kiri terlebih dahulu');
+function rekonOcrSource(item) {
+    var raw = item.ocr_raw || {};
+    if (typeof raw === 'string') return raw.slice(0, 32);
+    if (raw.source) return raw.source;
+    if (raw.attempts && raw.attempts.length) return raw.attempts.map(function(a){ return a.source; }).filter(Boolean).join(' + ');
+    return item.signal_type || '-';
+}
+function renderRekonSummary(data) {
+    var s = data.summary || {};
+    var cards = [
+        ['Perlu OCR', s.pending_ocr || 0, 'text-orange-600'],
+        ['Perlu Match', s.needs_match || 0, 'text-blue-600'],
+        ['Perlu Approve', s.needs_confirm || 0, 'text-amber-600'],
+        ['Selesai', s.confirmed || 0, 'text-green-600'],
+        ['Total Bukti', s.total_signals || 0, 'text-gold']
+    ];
+    $('rekon-review-summary').innerHTML = cards.map(function(c) {
+        return '<div class="bg-white/85 rounded-2xl p-4 border border-white shadow-sm">'+
+            '<div class="text-[11px] uppercase tracking-wider text-slate-400 font-bold">'+c[0]+'</div>'+
+            '<div class="text-2xl font-bold font-display '+c[2]+'">'+c[1]+'</div>'+
+        '</div>';
+    }).join('');
+    var model = data.automation && data.automation.model ? data.automation.model : 'ollama';
+    $('rekon-period-label').textContent = 'Periode ' + (data.period ? data.period.label : '-') + ' · Vision: ' + model + ' · auto-confirm mati, approve tetap manual.';
+    $('rekon-review-count').textContent = (data.count || 0) + ' item';
+}
+function renderRekonList(items) {
+    var list = $('rekon-review-list');
+    if (!items || !items.length) {
+        list.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">Tidak ada item di filter ini</div></div>';
         return;
     }
-    var notes = window.prompt('Catatan rekonsiliasi (opsional):');
-    if (notes === null) return;
-    showToast('Menyimpan rekonsiliasi...');
-    accountingApi('/mutasi/' + rekonState.selectedMutasi + '/recon', {
-        method: 'PATCH',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ wa_media_path: mediaPath, recon_notes: notes })
-    }).then(function(res) {
-        showToast('Rekonsiliasi berhasil!');
-        rekonState.selectedMutasi = null;
-        loadRekonWa();
-        loadRekonWaImages();
-    }).catch(function(e) {
-        console.error('Rekon error:', e);
-        showToast('Gagal rekonsiliasi: ' + e.message);
-    });
+    list.innerHTML = items.map(function(item) {
+        var meta = rekonStageMeta(item.stage);
+        var active = item.id === rekonState.selectedSignalId ? 'ring-2 ring-gold border-gold' : 'border-slate-100';
+        var thumb = item.image_url ? '<img src="'+escHtml(item.image_url)+'" class="w-14 h-14 object-cover rounded-2xl border border-slate-100 bg-slate-50" alt="Bukti transfer">' : '<div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center"><span class="material-symbols-outlined text-slate-300">image</span></div>';
+        return '<button class="w-full text-left bg-white rounded-2xl p-3 border '+active+' shadow-sm hover:shadow-card transition-all" onclick="selectRekonSignal('+item.id+')">'+
+            '<div class="flex gap-3">'+
+                thumb+
+                '<div class="min-w-0 flex-1">'+
+                    '<div class="flex justify-between gap-2 mb-1">'+
+                        '<div class="text-xs text-slate-400 font-semibold">'+fmtDate(item.wa_timestamp)+'</div>'+
+                        '<span class="inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-bold '+meta.cls+'">'+meta.label+'</span>'+
+                    '</div>'+
+                    '<div class="text-sm font-bold text-slate-900 truncate">'+escHtml(item.customer_name || item.phone || 'Customer WA')+'</div>'+
+                    '<div class="text-xs text-slate-500 truncate">'+escHtml(item.raw_caption || item.reference || item.phone || '-')+'</div>'+
+                    '<div class="flex items-center justify-between mt-2">'+
+                        '<span class="text-sm font-bold text-gold">'+(item.amount ? rp(item.amount) : 'Belum terbaca')+'</span>'+
+                        '<span class="text-[10px] font-bold text-slate-400">'+confidenceLabel(item.confidence)+'</span>'+
+                    '</div>'+
+                '</div>'+
+            '</div>'+
+        '</button>';
+    }).join('');
 }
-async function unlinkMutasiRekon(id) {
-    if (!window.confirm('Batalkan rekonsiliasi mutasi #' + id + '?')) return;
-    showToast('Membatalkan rekonsiliasi...');
-    accountingApi('/mutasi/' + id + '/recon', {
-        method: 'PATCH',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ wa_media_path: null, recon_notes: null })
-    }).then(function(res) {
-        showToast('Rekonsiliasi dibatalkan');
-        loadRekonWa();
-        loadRekonWaImages();
-    }).catch(function(e) {
-        showToast('Gagal: ' + e.message);
-    });
+function renderCandidateRows(item) {
+    var candidates = item.candidates || [];
+    if (!candidates.length) {
+        return '<div class="rounded-2xl border border-dashed border-slate-200 p-4 text-sm text-slate-500">Belum ada kandidat invoice yang dekat waktunya. Coba sync WA atau cek invoice customer ini.</div>';
+    }
+    return candidates.map(function(c) {
+        var exact = c.amount_exact ? '<span class="text-[10px] font-bold bg-green-50 text-green-700 px-2 py-0.5 rounded-full">nominal cocok</span>' : '<span class="text-[10px] font-bold bg-slate-50 text-slate-500 px-2 py-0.5 rounded-full">nominal beda</span>';
+        var isCurrent = item.invoice_rekon_id === c.id;
+        var canMatch = c.rekon_status === 'unmatched' || isCurrent;
+        return '<div class="rounded-2xl border border-slate-100 p-4 bg-slate-50/60">'+
+            '<div class="flex flex-col md:flex-row md:items-start justify-between gap-3">'+
+                '<div>'+
+                    '<div class="flex items-center gap-2 flex-wrap mb-1">'+
+                        '<div class="text-sm font-bold text-slate-900">Nota '+escHtml(c.nota_number || c.id)+'</div>'+exact+(isCurrent?'<span class="text-[10px] font-bold bg-gold/10 text-gold px-2 py-0.5 rounded-full">terpilih</span>':'')+
+                    '</div>'+
+                    '<div class="text-xs text-slate-500">'+escHtml(c.customer_name || '-')+' · '+fmtDate(c.wa_timestamp)+'</div>'+
+                    '<div class="text-xs text-slate-500 truncate max-w-xl">'+escHtml(c.layanan || '-')+'</div>'+
+                '</div>'+
+                '<div class="md:text-right">'+
+                    '<div class="text-sm font-bold text-gold">'+rp(c.total_tagihan || 0)+'</div>'+
+                    '<div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">'+escHtml(c.rekon_status || '-')+'</div>'+
+                '</div>'+
+            '</div>'+
+            '<div class="flex gap-2 mt-3">'+
+                (canMatch && !isCurrent ? '<button class="bg-slate-900 text-white px-3 py-2 rounded-xl text-xs font-bold" onclick="matchRekonInvoice('+item.id+','+c.id+')">Match invoice ini</button>' : '')+
+                (isCurrent && item.stage === 'needs_confirm' ? '<button class="bg-gold text-white px-3 py-2 rounded-xl text-xs font-bold" onclick="confirmRekonInvoice('+c.id+')">Approve & tandai lunas</button><button class="bg-white border border-slate-200 text-slate-600 px-3 py-2 rounded-xl text-xs font-bold" onclick="unmatchRekonInvoice('+c.id+')">Batal match</button>' : '')+
+            '</div>'+
+        '</div>';
+    }).join('');
 }
-function showRekonPreview(idx) {
-    var imgData = rekonImageData[idx];
-    if (!imgData) return;
-    var modal = $('rekon-preview-modal');
-    var img = $('rekon-preview-img');
-    var ctx = $('rekon-preview-context');
-    img.src = imgData.image_url || '';
-    var ctxHtml = imgData.context.map(function(c){ return '<div class="'+(c.is_me?'text-blue-600':'text-slate-600')+' text-xs py-0.5">'+(c.is_me?'👤 CS: ':'👤 Pelanggan: ')+escHtml(c.text)+'</div>'; }).join('');
-    ctx.innerHTML = ctxHtml || '<div class="text-slate-400 text-xs">Tidak ada konteks</div>';
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-}
-function linkMutasiToWa(idx) {
-    var imgData = rekonImageData[idx];
-    if (!imgData) return;
-    if (!rekonState.selectedMutasi) {
-        showToast('Pilih mutasi di sebelah kiri terlebih dahulu');
+function renderRekonDetail(item) {
+    var box = $('rekon-review-detail');
+    if (!item) {
+        box.innerHTML = '<div class="h-full min-h-[420px] flex flex-col items-center justify-center text-center text-slate-400"><span class="material-symbols-outlined text-5xl mb-3">fact_check</span><div class="font-display font-bold text-slate-600">Pilih bukti transfer</div><div class="text-sm">Detail OCR, model, dan kandidat invoice akan muncul di sini.</div></div>';
         return;
     }
-    var notes = window.prompt('Catatan rekonsiliasi (opsional):');
+    var meta = rekonStageMeta(item.stage);
+    var raw = item.ocr_raw ? escHtml(JSON.stringify(item.ocr_raw, null, 2)).slice(0, 1800) : 'Belum ada hasil OCR/model.';
+    var image = item.image_url ? '<img src="'+escHtml(item.image_url)+'" class="w-full max-h-[460px] object-contain rounded-3xl bg-slate-50 border border-slate-100" alt="Bukti transfer">' : '<div class="h-64 rounded-3xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">Gambar lokal belum tersedia</div>';
+    box.innerHTML =
+        '<div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-5">'+
+            '<div>'+
+                '<div class="flex items-center gap-2 flex-wrap mb-2">'+
+                    '<span class="inline-flex items-center px-2 py-1 rounded-full border text-[10px] font-bold '+meta.cls+'">'+meta.label+'</span>'+
+                    '<span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">'+escHtml(rekonOcrSource(item))+'</span>'+
+                '</div>'+
+                '<h3 class="font-display text-xl font-bold text-slate-900">'+escHtml(item.customer_name || item.phone || 'Customer WA')+'</h3>'+
+                '<div class="text-xs text-slate-500">'+fmtDate(item.wa_timestamp)+' · '+escHtml(item.phone || '-')+'</div>'+
+            '</div>'+
+            '<div class="flex gap-2">'+
+                '<button class="bg-white border border-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-bold" onclick="runRekonOcr('+item.id+')">Jalankan OCR</button>'+
+                (item.invoice_rekon_id && item.stage === 'needs_confirm' ? '<button class="bg-gold text-white px-3 py-2 rounded-xl text-xs font-bold" onclick="confirmRekonInvoice('+item.invoice_rekon_id+')">Approve</button>' : '')+
+            '</div>'+
+        '</div>'+
+        '<div class="grid grid-cols-1 lg:grid-cols-[minmax(260px,420px)_1fr] gap-5">'+
+            '<div>'+image+'</div>'+
+            '<div class="space-y-4">'+
+                '<div class="grid grid-cols-2 gap-3">'+
+                    '<div class="rounded-2xl bg-slate-50 p-4"><div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Nominal OCR</div><div class="text-lg font-bold text-gold">'+(item.amount ? rp(item.amount) : '-')+'</div></div>'+
+                    '<div class="rounded-2xl bg-slate-50 p-4"><div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Confidence</div><div class="text-lg font-bold text-slate-900">'+confidenceLabel(item.confidence)+'</div></div>'+
+                    '<div class="rounded-2xl bg-slate-50 p-4"><div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Bank</div><div class="text-sm font-bold text-slate-900">'+escHtml(item.bank_name || '-')+'</div></div>'+
+                    '<div class="rounded-2xl bg-slate-50 p-4"><div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Ref</div><div class="text-sm font-bold text-slate-900 truncate">'+escHtml(item.reference || '-')+'</div></div>'+
+                '</div>'+
+                '<div class="rounded-2xl border border-slate-100 p-4">'+
+                    '<div class="text-xs font-bold text-slate-500 mb-2">Caption / konteks WA</div>'+
+                    '<div class="text-sm text-slate-700 whitespace-pre-wrap">'+escHtml(item.raw_caption || 'Tidak ada caption.')+'</div>'+
+                '</div>'+
+                '<div class="rounded-2xl border border-slate-100 p-4">'+
+                    '<div class="text-xs font-bold text-slate-500 mb-2">Raw OCR / model evidence</div>'+
+                    '<pre class="text-[11px] leading-relaxed text-slate-500 whitespace-pre-wrap max-h-44 overflow-auto">'+raw+'</pre>'+
+                '</div>'+
+            '</div>'+
+        '</div>'+
+        '<div class="mt-6">'+
+            '<div class="font-display font-bold text-sm mb-3">Kandidat Invoice</div>'+
+            '<div class="space-y-3">'+renderCandidateRows(item)+'</div>'+
+        '</div>';
+}
+async function loadRekonReview() {
+    var list = $('rekon-review-list');
+    if (!list) return;
+    list.innerHTML = '<div class="loading"><div class="spinner"></div> Memuat antrian rekon...</div>';
+    renderRekonDetail(null);
+    try {
+        var statusEl = $('rekon-filter-status');
+        var status = statusEl ? statusEl.value : 'all';
+        var data = await rekonApi('/review?' + rekonPeriodQuery() + '&status=' + encodeURIComponent(status) + '&limit=120');
+        rekonState.lastData = data;
+        rekonState.items = data.items || [];
+        renderRekonSummary(data);
+        renderRekonList(rekonState.items);
+        var selected = rekonState.items.find(function(i){ return i.id === rekonState.selectedSignalId; }) || rekonState.items[0] || null;
+        rekonState.selectedSignalId = selected ? selected.id : null;
+        if (selected) renderRekonList(rekonState.items);
+        renderRekonDetail(selected);
+    } catch(e) {
+        console.error('Rekon review error:', e);
+        list.innerHTML = '<div class="text-error text-sm p-4">Gagal memuat review rekon: '+escHtml(e.message)+'</div>';
+    }
+}
+function selectRekonSignal(id) {
+    rekonState.selectedSignalId = id;
+    var item = rekonState.items.find(function(i){ return i.id === id; });
+    renderRekonList(rekonState.items);
+    renderRekonDetail(item);
+}
+async function syncRekonWa() {
+    try {
+        showToast('Sync invoice dan bukti bayar WA...');
+        await rekonApi('/sync', { method: 'POST' });
+        showToast('Sync selesai');
+        loadRekonReview();
+    } catch(e) { showToast('Sync gagal: ' + e.message); }
+}
+async function runRekonOcr(signalId) {
+    try {
+        showToast('OCR/Ollama dimasukkan ke antrean...');
+        await rekonApi('/signals/' + signalId + '/ocr', { method: 'POST' });
+        showToast('OCR berjalan di background');
+        setTimeout(loadRekonReview, 3000);
+        setTimeout(loadRekonReview, 9000);
+    } catch(e) { showToast('OCR gagal: ' + e.message); }
+}
+async function runRekonOcrBatch() {
+    var limit = parseInt(($('rekon-ocr-limit') && $('rekon-ocr-limit').value) || '5', 10);
+    limit = Math.max(1, Math.min(limit || 5, 20));
+    try {
+        showToast('Menjalankan OCR batch maksimal ' + limit + ' bukti...');
+        var res = await rekonApi('/signals/ocr-batch?limit=' + limit, { method: 'POST' });
+        showToast('OCR batch queued: ' + (res.queued || 0) + ' item');
+        setTimeout(loadRekonReview, 4000);
+        setTimeout(loadRekonReview, 12000);
+    } catch(e) { showToast('OCR batch gagal: ' + e.message); }
+}
+async function matchRekonInvoice(signalId, invoiceId) {
+    var notes = window.prompt('Catatan match (opsional):', 'Reviewed via Keuangan Recon Desk');
     if (notes === null) return;
-    showToast('Menyimpan rekonsiliasi...');
-    accountingApi('/mutasi/' + rekonState.selectedMutasi + '/recon', {
-        method: 'PATCH',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ wa_media_path: imgData.local_file, recon_notes: notes })
-    }).then(function(res) {
-        showToast('Rekonsiliasi berhasil!');
-        rekonState.selectedMutasi = null;
-        loadRekonWa();
-        loadRekonWaImages();
-    }).catch(function(e) {
-        console.error('Rekon error:', e);
-        showToast('Gagal rekonsiliasi: ' + e.message);
-    });
+    try {
+        showToast('Menyimpan match...');
+        await rekonApi('/match', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ signal_id: signalId, invoice_rekon_id: invoiceId, notes: notes }) });
+        showToast('Match tersimpan. Masih perlu approve.');
+        rekonState.selectedSignalId = signalId;
+        loadRekonReview();
+    } catch(e) { showToast('Match gagal: ' + e.message); }
 }
-function closeRekonPreview() {
-    var modal = $('rekon-preview-modal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
+async function confirmRekonInvoice(invoiceId) {
+    if (!window.confirm('Approve invoice ini sebagai Lunas dan buat pemasukan manual terverifikasi?')) return;
+    var notes = window.prompt('Catatan approve (opsional):', 'Approved via Keuangan Recon Desk');
+    if (notes === null) return;
+    try {
+        showToast('Mengapprove invoice...');
+        await rekonApi('/invoices/' + invoiceId + '/confirm', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ rekon_notes: notes, create_pemasukan: true }) });
+        showToast('Invoice berhasil diapprove sebagai Lunas');
+        loadRekonReview();
+        refreshAccountingPage();
+    } catch(e) { showToast('Approve gagal: ' + e.message); }
 }
-function refreshRekonWa() {
-    loadRekonWa();
-    loadRekonWaImages();
+async function unmatchRekonInvoice(invoiceId) {
+    if (!window.confirm('Batalkan match invoice ini?')) return;
+    try {
+        await rekonApi('/invoices/' + invoiceId + '/unmatch', { method: 'DELETE' });
+        showToast('Match dibatalkan');
+        loadRekonReview();
+    } catch(e) { showToast('Batal match gagal: ' + e.message); }
 }
+function loadRekonWa() { loadRekonReview(); }
+function loadRekonWaImages() { loadRekonReview(); }
+function refreshRekonWa() { loadRekonReview(); }
 
 // ─── Init ────────────────────────────────────────────────────────
 if (window.visualViewport) {
